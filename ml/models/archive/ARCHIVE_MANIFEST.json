@@ -1,0 +1,25 @@
+{
+  "archive_version": "1.0.0",
+  "archived_at": "2026-09-12T03:39:00Z",
+  "reason": "Phase 18 Artifact Versioning & Model Governance",
+  "models": {
+    "xgb_flood_model.joblib": {
+      "sha256": "5cdaa540395887bd70adbf0d0d14610e089ccd589ecb30746459baa1e17762ba",
+      "status": "DEPRECATED",
+      "reason": "V1 legacy model trained on synthetic or unverified data with legacy feature schemas. Superseded by V2 15-canonical-feature verified pipeline.",
+      "replacement": "v2_selected_model.joblib"
+    },
+    "rf_real_flood_model.joblib": {
+      "sha256": "07149c53ebc56c0015c256a9812d455b2f68ec1a5aad25de36ed13e9471d589e",
+      "status": "DEPRECATED",
+      "reason": "V1 legacy model trained on synthetic or unverified data with legacy feature schemas. Superseded by V2 15-canonical-feature verified pipeline.",
+      "replacement": "v2_selected_model.joblib"
+    },
+    "xgb_real_flood_model.joblib": {
+      "sha256": "7afc57e6997b87c848d409fafd452eabe898e50c3247de590d9e53e3d334e25f",
+      "status": "DEPRECATED",
+      "reason": "V1 legacy model trained on synthetic or unverified data with legacy feature schemas. Superseded by V2 15-canonical-feature verified pipeline.",
+      "replacement": "v2_selected_model.joblib"
+    }
+  }
+}

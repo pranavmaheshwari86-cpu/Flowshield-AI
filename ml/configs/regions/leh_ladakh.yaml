@@ -1,0 +1,113 @@
+# ml/configs/regions/leh_ladakh.yaml
+# Flowshield — Leh & Ladakh Regional Configuration
+# Upper Indus Basin, Zanskar, Shyok
+# NOTE: Includes 2010 Leh cloudburst as major reference event (§65)
+
+region:
+  slug: "leh_ladakh"
+  display_name: "Leh & Ladakh"
+  state: "Ladakh"
+  primary_basin: "Upper Indus, Zanskar, Shyok"
+  climate_zone: "Cold desert / high-altitude arid Himalayan"
+
+boundary:
+  lat_min: 32.50
+  lat_max: 35.50
+  lon_min: 75.50
+  lon_max: 78.50
+
+stations:
+  LEH_IND_01:
+    name: "Leh / Upper Indus"
+    latitude: 34.1526
+    longitude: 77.5771
+    elevation_m: 3524.0
+    catchment_slope_deg: 14.0
+    dist_to_river_m: 200.0
+    upstream_drainage_sqkm: 41000.0
+    role: "train"
+  KRU_SHY_02:
+    name: "Karu / Shyok Confluence"
+    latitude: 34.0300
+    longitude: 77.8000
+    elevation_m: 3340.0
+    catchment_slope_deg: 18.0
+    dist_to_river_m: 100.0
+    upstream_drainage_sqkm: 33000.0
+    role: "train"
+  KHL_ZAN_03:
+    name: "Khalsi / Zanskar-Indus Confluence"
+    latitude: 34.3000
+    longitude: 76.9500
+    elevation_m: 3060.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 60.0
+    upstream_drainage_sqkm: 52000.0
+    role: "spatial_holdout_val"
+  NUB_NUB_04:
+    name: "Nubra Valley / Shyok River"
+    latitude: 34.6800
+    longitude: 77.5700
+    elevation_m: 3100.0
+    catchment_slope_deg: 12.0
+    dist_to_river_m: 150.0
+    upstream_drainage_sqkm: 15000.0
+    role: "train"
+  CHL_LEH_05:
+    name: "Choglamsar / Leh (2010 Disaster Site)"
+    latitude: 34.1000
+    longitude: 77.6200
+    elevation_m: 3400.0
+    catchment_slope_deg: 25.0
+    dist_to_river_m: 80.0
+    upstream_drainage_sqkm: 3200.0
+    role: "train"
+
+# SCIENTIFIC NOTE (§65):
+# The August 6, 2010 Leh cloudburst produced ~120 mm of rainfall within
+# approximately 2 hours over a localized area near Leh/Choglamsar.
+# The exact peak intensity measurement varies across sources:
+# - IMD Leh station: ~76 mm in 2 hours (manual gauge)
+# - Kumar et al. (2012): "extraordinary" event; >100 mm inferred from satellite
+# - Thayyen et al. (2013): 120 mm estimated total
+# We do NOT hard-code ">200 mm/hr" as no authoritative sub-hourly measurement
+# at that resolution is publicly verified. The event is labeled based on
+# confirmed disaster records from SDMA/NDMA/DesInventar.
+reference_events:
+  - event: "2010 Leh Cloudburst"
+    date: "2010-08-06"
+    verified_precipitation_mm: 120.0
+    temporal_resolution: "~2 hours cumulative estimate"
+    source: "Kumar et al. 2012; NDMA; SDMA Ladakh"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "SDMA Ladakh historical records"
+    - "NDMA event database"
+    - "DesInventar / UNDRR cross-reference"
+    - "Published literature (Kumar et al. 2012)"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

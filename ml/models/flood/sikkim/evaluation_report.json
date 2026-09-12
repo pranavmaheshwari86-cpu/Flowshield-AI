@@ -1,0 +1,51 @@
+{
+  "region": "sikkim",
+  "model_architecture": "xgboost",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "threshold_used": 0.2189,
+  "holdout_sample_count": 29045,
+  "actual_floods_count": 387,
+  "missed_floods_count": 89,
+  "detected_floods_count": 298,
+  "false_alarms_count": 169,
+  "metrics": {
+    "accuracy": 0.9911,
+    "precision": 0.6381,
+    "recall": 0.77,
+    "f1_score": 0.6979,
+    "macro_f1": 0.8467,
+    "roc_auc": 0.9432,
+    "pr_auc": 0.7546,
+    "brier_score": 0.0054,
+    "expected_calibration_error": 0.0025,
+    "false_negative_rate": 0.23,
+    "false_positive_rate": 0.0059
+  },
+  "confusion_matrix": {
+    "true_negatives": 28489,
+    "false_positives": 169,
+    "false_negatives": 89,
+    "true_positives": 298
+  },
+  "multi_tier_alert_performance": {
+    "advisory_threshold": {
+      "threshold": 0.0195,
+      "recall": 0.8915,
+      "precision": 0.1253,
+      "predicted_alerts": 2754
+    },
+    "watch_threshold": {
+      "threshold": 0.2189,
+      "recall": 0.77,
+      "precision": 0.6381,
+      "predicted_alerts": 467
+    },
+    "warning_threshold": {
+      "threshold": 0.3284,
+      "recall": 0.6357,
+      "precision": 0.8119,
+      "predicted_alerts": 303
+    }
+  }
+}

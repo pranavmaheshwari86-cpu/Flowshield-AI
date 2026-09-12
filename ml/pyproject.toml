@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowshield-ml"
+version = "2.5.0"
+description = "Flowshield — Certified Hydrological Machine Learning Pipeline for Flash Flood Risk Prediction"
+readme = "README.md"
+authors = [{ name = "Flowshield ML Engineering Team" }]
+license = { text = "Proprietary" }
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.26.0",
+    "pandas>=2.1.0",
+    "scipy>=1.11.0",
+    "scikit-learn>=1.4.0",
+    "joblib>=1.3.0",
+    "pyyaml>=6.0.1",
+    "pydantic>=2.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+tree = [
+    "xgboost>=2.0.0",
+    "shap>=0.44.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"

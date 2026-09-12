@@ -1,0 +1,79 @@
+{
+  "type": "FeatureCollection",
+  "crs": {
+    "type": "name",
+    "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "riv01",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [79.0680, 30.7400],
+          [79.0669, 30.7346],
+          [79.0612, 30.6821],
+          [79.0528, 30.6355],
+          [79.0354, 30.5891],
+          [79.0125, 30.5512],
+          [79.0018, 30.5280],
+          [78.9880, 30.4720],
+          [78.9720, 30.4350],
+          [78.9610, 30.4120],
+          [78.9850, 30.3950],
+          [78.9950, 30.3620],
+          [78.9810, 30.2850]
+        ]
+      },
+      "properties": {
+        "id": "33333333-0000-0000-0000-000000000001",
+        "name": "Mandakini Main River",
+        "danger_level_meters": 6.5,
+        "warning_level_meters": 4.5,
+        "gauge_station": "Tilwara CWC Station",
+        "basin": "Alaknanda Sub-basin"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "riv02",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [79.0150, 30.6200],
+          [79.0250, 30.6050],
+          [79.0354, 30.5891]
+        ]
+      },
+      "properties": {
+        "id": "33333333-0000-0000-0000-000000000002",
+        "name": "Vasuki Ganga Tributary",
+        "danger_level_meters": 4.0,
+        "warning_level_meters": 2.8,
+        "gauge_station": "Sonprayag Confluence",
+        "basin": "Mandakini Basin"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "riv03",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [79.0800, 30.4900],
+          [79.0350, 30.4800],
+          [78.9880, 30.4720]
+        ]
+      },
+      "properties": {
+        "id": "33333333-0000-0000-0000-000000000003",
+        "name": "Madhyamaheshwar Ganga",
+        "danger_level_meters": 4.5,
+        "warning_level_meters": 3.0,
+        "gauge_station": "Kund Gauge",
+        "basin": "Mandakini Basin"
+      }
+    }
+  ]
+}

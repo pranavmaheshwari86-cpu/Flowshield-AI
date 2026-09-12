@@ -1,0 +1,174 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at_utc": "2026-09-12T02:00:00Z",
+  "contract_version": "3.0.0",
+  "schema_hash": "2ff1a0ec947231464db3eb5c69784b1eb4c62241b71457816df98912e54eb89e",
+  "total_canonical_features": 15,
+  "features": {
+    "rainfall_1h_mm": {
+      "index": 0,
+      "domain": "meteorology",
+      "physical_meaning": "Short-term peak precipitation accumulation in the preceding 1 hour",
+      "source": "ERA5-Land hourly precipitation (ECMWF via Open-Meteo Archive / In-situ Automatic Rain Gauges)",
+      "derivation": "Direct 1-hour sum of precipitation flux (hourly total liquid water equivalent mm)",
+      "units": "mm",
+      "bounds": [0.0, 500.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Key trigger for flash floods, debris flows, and sudden urban/ravine inundations."
+    },
+    "rainfall_3h_mm": {
+      "index": 1,
+      "domain": "meteorology",
+      "physical_meaning": "Medium-term antecedent precipitation accumulation over 3 hours",
+      "source": "ERA5-Land hourly precipitation (ECMWF via Open-Meteo Archive / Station Telemetry)",
+      "derivation": "Rolling 3-hour backward sum of hourly precipitation",
+      "units": "mm",
+      "bounds": [0.0, 800.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Captures meso-convective cloudburst burst durations typical of Himalayan valleys."
+    },
+    "rainfall_6h_mm": {
+      "index": 2,
+      "domain": "meteorology",
+      "physical_meaning": "Intermediate rainfall accumulation over 6 hours",
+      "source": "ERA5-Land hourly precipitation (ECMWF via Open-Meteo Archive / IMD AWS)",
+      "derivation": "Rolling 6-hour backward sum of hourly precipitation",
+      "units": "mm",
+      "bounds": [0.0, 1200.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Integrates sustained frontal rainfall events that begin saturating mid-altitude hillslopes."
+    },
+    "rainfall_24h_mm": {
+      "index": 3,
+      "domain": "meteorology",
+      "physical_meaning": "Daily antecedent rainfall accumulation over 24 hours",
+      "source": "ERA5-Land hourly precipitation (ECMWF via Open-Meteo Archive / IMD Daily Gauges)",
+      "derivation": "Rolling 24-hour backward sum of hourly precipitation",
+      "units": "mm",
+      "bounds": [0.0, 2000.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Governs catchment wetness and baseflow rise in regional river channels."
+    },
+    "rainfall_72h_mm": {
+      "index": 4,
+      "domain": "meteorology",
+      "physical_meaning": "Multi-day cumulative precipitation over 72 hours",
+      "source": "ERA5-Land hourly precipitation (ECMWF via Open-Meteo Archive)",
+      "derivation": "Rolling 72-hour backward sum of hourly precipitation",
+      "units": "mm",
+      "bounds": [0.0, 4000.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Determines deep soil saturation, prolonged groundwater replenishment, and regional catchment priming."
+    },
+    "soil_saturation_pct": {
+      "index": 5,
+      "domain": "soil_hydrology",
+      "physical_meaning": "Topsoil volumetric saturation level (0-7 cm layer)",
+      "source": "ERA5-Land volumetric soil water layer 1 (swvl1) / Field Soil Sensors",
+      "derivation": "Normalized as percentage of soil field capacity: (swvl1 / 0.47) * 100.0, clipped [0, 100]",
+      "units": "%",
+      "bounds": [0.0, 100.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Controls Hortonian overland flow: when topsoil reaches 100%, infiltration ceases and rainfall converts directly to surface runoff."
+    },
+    "deep_soil_saturation_pct": {
+      "index": 6,
+      "domain": "soil_hydrology",
+      "physical_meaning": "Subsurface soil volumetric saturation level (7-28 cm root layer)",
+      "source": "ERA5-Land volumetric soil water layer 2 (swvl2)",
+      "derivation": "Normalized as percentage of soil field capacity: (swvl2 / 0.47) * 100.0, clipped [0, 100]",
+      "units": "%",
+      "bounds": [0.0, 100.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Controls Dunian saturation-excess overland flow and landslide/debris-flow pore-pressure triggers."
+    },
+    "temperature_c": {
+      "index": 7,
+      "domain": "meteorology",
+      "physical_meaning": "Ambient 2m surface air temperature",
+      "source": "ERA5-Land 2m air temperature (ECMWF / In-situ AWS)",
+      "derivation": "Direct instantaneous temperature in degrees Celsius (converted from Kelvin: T - 273.15)",
+      "units": "°C",
+      "bounds": [-50.0, 60.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Affects snowmelt rates in high-altitude cryospheric catchments and atmospheric moisture-holding capacity."
+    },
+    "relative_humidity_pct": {
+      "index": 8,
+      "domain": "meteorology",
+      "physical_meaning": "Relative atmospheric humidity at 2m height",
+      "source": "ERA5-Land dewpoint temperature and air temperature (ECMWF)",
+      "derivation": "Magnus-Tetens psychrometric calculation: 100 * (exp((17.625 * Td) / (243.04 + Td)) / exp((17.625 * T) / (243.04 + T)))",
+      "units": "%",
+      "bounds": [0.0, 100.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Indicator of air mass saturation, cloud deck base, and convective thunderstorm potential."
+    },
+    "surface_pressure_hpa": {
+      "index": 9,
+      "domain": "meteorology",
+      "physical_meaning": "Local barometric surface pressure",
+      "source": "ERA5-Land surface pressure (ECMWF)",
+      "derivation": "Direct barometric pressure converted from Pa to hPa (P / 100.0)",
+      "units": "hPa",
+      "bounds": [400.0, 1100.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Rapid barometric pressure drops signal approaching cyclonic depressions, western disturbances, or monsoonal lows."
+    },
+    "wind_speed_kmh": {
+      "index": 10,
+      "domain": "meteorology",
+      "physical_meaning": "Surface wind speed at 10m height",
+      "source": "ERA5-Land 10m u-wind and v-wind components (ECMWF)",
+      "derivation": "Vector magnitude converted to km/h: sqrt(u10^2 + v10^2) * 3.6",
+      "units": "km/h",
+      "bounds": [0.0, 300.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Drives orographic windward moisture convergence and mechanical slope turbulence in deep gorges."
+    },
+    "elevation_m": {
+      "index": 11,
+      "domain": "terrain_morphology",
+      "physical_meaning": "Station or settlement altitude above mean sea level",
+      "source": "Copernicus DEM 30m / SRTM 1 Arc-Second Digital Elevation Model",
+      "derivation": "Bilinear spatial interpolation from 30m DEM at station/village lat/lon coordinate",
+      "units": "m",
+      "bounds": [0.0, 9000.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Governs precipitation phase (rain vs snow), temperature lapse rates, and potential gravitational energy of runoff."
+    },
+    "catchment_slope_deg": {
+      "index": 12,
+      "domain": "terrain_morphology",
+      "physical_meaning": "Mean catchment hillslope gradient",
+      "source": "Copernicus DEM 30m spatial gradient analysis",
+      "derivation": "Horn's slope algorithm computed over 500m catchment buffer around station in degrees",
+      "units": "degrees",
+      "bounds": [0.0, 90.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Controls runoff velocity and concentration time: steep Himalayan slopes accelerate flash flood wave formation."
+    },
+    "dist_to_river_m": {
+      "index": 13,
+      "domain": "terrain_morphology",
+      "physical_meaning": "Perpendicular distance to nearest active river channel centerline",
+      "source": "HydroSHEDS / OpenStreetMap River Networks / Survey of India Hydrology",
+      "derivation": "Euclidean planar distance from station coordinate to nearest stream vector geometry",
+      "units": "m",
+      "bounds": [0.0, 100000.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Direct spatial exposure to overbank riverine flooding and channel boundary surge."
+    },
+    "upstream_drainage_sqkm": {
+      "index": 14,
+      "domain": "basin_routing",
+      "physical_meaning": "Total upstream watershed catchment area contributing runoff to the reach",
+      "source": "HydroSHEDS 15 Arc-Second Flow Accumulation / CWC Basin Maps",
+      "derivation": "Flow direction and accumulation accumulation raster pixel integration converted to square kilometers",
+      "units": "km²",
+      "bounds": [0.0, 50000.0],
+      "imputation_strategy": "training_median",
+      "relevance": "Scales peak flood discharge: larger drainage areas sustain higher volume floods, while small headwaters produce sudden flashy spikes."
+    }
+  }
+}

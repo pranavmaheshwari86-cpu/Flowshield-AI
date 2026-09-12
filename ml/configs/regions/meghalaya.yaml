@@ -1,0 +1,111 @@
+# ml/configs/regions/meghalaya.yaml
+# Flowshield — Meghalaya Regional Configuration
+# Umiam, Umngot, Myntdu, Simsang River Basins
+# NOTE: Cherrapunji/Mawsynram — world's highest rainfall zone
+
+region:
+  slug: "meghalaya"
+  display_name: "Meghalaya"
+  state: "Meghalaya"
+  primary_basin: "Umiam, Umngot, Myntdu, Simsang"
+  climate_zone: "Sub-tropical monsoon plateau (extreme rainfall)"
+
+boundary:
+  lat_min: 25.00
+  lat_max: 26.15
+  lon_min: 89.75
+  lon_max: 92.80
+
+stations:
+  SHL_UMI_01:
+    name: "Shillong / Umiam River"
+    latitude: 25.5788
+    longitude: 91.8933
+    elevation_m: 1496.0
+    catchment_slope_deg: 18.0
+    dist_to_river_m: 250.0
+    upstream_drainage_sqkm: 520.0
+    role: "train"
+  CHR_MYN_02:
+    name: "Cherrapunji / Myntdu River"
+    latitude: 25.2700
+    longitude: 91.7100
+    elevation_m: 1484.0
+    catchment_slope_deg: 30.0
+    dist_to_river_m: 180.0
+    upstream_drainage_sqkm: 380.0
+    role: "train"
+  DWK_UMN_03:
+    name: "Dawki / Umngot River"
+    latitude: 25.1870
+    longitude: 92.0190
+    elevation_m: 82.0
+    catchment_slope_deg: 14.0
+    dist_to_river_m: 15.0
+    upstream_drainage_sqkm: 1200.0
+    role: "spatial_holdout_val"
+  TUR_SMS_04:
+    name: "Tura / Simsang River"
+    latitude: 25.5157
+    longitude: 90.2186
+    elevation_m: 320.0
+    catchment_slope_deg: 16.0
+    dist_to_river_m: 60.0
+    upstream_drainage_sqkm: 3800.0
+    role: "train"
+  JWI_UMI_05:
+    name: "Jowai / Myntdu River Upper"
+    latitude: 25.4520
+    longitude: 92.2030
+    elevation_m: 1370.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 110.0
+    upstream_drainage_sqkm: 1600.0
+    role: "train"
+  NNG_UMI_06:
+    name: "Nongstoin / Wahblei River"
+    latitude: 25.5190
+    longitude: 91.2620
+    elevation_m: 1240.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 90.0
+    upstream_drainage_sqkm: 950.0
+    role: "train"
+
+# Meghalaya receives extremely high rainfall (11,000+ mm/year in southern slopes).
+# The model must handle extreme rainfall accumulations typical of this region.
+calibration_notes:
+  - "Rainfall thresholds are significantly higher than Himalayan regions"
+  - "24h rainfall of 500+ mm is not uncommon in Cherrapunji/Mawsynram"
+  - "Region-specific calibration essential to avoid false alarm flooding"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (limited CWC coverage in Meghalaya)"
+    - "SDMA Meghalaya historical records"
+    - "IMD extreme rainfall station data (Cherrapunji)"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

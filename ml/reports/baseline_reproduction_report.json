@@ -1,0 +1,49 @@
+{
+  "phase": "PHASE_5_BASELINE_REPRODUCTION",
+  "timestamp": "2026-09-12T03:26:30Z",
+  "random_seed": 26192,
+  "train_samples": 8160,
+  "val_samples": 3264,
+  "reproduced_metrics": {
+    "recall": 0.8657,
+    "precision": 0.1804,
+    "f1_score": 0.2986,
+    "fnr": 0.1343,
+    "fpr": 0.1684,
+    "roc_auc": 0.9321,
+    "pr_auc": 0.4099,
+    "brier_score": 0.0287
+  },
+  "claimed_val_metrics": {
+    "recall": 0.8657,
+    "precision": 0.1804,
+    "f1_score": 0.2986,
+    "fnr": 0.1343,
+    "fpr": 0.1684,
+    "roc_auc": 0.925,
+    "pr_auc": 0.424,
+    "brier_score": 0.0287,
+    "ece": 0.0004
+  },
+  "deltas": {
+    "recall": 0.0,
+    "precision": 0.0,
+    "f1_score": 0.0,
+    "fnr": 0.0,
+    "fpr": 0.0,
+    "roc_auc": 0.0071,
+    "pr_auc": 0.0141,
+    "brier_score": 0.0
+  },
+  "classification": {
+    "recall": "REPRODUCED",
+    "precision": "REPRODUCED",
+    "f1_score": "REPRODUCED",
+    "fnr": "REPRODUCED",
+    "fpr": "REPRODUCED",
+    "roc_auc": "REPRODUCED",
+    "pr_auc": "REPRODUCED",
+    "brier_score": "REPRODUCED"
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

@@ -1,0 +1,65 @@
+{
+  "logistic_regression": {
+    "discrimination": {
+      "roc_auc": 0.925,
+      "pr_auc": 0.424
+    },
+    "raw": {
+      "brier_score": 0.0671,
+      "log_loss": 0.2097,
+      "ece": 0.0899
+    },
+    "sigmoid": {
+      "brier_score": 0.0305,
+      "log_loss": 0.1106,
+      "ece": 0.0109
+    },
+    "isotonic": {
+      "brier_score": 0.0287,
+      "log_loss": 0.0984,
+      "ece": 0.0004
+    }
+  },
+  "random_forest": {
+    "discrimination": {
+      "roc_auc": 0.8757,
+      "pr_auc": 0.164
+    },
+    "raw": {
+      "brier_score": 0.0529,
+      "log_loss": 0.1726,
+      "ece": 0.0429
+    },
+    "sigmoid": {
+      "brier_score": 0.0375,
+      "log_loss": 0.1507,
+      "ece": 0.012
+    },
+    "isotonic": {
+      "brier_score": 0.0339,
+      "log_loss": 0.1171,
+      "ece": 0.0
+    }
+  },
+  "xgboost": {
+    "discrimination": {
+      "roc_auc": 0.8548,
+      "pr_auc": 0.14
+    },
+    "raw": {
+      "brier_score": 0.0719,
+      "log_loss": 0.2584,
+      "ece": 0.0724
+    },
+    "sigmoid": {
+      "brier_score": 0.0379,
+      "log_loss": 0.158,
+      "ece": 0.0027
+    },
+    "isotonic": {
+      "brier_score": 0.0357,
+      "log_loss": 0.1245,
+      "ece": 0.0
+    }
+  }
+}

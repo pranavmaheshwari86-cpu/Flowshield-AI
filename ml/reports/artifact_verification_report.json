@@ -1,0 +1,75 @@
+{
+  "phase": "PHASE_1_ARTIFACT_DATASET_VERIFICATION",
+  "timestamp": "2026-09-12T03:22:15Z",
+  "checks": {
+    "dataset": {
+      "path": "c:\\Users\\Pranav\\Desktop\\Flowshield\\data\\real\\mandi_real_hydrology_features.csv",
+      "shape": [
+        15624,
+        30
+      ],
+      "expected_shape": [
+        15624,
+        30
+      ],
+      "shape_matches": true,
+      "total_feature_nans": 0,
+      "bounds_violations": {},
+      "stations": [
+        "AUT_JNC_03",
+        "DHR_KHD_06",
+        "JGN_VLY_05",
+        "MND_URBAN_01",
+        "PND_DAM_02",
+        "SDR_BSN_07",
+        "THL_GRG_04"
+      ],
+      "flood_occurred_distribution": {
+        "0": 14525,
+        "1": 1099
+      },
+      "status": "PASSED",
+      "canonical_features_present": 15
+    },
+    "model_artifacts": {
+      "v2_selected_model": {
+        "type": "<class 'sklearn.linear_model._logistic.LogisticRegression'>",
+        "is_logistic_regression": true,
+        "coef_shape": [
+          1,
+          15
+        ],
+        "classes": [
+          0,
+          1
+        ],
+        "status": "PASSED"
+      },
+      "v2_calibrator": {
+        "type": "<class 'sklearn.calibration.CalibratedClassifierCV'>",
+        "is_calibrated_classifier": true,
+        "method": "isotonic",
+        "status": "PASSED"
+      },
+      "v2_preprocessor": {
+        "type": "<class 'sklearn.pipeline.Pipeline'>",
+        "n_features_in": 15,
+        "named_steps": [
+          "imputer",
+          "scaler"
+        ],
+        "status": "PASSED"
+      },
+      "xgb_real_flood_model": {
+        "type": "<class 'xgboost.sklearn.XGBClassifier'>",
+        "status": "PASSED"
+      },
+      "rf_real_flood_model": {
+        "type": "<class 'sklearn.ensemble._forest.RandomForestClassifier'>",
+        "n_estimators": 100,
+        "status": "PASSED"
+      }
+    }
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

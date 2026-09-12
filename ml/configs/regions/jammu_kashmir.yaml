@@ -1,0 +1,103 @@
+# ml/configs/regions/jammu_kashmir.yaml
+# Flowshield — Jammu & Kashmir Regional Configuration
+# Jhelum River Basin & Chenab River Basin
+
+region:
+  slug: "jammu_kashmir"
+  display_name: "Jammu & Kashmir"
+  state: "Jammu & Kashmir"
+  primary_basin: "Jhelum & Chenab River Basins"
+  climate_zone: "Western Himalayan temperate / sub-tropical"
+
+boundary:
+  lat_min: 32.50
+  lat_max: 34.80
+  lon_min: 73.50
+  lon_max: 76.00
+
+stations:
+  SRN_JHL_01:
+    name: "Srinagar / Jhelum at Ram Munshibagh"
+    latitude: 34.0837
+    longitude: 74.7973
+    elevation_m: 1585.0
+    catchment_slope_deg: 12.0
+    dist_to_river_m: 40.0
+    upstream_drainage_sqkm: 9480.0
+    role: "train"
+  ANN_CHN_02:
+    name: "Anantnag / Jhelum Upper Reach"
+    latitude: 33.7311
+    longitude: 75.1547
+    elevation_m: 1640.0
+    catchment_slope_deg: 18.0
+    dist_to_river_m: 80.0
+    upstream_drainage_sqkm: 4200.0
+    role: "train"
+  BRM_CHN_03:
+    name: "Banihal / Chenab Tributary"
+    latitude: 33.4397
+    longitude: 75.1982
+    elevation_m: 1700.0
+    catchment_slope_deg: 28.0
+    dist_to_river_m: 120.0
+    upstream_drainage_sqkm: 2100.0
+    role: "train"
+  JMU_TWI_04:
+    name: "Jammu / Tawi River"
+    latitude: 32.7266
+    longitude: 74.8570
+    elevation_m: 327.0
+    catchment_slope_deg: 8.0
+    dist_to_river_m: 55.0
+    upstream_drainage_sqkm: 2300.0
+    role: "spatial_holdout_val"
+  PHL_CHN_05:
+    name: "Phaltan / Upper Chenab"
+    latitude: 33.1500
+    longitude: 75.7700
+    elevation_m: 1450.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 65.0
+    upstream_drainage_sqkm: 7600.0
+    role: "train"
+  BRH_KSH_06:
+    name: "Baramulla / Jhelum Downstream"
+    latitude: 34.1986
+    longitude: 74.3439
+    elevation_m: 1580.0
+    catchment_slope_deg: 10.0
+    dist_to_river_m: 50.0
+    upstream_drainage_sqkm: 12500.0
+    role: "spatial_holdout_val"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (CWC Jhelum/Chenab gauges)"
+    - "SDMA J&K historical records"
+    - "September 2014 Kashmir Flood (major reference event)"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

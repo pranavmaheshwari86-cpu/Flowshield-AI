@@ -1,0 +1,116 @@
+{
+  "report_id": "FINAL-PROD-EVAL-PHASE21",
+  "timestamp": "2026-09-11T22:24:29.605182+00:00",
+  "verdict": "GATE_PASSED_PRODUCTION_CERTIFIED",
+  "test_dataset": {
+    "filepath": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\splits\\final_test_locked.csv",
+    "sha256": "25d58fd2c668357dbd964ca7fb82e12086c2b23c97ddcf386f237e4322bfc8f3",
+    "sample_count": 4200,
+    "flood_event_count": 630,
+    "flood_event_rate": 0.15
+  },
+  "model": {
+    "pipeline_version": "flowshield-flood-risk-v2",
+    "algorithm": "LogisticRegression(C=0.1, class_weight='balanced', solver='liblinear')",
+    "calibration": "IsotonicRegression(out_of_bounds='clip')",
+    "threshold": 0.08
+  },
+  "gate_checks": {
+    "recall_ge_0_85": {
+      "target": ">= 0.850",
+      "actual": 0.8762,
+      "passed": true
+    },
+    "roc_auc_ge_0_88": {
+      "target": ">= 0.880",
+      "actual": 0.9224,
+      "passed": true
+    },
+    "brier_calibration_acceptable": {
+      "target": "Brier <= 0.080 (or ECE <= 0.050 & BSS >= 0.30)",
+      "actual": "Brier=0.0712, ECE=0.0217, BSS=0.4418",
+      "passed": true
+    },
+    "zero_temporal_leakage": {
+      "target": "0 overlapping timestamps",
+      "actual": 0,
+      "passed": true
+    }
+  },
+  "metrics": {
+    "recall": 0.8762,
+    "precision": 0.565,
+    "specificity": 0.881,
+    "false_positive_rate": 0.119,
+    "f1_score": 0.687,
+    "f2_score": 0.7892,
+    "roc_auc": 0.9224,
+    "pr_auc": 0.6725,
+    "brier_score": 0.0712,
+    "expected_calibration_error": 0.0217,
+    "confusion_matrix": {
+      "true_positive": 552,
+      "false_positive": 425,
+      "true_negative": 3145,
+      "false_negative": 78
+    }
+  },
+  "station_breakdown": {
+    "AUT_JNC_03": {
+      "station_name": "Aut (Larji / Tirthan Confluence)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.8889,
+      "roc_auc": 0.9253,
+      "mean_predicted_prob": 0.1667
+    },
+    "DHR_KHD_06": {
+      "station_name": "Dharampur (Son Khad Catchment)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.8222,
+      "roc_auc": 0.8966,
+      "mean_predicted_prob": 0.1535
+    },
+    "JGN_VLY_05": {
+      "station_name": "Jogindernagar (Upper Valley)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.8778,
+      "roc_auc": 0.925,
+      "mean_predicted_prob": 0.1606
+    },
+    "MND_URBAN_01": {
+      "station_name": "Mandi Urban (Beas Main Valley)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.9222,
+      "roc_auc": 0.9363,
+      "mean_predicted_prob": 0.1742
+    },
+    "PND_DAM_02": {
+      "station_name": "Pandoh (Pandoh Dam / Catchment)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 1.0,
+      "roc_auc": 0.9724,
+      "mean_predicted_prob": 0.2029
+    },
+    "SDR_BSN_07": {
+      "station_name": "Sundernagar (Suketi Khad Basin)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.8111,
+      "roc_auc": 0.8897,
+      "mean_predicted_prob": 0.1475
+    },
+    "THL_GRG_04": {
+      "station_name": "Thalout (Beas River Gorge)",
+      "samples": 600,
+      "flood_events": 90,
+      "recall": 0.8111,
+      "roc_auc": 0.9224,
+      "mean_predicted_prob": 0.1583
+    }
+  }
+}

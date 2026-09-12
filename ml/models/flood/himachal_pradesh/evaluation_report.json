@@ -1,0 +1,51 @@
+{
+  "region": "himachal_pradesh",
+  "model_architecture": "logistic_regression",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "threshold_used": 0.029,
+  "holdout_sample_count": 2344,
+  "actual_floods_count": 16,
+  "missed_floods_count": 0,
+  "detected_floods_count": 16,
+  "false_alarms_count": 1713,
+  "metrics": {
+    "accuracy": 0.2692,
+    "precision": 0.0093,
+    "recall": 1.0,
+    "f1_score": 0.0183,
+    "macro_f1": 0.2181,
+    "roc_auc": 0.9914,
+    "pr_auc": 0.3777,
+    "brier_score": 0.1633,
+    "expected_calibration_error": 0.2705,
+    "false_negative_rate": 0.0,
+    "false_positive_rate": 0.7358
+  },
+  "confusion_matrix": {
+    "true_negatives": 615,
+    "false_positives": 1713,
+    "false_negatives": 0,
+    "true_positives": 16
+  },
+  "multi_tier_alert_performance": {
+    "advisory_threshold": {
+      "threshold": 0.029,
+      "recall": 1.0,
+      "precision": 0.0093,
+      "predicted_alerts": 1729
+    },
+    "watch_threshold": {
+      "threshold": 0.029,
+      "recall": 1.0,
+      "precision": 0.0093,
+      "predicted_alerts": 1729
+    },
+    "warning_threshold": {
+      "threshold": 0.0435,
+      "recall": 1.0,
+      "precision": 0.01,
+      "predicted_alerts": 1593
+    }
+  }
+}

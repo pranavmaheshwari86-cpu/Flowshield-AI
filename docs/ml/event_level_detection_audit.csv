@@ -1,0 +1,5 @@
+event_id,event_name,location,ground_truth_source,source_confidence,ml_detected,heuristic_detected,detection_comparison
+EPISODE_1_SIRMAUR,Sirmaur Malgi Dhewan Cloudburst & Flash Flood,Sirmaur District / Paonta Sahib Sub-catchment,HPSDMA Incident Report & India Flood Inventory v3 (UEI-IMD-FL-2023-0412),HIGH (Government Disaster Bulletin),False,False,HEURISTIC_WINS
+EPISODE_2_CHAMBA,Chamba / Mandi Upper Catchment Storm Surge,Upper Beas & Chamba border valleys,HPSDMA Daily Situation Report Aug 11 2023,HIGH (Official State Disaster Log),True,False,ML_WINS
+EPISODE_3_BEAS_DISASTER,Catastrophic Beas Basin Multi-District Cloudburst Cluster,"Mandi, Pandoh, Kullu, Aut, Larji Gorge",CWC Flood Bulletin / HPSDMA Catastrophe Assessment Report (Aug 2023),VERY HIGH (CWC River Gauge Danger Mark Breach & Dam Sluice Overtopping),True,True,BOTH_DETECTED
+EPISODE_4_SHIMLA_MANDI,Secondary Monsoon Cloudburst Surge,Mandi & Shimla Ridge Catchments,HPSDMA Secondary Disaster Summary Report,HIGH (State Emergency Operations Centre),True,True,BOTH_DETECTED

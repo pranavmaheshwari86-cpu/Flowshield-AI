@@ -1,0 +1,292 @@
+{
+  "model_eval_summary": {
+    "logistic_regression_raw": {
+      "model_name": "logistic_regression",
+      "calibration_variant": "raw",
+      "roc_auc": 0.925,
+      "pr_auc": 0.424,
+      "brier_score": 0.0671,
+      "ece": 0.0899,
+      "log_loss": 0.2097,
+      "operational_threshold": 0.19,
+      "operational_recall": 0.8507,
+      "operational_precision": 0.1821,
+      "operational_f1": 0.3,
+      "operational_fnr": 0.1493,
+      "operational_fpr": 0.1636,
+      "operational_tp": 114,
+      "operational_fn": 20,
+      "operational_fp": 512,
+      "operational_tn": 2618,
+      "balanced_f1_threshold": 0.86,
+      "balanced_f1_score": 0.4684
+    },
+    "logistic_regression_sigmoid": {
+      "model_name": "logistic_regression",
+      "calibration_variant": "sigmoid",
+      "roc_auc": 0.925,
+      "pr_auc": 0.424,
+      "brier_score": 0.0305,
+      "ece": 0.0109,
+      "log_loss": 0.1106,
+      "operational_threshold": 0.04,
+      "operational_recall": 0.8657,
+      "operational_precision": 0.1782,
+      "operational_f1": 0.2955,
+      "operational_fnr": 0.1343,
+      "operational_fpr": 0.1709,
+      "operational_tp": 116,
+      "operational_fn": 18,
+      "operational_fp": 535,
+      "operational_tn": 2595,
+      "balanced_f1_threshold": 0.28,
+      "balanced_f1_score": 0.4667
+    },
+    "logistic_regression_isotonic": {
+      "model_name": "logistic_regression",
+      "calibration_variant": "isotonic",
+      "roc_auc": 0.925,
+      "pr_auc": 0.424,
+      "brier_score": 0.0287,
+      "ece": 0.0004,
+      "log_loss": 0.0984,
+      "operational_threshold": 0.08,
+      "operational_recall": 0.8657,
+      "operational_precision": 0.1804,
+      "operational_f1": 0.2986,
+      "operational_fnr": 0.1343,
+      "operational_fpr": 0.1684,
+      "operational_tp": 116,
+      "operational_fn": 18,
+      "operational_fp": 527,
+      "operational_tn": 2603,
+      "balanced_f1_threshold": 0.15,
+      "balanced_f1_score": 0.4719
+    },
+    "random_forest_raw": {
+      "model_name": "random_forest",
+      "calibration_variant": "raw",
+      "roc_auc": 0.8757,
+      "pr_auc": 0.164,
+      "brier_score": 0.0529,
+      "ece": 0.0429,
+      "log_loss": 0.1726,
+      "operational_threshold": 0.06,
+      "operational_recall": 0.8881,
+      "operational_precision": 0.1453,
+      "operational_f1": 0.2497,
+      "operational_fnr": 0.1119,
+      "operational_fpr": 0.2236,
+      "operational_tp": 119,
+      "operational_fn": 15,
+      "operational_fp": 700,
+      "operational_tn": 2430,
+      "balanced_f1_threshold": 0.56,
+      "balanced_f1_score": 0.323
+    },
+    "random_forest_sigmoid": {
+      "model_name": "random_forest",
+      "calibration_variant": "sigmoid",
+      "roc_auc": 0.8757,
+      "pr_auc": 0.164,
+      "brier_score": 0.0375,
+      "ece": 0.012,
+      "log_loss": 0.1507,
+      "operational_threshold": 0.01,
+      "operational_recall": 1.0,
+      "operational_precision": 0.0411,
+      "operational_f1": 0.0789,
+      "operational_fnr": 0.0,
+      "operational_fpr": 1.0,
+      "operational_tp": 134,
+      "operational_fn": 0,
+      "operational_fp": 3130,
+      "operational_tn": 0,
+      "balanced_f1_threshold": 0.16,
+      "balanced_f1_score": 0.3206
+    },
+    "random_forest_isotonic": {
+      "model_name": "random_forest",
+      "calibration_variant": "isotonic",
+      "roc_auc": 0.8757,
+      "pr_auc": 0.164,
+      "brier_score": 0.0339,
+      "ece": 0.0,
+      "log_loss": 0.1171,
+      "operational_threshold": 0.1,
+      "operational_recall": 0.8806,
+      "operational_precision": 0.1536,
+      "operational_f1": 0.2616,
+      "operational_fnr": 0.1194,
+      "operational_fpr": 0.2077,
+      "operational_tp": 118,
+      "operational_fn": 16,
+      "operational_fp": 650,
+      "operational_tn": 2480,
+      "balanced_f1_threshold": 0.13,
+      "balanced_f1_score": 0.3241
+    },
+    "xgboost_raw": {
+      "model_name": "xgboost",
+      "calibration_variant": "raw",
+      "roc_auc": 0.8548,
+      "pr_auc": 0.14,
+      "brier_score": 0.0719,
+      "ece": 0.0724,
+      "log_loss": 0.2584,
+      "operational_threshold": 0.01,
+      "operational_recall": 0.7836,
+      "operational_precision": 0.1224,
+      "operational_f1": 0.2117,
+      "operational_fnr": 0.2164,
+      "operational_fpr": 0.2406,
+      "operational_tp": 105,
+      "operational_fn": 29,
+      "operational_fp": 753,
+      "operational_tn": 2377,
+      "balanced_f1_threshold": 0.38,
+      "balanced_f1_score": 0.2512
+    },
+    "xgboost_sigmoid": {
+      "model_name": "xgboost",
+      "calibration_variant": "sigmoid",
+      "roc_auc": 0.8548,
+      "pr_auc": 0.14,
+      "brier_score": 0.0379,
+      "ece": 0.0027,
+      "log_loss": 0.158,
+      "operational_threshold": 0.01,
+      "operational_recall": 1.0,
+      "operational_precision": 0.0411,
+      "operational_f1": 0.0789,
+      "operational_fnr": 0.0,
+      "operational_fpr": 1.0,
+      "operational_tp": 134,
+      "operational_fn": 0,
+      "operational_fp": 3130,
+      "operational_tn": 0,
+      "balanced_f1_threshold": 0.07,
+      "balanced_f1_score": 0.2463
+    },
+    "xgboost_isotonic": {
+      "model_name": "xgboost",
+      "calibration_variant": "isotonic",
+      "roc_auc": 0.8548,
+      "pr_auc": 0.14,
+      "brier_score": 0.0357,
+      "ece": 0.0,
+      "log_loss": 0.1245,
+      "operational_threshold": 0.04,
+      "operational_recall": 0.9776,
+      "operational_precision": 0.12,
+      "operational_f1": 0.2137,
+      "operational_fnr": 0.0224,
+      "operational_fpr": 0.307,
+      "operational_tp": 131,
+      "operational_fn": 3,
+      "operational_fp": 961,
+      "operational_tn": 2169,
+      "balanced_f1_threshold": 0.1,
+      "balanced_f1_score": 0.2518
+    }
+  },
+  "composite_scores": {
+    "logistic_regression_isotonic": 0.7199,
+    "logistic_regression_sigmoid": 0.7085,
+    "xgboost_isotonic": 0.669,
+    "xgboost_sigmoid": 0.648,
+    "random_forest_sigmoid": 0.6112,
+    "logistic_regression_raw": 0.5506,
+    "random_forest_isotonic": 0.4605,
+    "random_forest_raw": 0.4029,
+    "xgboost_raw": 0.1406
+  },
+  "latency_and_size": {
+    "logistic_regression": {
+      "model_size_kb": 0.97,
+      "p50_latency_ms": 0.088,
+      "p95_latency_ms": 0.169,
+      "mean_latency_ms": 0.102,
+      "explainability": "Direct linear coefficients"
+    },
+    "random_forest": {
+      "model_size_kb": 775.7,
+      "p50_latency_ms": 37.221,
+      "p95_latency_ms": 43.487,
+      "mean_latency_ms": 37.017,
+      "explainability": "MDI feature importances"
+    },
+    "xgboost": {
+      "model_size_kb": 150.57,
+      "p50_latency_ms": 0.505,
+      "p95_latency_ms": 0.814,
+      "mean_latency_ms": 0.54,
+      "explainability": "Tree feature importances & SHAP TreeExplainer"
+    }
+  },
+  "calibration_results": {
+    "logistic_regression": {
+      "discrimination": {
+        "roc_auc": 0.925,
+        "pr_auc": 0.424
+      },
+      "raw": {
+        "brier_score": 0.0671,
+        "log_loss": 0.2097,
+        "ece": 0.0899
+      },
+      "sigmoid": {
+        "brier_score": 0.0305,
+        "log_loss": 0.1106,
+        "ece": 0.0109
+      },
+      "isotonic": {
+        "brier_score": 0.0287,
+        "log_loss": 0.0984,
+        "ece": 0.0004
+      }
+    },
+    "random_forest": {
+      "discrimination": {
+        "roc_auc": 0.8757,
+        "pr_auc": 0.164
+      },
+      "raw": {
+        "brier_score": 0.0529,
+        "log_loss": 0.1726,
+        "ece": 0.0429
+      },
+      "sigmoid": {
+        "brier_score": 0.0375,
+        "log_loss": 0.1507,
+        "ece": 0.012
+      },
+      "isotonic": {
+        "brier_score": 0.0339,
+        "log_loss": 0.1171,
+        "ece": 0.0
+      }
+    },
+    "xgboost": {
+      "discrimination": {
+        "roc_auc": 0.8548,
+        "pr_auc": 0.14
+      },
+      "raw": {
+        "brier_score": 0.0719,
+        "log_loss": 0.2584,
+        "ece": 0.0724
+      },
+      "sigmoid": {
+        "brier_score": 0.0379,
+        "log_loss": 0.158,
+        "ece": 0.0027
+      },
+      "isotonic": {
+        "brier_score": 0.0357,
+        "log_loss": 0.1245,
+        "ece": 0.0
+      }
+    }
+  }
+}

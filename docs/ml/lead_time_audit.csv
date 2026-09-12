@@ -1,0 +1,5 @@
+event_id,event_name,event_start,event_peak,ml_detected,ml_first_alert_time,ml_lead_time_to_onset_hours,ml_lead_time_to_peak_hours,ml_max_prob_issued,heuristic_detected,heuristic_first_alert_time,heuristic_lead_time_to_onset_hours,heuristic_lead_time_to_peak_hours,heuristic_max_rain24_mm
+EPISODE_1_SIRMAUR,Sirmaur Malgi Dhewan Cloudburst & Flash Flood,2023-08-09 20:00:00+00:00,2023-08-10 03:00:00+00:00,False,NONE,-999.0,-999.0,0.0,False,NONE,-999.0,-999.0,0.0
+EPISODE_2_CHAMBA,Chamba / Mandi Upper Catchment Storm Surge,2023-08-11 12:00:00+00:00,2023-08-11 19:00:00+00:00,True,2023-08-11 16:00:00+00:00,-4.0,3.0,0.1136,False,NONE,-999.0,-999.0,0.0
+EPISODE_3_BEAS_DISASTER,Catastrophic Beas Basin Multi-District Cloudburst Cluster,2023-08-12 18:00:00+00:00,2023-08-14 06:00:00+00:00,True,2023-08-11 16:00:00+00:00,26.0,62.0,1.0,True,2023-08-13 01:00:00+00:00,-7.0,29.0,67.9
+EPISODE_4_SHIMLA_MANDI,Secondary Monsoon Cloudburst Surge,2023-08-22 14:00:00+00:00,2023-08-23 04:00:00+00:00,True,2023-08-22 12:00:00+00:00,2.0,16.0,1.0,True,2023-08-22 23:00:00+00:00,-9.0,5.0,95.6

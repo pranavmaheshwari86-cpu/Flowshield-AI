@@ -1,0 +1,58 @@
+version: "2.4.0"
+policy_name: "Flowshield Operational Disaster Risk & Prioritization Policy"
+authority: "Flowshield Operational Decision Support Framework"
+updated_at: "2026-09-11"
+
+# Scientific decision boundary
+decision_threshold: 0.08  # Frozen operational decision threshold (tau) minimizing FNR
+
+# Administrative severity mapping bands
+severity_bands:
+  critical:
+    min_probability: 0.50
+    min_policy_score: 75
+    description: "Imminent or high-certainty hazard requiring emergency evacuation and SDRF mobilization."
+    color_hex: "#ef4444"
+  high:
+    min_probability: 0.08  # Exceeds operational threshold tau
+    min_policy_score: 50
+    description: "Operational flood threshold exceeded. Active warning and pre-positioning required."
+    color_hex: "#f97316"
+  watch:
+    min_probability: 0.04  # Pre-threshold watch (>= 0.5 * tau)
+    min_policy_score: 25
+    description: "Hydrological indicators rising. Heightened surveillance and shelter readiness."
+    color_hex: "#f59e0b"
+  low:
+    min_probability: 0.00
+    min_policy_score: 0
+    description: "Baseline seasonal status. Telemetry within normal operational limits."
+    color_hex: "#10b981"
+  insufficient_data:
+    description: "Physical telemetry corrupt, missing, or out of feasible range. Safety abort."
+    color_hex: "#6b7280"
+
+# Operational queue prioritization weights (sum = 1.0)
+# Used for administrative dispatch ordering, NOT statistical flood probability
+prioritization_weights:
+  demographic_vulnerability: 0.35  # Elderly, children, socioeconomic vulnerability
+  critical_infrastructure: 0.25    # Hospitals, power substations, access roads
+  population_density: 0.20        # Human exposure density
+  topographic_exposure: 0.20      # Slope incline and active river proximity
+
+# Trend multipliers
+trend_multipliers:
+  rising:
+    threshold_delta: 15.0
+    multiplier: 1.20
+  falling:
+    threshold_delta: -10.0
+    multiplier: 0.85
+  stable:
+    multiplier: 1.00
+
+# Data quality & staleness guardrails
+safety_guardrails:
+  stale_data_seconds: 3600       # 1 hour
+  min_data_quality_score: 0.60   # Minimum acceptable quality score
+  degraded_score_cap: 55         # Maximum allowed score when data is stale or degraded

@@ -1,0 +1,752 @@
+/* FLOWSHIELD COMMAND CENTER — HIMALAYAN EMERGENCY INTELLIGENCE */
+
+/* Master Full-Viewport Himalayan Mountain Backdrop (3D Himalayan Emergency Intelligence) */
+.himalayan-viewport-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    /* Layer 1: Atmospheric gradient overlay - ultra-clear for snowy peak visibility */
+    linear-gradient(180deg, rgba(2, 10, 24, 0.10) 0%, rgba(2, 8, 18, 0.22) 40%, rgba(1, 6, 14, 0.42) 100%),
+    /* Layer 2: Subtle teal bloom at mountain ridge line */
+    radial-gradient(ellipse at 50% 16%, rgba(34, 211, 238, 0.18) 0%, transparent 55%),
+    /* Layer 3: Warm sunrise glow from left horizon */
+    radial-gradient(ellipse at 12% 28%, rgba(245, 158, 11, 0.10) 0%, transparent 45%),
+    /* Layer 4: Topographic contour lines for depth */
+    repeating-radial-gradient(
+      circle at 45% 45%,
+      transparent 0,
+      transparent 38px,
+      rgba(80, 150, 180, 0.02) 39px,
+      transparent 40px
+    ),
+    /* Layer 5: PHOTOREALISTIC HIMALAYAN MOUNTAIN PANORAMA */
+    url('/assets/himalayan_backdrop.jpg');
+  background-size: cover, cover, cover, cover, cover;
+  background-position: center, center, center, center, center 38%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Master Layout Container — Transparent to let Himalayan Mountain Panorama show throughout */
+.command-center-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  color: var(--flow-text);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Atmospheric Mountain Fog — Drifting Cloud Layer (Top) */
+.command-center-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -20%;
+  right: -20%;
+  height: 300px;
+  background:
+    radial-gradient(ellipse at 25% 40%, rgba(200, 220, 240, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(180, 210, 230, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 20%, rgba(34, 211, 238, 0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 1;
+  animation: fogDrift 45s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Flowing Water Shimmer — Bottom Edge (River / Glacier Effect) */
+.command-center-root::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background:
+    linear-gradient(to top, rgba(0, 8, 20, 0.95) 0%, transparent 100%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 60px,
+      rgba(56, 189, 248, 0.03) 62px,
+      transparent 64px
+    );
+  pointer-events: none;
+  z-index: 1;
+  animation: waterShimmer 12s linear infinite;
+  will-change: transform;
+}
+
+/* Ambient Fog Drift Animation */
+@keyframes fogDrift {
+  0% { transform: translateX(0) scale(1); opacity: 0.7; }
+  50% { transform: translateX(5%) scale(1.05); opacity: 1; }
+  100% { transform: translateX(-3%) scale(1.02); opacity: 0.8; }
+}
+
+/* Water Shimmer Animation */
+@keyframes waterShimmer {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 0 0, 200px 0; }
+}
+
+/* Ambient Mountain Light Particles (via extra overlay div — added by JS) */
+.mountain-ambient-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(1px 1px at 15% 22%, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 42% 8%, rgba(200, 230, 255, 0.12), transparent),
+    radial-gradient(1px 1px at 68% 15%, rgba(255, 255, 255, 0.10), transparent),
+    radial-gradient(1.5px 1.5px at 88% 28%, rgba(34, 211, 238, 0.14), transparent),
+    radial-gradient(1px 1px at 30% 35%, rgba(255, 255, 255, 0.08), transparent),
+    radial-gradient(1px 1px at 55% 42%, rgba(200, 230, 255, 0.06), transparent),
+    radial-gradient(1px 1px at 78% 5%, rgba(255, 255, 255, 0.12), transparent);
+  animation: particleFloat 30s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes particleFloat {
+  0% { transform: translateY(0) translateX(0); }
+  100% { transform: translateY(-8px) translateX(5px); }
+}
+
+/* 4-Zone Framework */
+.cc-header-zone {
+  height: var(--header-height);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.cc-body-zone {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+.cc-sidebar-zone {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+/* Operations Navigation Buttons — 3D Tactile Extrusion, Radiant Background Light & Interactive Depth */
+.cc-nav-btn {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, rgba(14, 85, 126, 0.32) 0%, rgba(8, 47, 73, 0.45) 50%, rgba(3, 20, 36, 0.6) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  color: #E0F2FE;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  user-select: none;
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cc-nav-btn .cc-nav-icon {
+  color: #38BDF8;
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.4));
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cc-nav-btn .cc-nav-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #E0F2FE;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+/* Hover Effect: Raised 3D Button with Subtle Background Glow */
+.cc-nav-btn:hover {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.16) 0%, rgba(14, 165, 233, 0.22) 50%, rgba(4, 30, 52, 0.7) 100%);
+  border-color: rgba(56, 189, 248, 0.45);
+  border-top: 1.5px solid rgba(186, 230, 253, 0.45);
+  transform: translateX(3px) translateY(-1px);
+  box-shadow: 
+    0 0 14px rgba(56, 189, 248, 0.22),
+    0 4px 10px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.2),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.4);
+}
+
+.cc-nav-btn:hover .cc-nav-icon {
+  color: #22D3EE;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.6));
+}
+
+.cc-nav-btn:hover .cc-nav-label {
+  color: #FFFFFF;
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+}
+
+/* Active State: Refined 3D Tactile Pill with Balanced Glow */
+.cc-nav-btn.active {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.22) 0%, rgba(6, 182, 212, 0.26) 50%, rgba(2, 38, 64, 0.8) 100%);
+  border-color: rgba(34, 211, 238, 0.55);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 
+    0 0 16px rgba(34, 211, 238, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cc-nav-btn.active .cc-nav-icon {
+  color: #22D3EE;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.75));
+}
+
+.cc-nav-btn.active .cc-nav-label {
+  color: #FFFFFF;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+}
+
+/* Active Indicator Line for Current Page */
+.cc-nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  border-radius: 0 3px 3px 0;
+  background: #00E5FF;
+  box-shadow: 0 0 10px #00E5FF, 0 0 18px rgba(0, 229, 255, 0.9);
+}
+
+.cc-main-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 8px 14px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  gap: 10px;
+}
+
+.cc-status-zone {
+  height: var(--statusbar-height);
+  flex-shrink: 0;
+  z-index: 90;
+}
+
+/* Glassmorphic System Status Dock & Metrics */
+.cc-status-glass-dock {
+  height: 64px;
+  margin: 0 14px 8px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(56, 189, 248, 0.03) 45%, rgba(255, 255, 255, 0.02) 100%), rgba(6, 20, 38, 0.12);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 
+    0 8px 32px -4px rgba(0, 0, 0, 0.30),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 0 20px 0 rgba(255, 255, 255, 0.03),
+    0 0 20px rgba(34, 211, 238, 0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  position: relative;
+  z-index: 90;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.cc-status-glass-dock::-webkit-scrollbar {
+  display: none;
+}
+
+/* Status Item / Button — Background Removed */
+.cc-status-glass-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cc-status-glass-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+/* Frosted Glass Divider */
+.cc-status-glass-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+
+.cc-status-glass-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Incident & Forecast Top Bar */
+.incident-forecast-bar {
+  display: grid;
+  grid-template-columns: 1fr 410px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Executive KPI Grid */
+.executive-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  flex-shrink: 0;
+  height: 132px;
+}
+
+/* Operations Workspace (3-Columns) */
+.operations-workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 25% calc(48% - 14px) calc(27% - 14px);
+  gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Common Card Styles — Premium Frosted Glass (Himalayan Glassmorphism) */
+.cc-card {
+  background: rgba(2, 14, 30, 0.50);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 16px rgba(34, 211, 238, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.cc-card:hover {
+  border-color: rgba(34, 211, 238, 0.38);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 20px rgba(34, 211, 238, 0.08);
+}
+
+.cc-card-critical {
+  background: rgba(45, 8, 20, 0.48) !important;
+  border-color: rgba(239, 68, 68, 0.50) !important;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.cc-card-warning {
+  background: rgba(38, 20, 6, 0.48) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Telemetry Font Utility */
+.font-telemetry {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   HIMALAYAN FROSTED GLASS CARDS (TIMELINE & DASHBOARD GLASSMORPHISM)
+   ========================================================================== */
+.timeline-glass-card {
+  background: linear-gradient(135deg, rgba(6, 18, 38, 0.58) 0%, rgba(4, 12, 26, 0.68) 100%) !important;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(56, 189, 248, 0.22) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.40),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    0 0 20px rgba(34, 211, 238, 0.04) !important;
+}
+
+.timeline-glass-card:hover {
+  border-color: rgba(56, 189, 248, 0.38) !important;
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.18),
+    0 0 24px rgba(34, 211, 238, 0.08) !important;
+}
+
+.timeline-glass-subcard {
+  background: rgba(8, 24, 46, 0.45) !important;
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  border: 1px solid rgba(56, 189, 248, 0.18) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.timeline-glass-select {
+  background: rgba(8, 24, 48, 0.70) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #F1F5F9 !important;
+}
+
+/* Live Telemetry Pulse Dot */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  display: inline-block;
+  animation: livePulse 2s infinite ease-in-out;
+}
+
+.live-dot-red {
+  background: #EF4444;
+  box-shadow: 0 0 10px #EF4444;
+}
+
+@keyframes livePulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 14px currentColor; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* Smooth Wave Animation */
+@keyframes waveFlow {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Custom Tactical Scrollbar */
+.cc-scrollable::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.cc-scrollable::-webkit-scrollbar-track {
+  background: rgba(13, 27, 42, 0.4);
+}
+
+.cc-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(61, 139, 180, 0.35);
+  border-radius: 4px;
+}
+
+.cc-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.6);
+}
+
+/* Accessible Focus States */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--flow-primary-bright);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion Overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Real-Time Rainfall Radar Marker Animations */
+@keyframes rainfallRipple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.rainfall-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  margin-top: -50%;
+  margin-left: -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: rainfallRipple 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+.rainfall-ripple-heavy {
+  animation-duration: 1.4s;
+}
+
+/* Tactical Leaflet Map Popup Styling */
+.flowshield-rainfall-popup .leaflet-popup-content-wrapper {
+  background: rgba(3, 16, 36, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(34, 211, 238, 0.15) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.flowshield-rainfall-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.flowshield-rainfall-popup .leaflet-popup-tip {
+  background: rgba(3, 16, 36, 0.95) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+.flowshield-rainfall-popup a.leaflet-popup-close-button {
+  color: #94A3B8 !important;
+  padding: 6px 8px 0 0 !important;
+}
+
+.flowshield-rainfall-popup a.leaflet-popup-close-button:hover {
+  color: #F8FAFC !important;
+}
+
+/* ==========================================================================
+   TACTICAL 3D NAVIGATION PILLS & ILLUMINATED BACKGROUND LIGHT (NAVBAR)
+   ========================================================================== */
+
+.nav-3d-rail {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  background: rgba(3, 14, 30, 0.65);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9999px;
+  padding: 4px 5px;
+  gap: 4px;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.10),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.7),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 10;
+}
+
+.nav-3d-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  white-space: nowrap !important;
+  gap: 7px;
+  padding: 5px 14px;
+  height: 32px;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: #8EA4B8;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  z-index: 1;
+
+  /* 3D Glass Extrusion Baseline (Matching Image 1) */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(10, 24, 44, 0.5) 50%, rgba(2, 10, 22, 0.7) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.65);
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Background Light Aura (Radiant illumination behind the button) */
+.nav-3d-pill::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.55) 0%, rgba(34, 211, 238, 0.35) 45%, transparent 72%);
+  opacity: 0;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(9px);
+  transform: scale(0.92);
+}
+
+/* 3D Specular Light Edge (Glint along top curve) */
+.nav-3d-pill::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 14%;
+  right: 14%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+  border-radius: 9999px;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.nav-3d-pill .nav-3d-icon {
+  color: #8EA4B8;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Hover: Raised 3D Elevation + Subtle Background Light Glow */
+.nav-3d-pill:hover {
+  color: #FFFFFF;
+  transform: translateY(-1.5px);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.12) 0%, rgba(14, 116, 144, 0.22) 50%, rgba(3, 16, 32, 0.75) 100%);
+  border-color: rgba(56, 189, 248, 0.38);
+  border-top: 1.5px solid rgba(186, 230, 253, 0.55);
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 
+    0 5px 14px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(34, 211, 238, 0.18),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.3),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.4);
+}
+
+.nav-3d-pill:hover::before {
+  opacity: 0.4;
+  transform: scale(1.04);
+}
+
+.nav-3d-pill:hover::after {
+  opacity: 0.7;
+}
+
+.nav-3d-pill:hover .nav-3d-icon {
+  color: #22D3EE;
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.5));
+}
+
+/* Active State: Soft, Refined 3D Pill + Balanced Background Light */
+.nav-3d-pill.active {
+  color: #FFFFFF !important;
+  font-weight: 700;
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(20, 184, 166, 0.26) 0%, rgba(13, 148, 136, 0.20) 50%, rgba(4, 26, 44, 0.8) 100%);
+  border: 1px solid rgba(45, 212, 191, 0.5);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.65);
+  border-bottom: 1.5px solid rgba(3, 20, 36, 0.9);
+  box-shadow: 
+    0 0 14px rgba(20, 184, 166, 0.32),
+    0 0 22px rgba(34, 211, 238, 0.16),
+    0 5px 14px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.55),
+    inset 0 -1.5px 2.5px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 0 6px rgba(34, 211, 238, 0.35), 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.nav-3d-pill.active::before {
+  opacity: 0.5;
+  filter: blur(8px);
+  background: radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.45) 0%, rgba(34, 211, 238, 0.25) 45%, transparent 70%);
+  transform: scale(1.06);
+}
+
+.nav-3d-pill.active::after {
+  opacity: 0.75;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+}
+
+.nav-3d-pill.active .nav-3d-icon {
+  color: #22D3EE;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.65));
+}
+
+/* Tactile Click Depression */
+.nav-3d-pill:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 2px 5px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(34, 211, 238, 0.3),
+    inset 0 2px 3px rgba(0, 0, 0, 0.7),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2);
+}
+

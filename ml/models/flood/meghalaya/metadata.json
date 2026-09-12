@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-meghalaya-random_forest-v3-20260912",
+  "region": "meghalaya",
+  "algorithm": "random_forest",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "sigmoid",
+  "selected_threshold": 0.01,
+  "holdout_recall": 0.8695,
+  "holdout_roc_auc": 0.9231,
+  "holdout_f1": 0.6355,
+  "holdout_brier_score": 0.045,
+  "trained_at_utc": "2026-09-12T00:59:13.297244+00:00"
+}

@@ -1,0 +1,40 @@
+{
+  "phase": "PHASE_8_CALIBRATION_ARCHITECTURE",
+  "timestamp": "2026-09-11T21:57:25Z",
+  "champion_model": "LogisticRegression",
+  "cal_fit_samples": 980,
+  "cal_fit_positives": 40,
+  "eval_tune_samples": 2284,
+  "eval_tune_positives": 94,
+  "raw_uncalibrated": {
+    "brier_score": 0.0658,
+    "ece": 0.0906
+  },
+  "methods_evaluated": {
+    "sigmoid": {
+      "artifact_path": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\calibrator_sigmoid.joblib",
+      "brier_score": 0.0297,
+      "ece": 0.0093,
+      "roc_auc": 0.9318,
+      "pr_auc": 0.4598,
+      "is_monotonic": true,
+      "mean_calibrated_prob": 0.0422,
+      "min_calibrated_prob": 0.0,
+      "max_calibrated_prob": 0.7151
+    },
+    "isotonic": {
+      "artifact_path": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\calibrator_isotonic.joblib",
+      "brier_score": 0.0287,
+      "ece": 0.004,
+      "roc_auc": 0.9305,
+      "pr_auc": 0.3846,
+      "is_monotonic": true,
+      "mean_calibrated_prob": 0.042,
+      "min_calibrated_prob": 0.0,
+      "max_calibrated_prob": 1.0
+    }
+  },
+  "selected_calibrator": "isotonic",
+  "selected_calibrator_artifact": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\calibrator_isotonic.joblib",
+  "status": "ALL_CHECKS_PASSED"
+}

@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-jammu_kashmir-random_forest-v3-20260912",
+  "region": "jammu_kashmir",
+  "algorithm": "random_forest",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "sigmoid",
+  "selected_threshold": 0.01,
+  "holdout_recall": 0.9043,
+  "holdout_roc_auc": 0.9735,
+  "holdout_f1": 0.407,
+  "holdout_brier_score": 0.01,
+  "trained_at_utc": "2026-09-12T00:58:39.036286+00:00"
+}

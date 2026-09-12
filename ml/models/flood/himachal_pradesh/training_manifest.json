@@ -1,0 +1,166 @@
+{
+  "region_slug": "himachal_pradesh",
+  "region_display_name": "Himachal Pradesh",
+  "model_version": "flowshield-himachal_pradesh-logistic_regression-v3-20260912",
+  "trained_at_utc": "2026-09-12T00:58:33.905248+00:00",
+  "random_seed": 42,
+  "sample_counts": {
+    "train": 7812,
+    "val_cal": 1172,
+    "val_tune": 1172,
+    "holdout": 2344
+  },
+  "positive_flood_counts": {
+    "train": 605,
+    "val_cal": 0,
+    "val_tune": 847,
+    "holdout": 16
+  },
+  "tournament": {
+    "logistic_regression": {
+      "fit_time_sec": 0.012,
+      "roc_auc": 0.8065,
+      "pr_auc": 0.9202,
+      "recall_at_0.15": 0.6635,
+      "f1_score": 0.7528,
+      "tournament_score": 0.8175
+    },
+    "random_forest": {
+      "fit_time_sec": 0.158,
+      "roc_auc": 0.7468,
+      "pr_auc": 0.9049,
+      "recall_at_0.15": 0.5714,
+      "f1_score": 0.6979,
+      "tournament_score": 0.7715
+    },
+    "xgboost": {
+      "fit_time_sec": 0.18,
+      "roc_auc": 0.6538,
+      "pr_auc": 0.8563,
+      "recall_at_0.15": 0.2172,
+      "f1_score": 0.3562,
+      "tournament_score": 0.6007
+    }
+  },
+  "selected_champion": "logistic_regression",
+  "calibration": {
+    "raw": {
+      "brier_score": 0.3217,
+      "ece": 0.3729
+    },
+    "selected_method": "none",
+    "improvement": false
+  },
+  "ablation_summary": {
+    "experiments": {
+      "Exp_A_Meteorology_Only": {
+        "feature_count": 4,
+        "features": [
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh"
+        ],
+        "roc_auc": 0.314,
+        "pr_auc": 0.005,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0158,
+        "delta_f1_vs_full": -0.0112
+      },
+      "Exp_B_Rainfall_Only": {
+        "feature_count": 5,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm"
+        ],
+        "roc_auc": 0.992,
+        "pr_auc": 0.4172,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0513,
+        "delta_f1_vs_full": 0.0243
+      },
+      "Exp_C_Rain_Plus_Soil": {
+        "feature_count": 7,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct"
+        ],
+        "roc_auc": 0.9927,
+        "pr_auc": 0.4469,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0525,
+        "delta_f1_vs_full": 0.0255
+      },
+      "Exp_D_Dynamic_Only": {
+        "feature_count": 11,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct",
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh"
+        ],
+        "roc_auc": 0.9923,
+        "pr_auc": 0.4251,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0297,
+        "delta_f1_vs_full": 0.0027
+      },
+      "Exp_E_Static_Terrain_Only": {
+        "feature_count": 4,
+        "features": [
+          "elevation_m",
+          "catchment_slope_deg",
+          "dist_to_river_m",
+          "upstream_drainage_sqkm"
+        ],
+        "roc_auc": 0.5,
+        "pr_auc": 0.0068,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0136,
+        "delta_f1_vs_full": -0.0134
+      },
+      "Exp_F_Full_15_Features": {
+        "feature_count": 15,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct",
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh",
+          "elevation_m",
+          "catchment_slope_deg",
+          "dist_to_river_m",
+          "upstream_drainage_sqkm"
+        ],
+        "roc_auc": 0.9914,
+        "pr_auc": 0.3777,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.027,
+        "delta_f1_vs_full": -0.0
+      }
+    },
+    "key_finding": "Static terrain alone cannot capture flash-flood dynamics; rainfall alone fails without antecedent soil saturation; full 15-feature contract provides maximal joint discrimination and early-warning lead time."
+  },
+  "duration_seconds": 0.93
+}

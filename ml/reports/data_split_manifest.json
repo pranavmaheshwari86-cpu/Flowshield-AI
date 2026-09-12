@@ -1,0 +1,65 @@
+{
+  "phase": "PHASE_4_VALIDATION_ARCHITECTURE",
+  "timestamp": "2026-09-12T03:25:00Z",
+  "splits": {
+    "train": {
+      "file": "train_split.csv",
+      "rows": 8160,
+      "positives": 335,
+      "flood_rate": 0.0411,
+      "stations": [
+        "AUT_JNC_03",
+        "JGN_VLY_05",
+        "MND_URBAN_01",
+        "SDR_BSN_07",
+        "THL_GRG_04"
+      ],
+      "sha256": "c65496a388305db3c230195a10d385187b5cb05c73db4a38aa02132bb7164c16"
+    },
+    "val_cal": {
+      "file": "val_cal_split.csv",
+      "rows": 980,
+      "positives": 40,
+      "flood_rate": 0.0408,
+      "stations": [
+        "DHR_KHD_06",
+        "PND_DAM_02"
+      ],
+      "sha256": "18e5b88aaffd459ede2a9fbaa8dbbb405b7a2e5fa538de520b215eaaac7937b3"
+    },
+    "val_tune": {
+      "file": "val_tune_split.csv",
+      "rows": 2284,
+      "positives": 94,
+      "flood_rate": 0.0412,
+      "stations": [
+        "DHR_KHD_06",
+        "PND_DAM_02"
+      ],
+      "sha256": "0809af6f9e6ed5fcef815193f257d047c0f64a7ea59ae401e6b8a43dd90ef97f"
+    },
+    "final_test_locked": {
+      "file": "final_test_locked.csv",
+      "rows": 4200,
+      "positives": 630,
+      "flood_rate": 0.15,
+      "stations": [
+        "AUT_JNC_03",
+        "DHR_KHD_06",
+        "JGN_VLY_05",
+        "MND_URBAN_01",
+        "PND_DAM_02",
+        "SDR_BSN_07",
+        "THL_GRG_04"
+      ],
+      "sha256": "25d58fd2c668357dbd964ca7fb82e12086c2b23c97ddcf386f237e4322bfc8f3",
+      "governance": "LOCKED"
+    }
+  },
+  "assertions": {
+    "total_rows_check": true,
+    "zero_leakage_check": true,
+    "spatial_holdout_check": true
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

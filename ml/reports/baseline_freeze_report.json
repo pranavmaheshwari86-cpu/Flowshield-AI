@@ -1,0 +1,131 @@
+{
+  "phase": "PHASE_0_BASELINE_FREEZE",
+  "timestamp": "2026-09-12T03:22:00Z",
+  "git": {
+    "commit": "903df3c9e7047236e2190fb9550519c115ef8a53",
+    "branch": "master",
+    "tags": [
+      "v2.4-baseline-freeze"
+    ]
+  },
+  "model_artifacts": {
+    "feature_schema.json": {
+      "sha256": "48cb19222076145194dd016a36f45d75f93fbd483e96bea0b70c710a275221d7",
+      "size_bytes": 2444
+    },
+    "lr_real_flood_model.joblib": {
+      "sha256": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb",
+      "size_bytes": 991
+    },
+    "model_metadata.json": {
+      "sha256": "5d724978b9ce755129971c9b500f3da54e54fd44962865ef59036f8972e794bc",
+      "size_bytes": 1995
+    },
+    "preprocessor.joblib": {
+      "sha256": "5056770e5d72e8133177cdb27535bba9ee3cb68be59f0a39191084387314df0e",
+      "size_bytes": 1993
+    },
+    "rf_real_flood_model.joblib": {
+      "sha256": "07149c53ebc56c0015c256a9812d455b2f68ec1a5aad25de36ed13e9471d589e",
+      "size_bytes": 794313
+    },
+    "v2_calibrator.joblib": {
+      "sha256": "0f75ceb87e5576132f25dfb9950e08f5b7b9b44d1ea557643bef40ad56d3a891",
+      "size_bytes": 2212
+    },
+    "v2_decision_pipeline.json": {
+      "sha256": "4e5f9bdcbc5d5dca69f777743d8684385044f327f859cd397c3fa76a5327d148",
+      "size_bytes": 3037
+    },
+    "v2_preprocessor.joblib": {
+      "sha256": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c",
+      "size_bytes": 1993
+    },
+    "v2_selected_model.joblib": {
+      "sha256": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb",
+      "size_bytes": 991
+    },
+    "xgb_flood_model.joblib": {
+      "sha256": "5cdaa540395887bd70adbf0d0d14610e089ccd589ecb30746459baa1e17762ba",
+      "size_bytes": 369394
+    },
+    "xgb_real_flood_model.joblib": {
+      "sha256": "7afc57e6997b87c848d409fafd452eabe898e50c3247de590d9e53e3d334e25f",
+      "size_bytes": 154184
+    }
+  },
+  "smoke_test": {
+    "input": {
+      "rainfall_1h_mm": 10.0,
+      "rainfall_3h_mm": 10.0,
+      "rainfall_6h_mm": 10.0,
+      "rainfall_24h_mm": 10.0,
+      "rainfall_72h_mm": 10.0,
+      "soil_saturation_pct": 10.0,
+      "deep_soil_saturation_pct": 10.0,
+      "temperature_c": 10.0,
+      "relative_humidity_pct": 10.0,
+      "surface_pressure_hpa": 10.0,
+      "wind_speed_kmh": 10.0,
+      "elevation_m": 800.0,
+      "catchment_slope_deg": 22.0,
+      "dist_to_river_m": 120.0,
+      "upstream_drainage_sqkm": 3500.0
+    },
+    "output": {
+      "risk_score": 0.0,
+      "risk_level": "INSUFFICIENT_DATA",
+      "flood_probability": 0.0,
+      "confidence": 0.0,
+      "threshold": 0.08,
+      "calibration_method": "isotonic",
+      "model_version": "flowshield-flood-risk-v2",
+      "model_type": "Calibrated Logistic Regression (Isotonic scaling on ERA5-Land)",
+      "explanation": [
+        "Data quality safety guardrail tripped: Feature 'surface_pressure_hpa' value 10.0 is outside physical range [500.0, 1100.0]."
+      ],
+      "status": "insufficient_data",
+      "topographic_factor": 0.0
+    }
+  },
+  "integrity_check": {
+    "state": "MODEL_READY",
+    "details": {
+      "checks": {
+        "checksums": {
+          "v2_selected_model.joblib": {
+            "actual": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb",
+            "expected": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb",
+            "match": true
+          },
+          "v2_calibrator.joblib": {
+            "actual": "0f75ceb87e5576132f25dfb9950e08f5b7b9b44d1ea557643bef40ad56d3a891",
+            "expected": "0f75ceb87e5576132f25dfb9950e08f5b7b9b44d1ea557643bef40ad56d3a891",
+            "match": true
+          },
+          "v2_preprocessor.joblib": {
+            "actual": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c",
+            "expected": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c",
+            "match": true
+          },
+          "v2_decision_pipeline.json": {
+            "actual": "4e5f9bdcbc5d5dca69f777743d8684385044f327f859cd397c3fa76a5327d148",
+            "expected": "4e5f9bdcbc5d5dca69f777743d8684385044f327f859cd397c3fa76a5327d148",
+            "match": true
+          }
+        },
+        "smoke_test": {
+          "raw_probability": 0.9998,
+          "calibrated_probability": 1.0,
+          "status": "PASSED"
+        }
+      },
+      "verified_features_count": 15,
+      "decision_threshold": 0.08,
+      "errors": [],
+      "status": "ALL_CHECKS_PASSED"
+    }
+  },
+  "backup_directory": "c:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\baseline_backup",
+  "status": "BASELINE_FROZEN_SUCCESS"
+}

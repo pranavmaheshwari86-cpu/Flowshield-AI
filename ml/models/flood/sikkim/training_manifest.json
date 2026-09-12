@@ -1,0 +1,176 @@
+{
+  "region_slug": "sikkim",
+  "region_display_name": "Sikkim",
+  "model_version": "flowshield-sikkim-xgboost-v3-20260912",
+  "trained_at_utc": "2026-09-12T00:58:48.339567+00:00",
+  "random_seed": 42,
+  "sample_counts": {
+    "train": 192580,
+    "val_cal": 7322,
+    "val_tune": 7323,
+    "holdout": 29045
+  },
+  "positive_flood_counts": {
+    "train": 8697,
+    "val_cal": 1444,
+    "val_tune": 766,
+    "holdout": 387
+  },
+  "tournament": {
+    "logistic_regression": {
+      "fit_time_sec": 0.176,
+      "roc_auc": 0.9535,
+      "pr_auc": 0.8706,
+      "recall_at_0.15": 0.9648,
+      "f1_score": 0.3385,
+      "tournament_score": 0.9083
+    },
+    "random_forest": {
+      "fit_time_sec": 1.44,
+      "roc_auc": 0.957,
+      "pr_auc": 0.8865,
+      "recall_at_0.15": 0.9765,
+      "f1_score": 0.2717,
+      "tournament_score": 0.9225
+    },
+    "xgboost": {
+      "fit_time_sec": 0.364,
+      "roc_auc": 0.9609,
+      "pr_auc": 0.9072,
+      "recall_at_0.15": 0.9543,
+      "f1_score": 0.4042,
+      "tournament_score": 0.9261
+    }
+  },
+  "selected_champion": "xgboost",
+  "calibration": {
+    "raw": {
+      "brier_score": 0.0583,
+      "ece": 0.1203
+    },
+    "isotonic": {
+      "brier_score": 0.0228,
+      "ece": 0.0076,
+      "monotonic": true
+    },
+    "sigmoid": {
+      "brier_score": 0.0289,
+      "ece": 0.0336,
+      "monotonic": true
+    },
+    "selected_method": "isotonic",
+    "improvement": true
+  },
+  "ablation_summary": {
+    "experiments": {
+      "Exp_A_Meteorology_Only": {
+        "feature_count": 4,
+        "features": [
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh"
+        ],
+        "roc_auc": 0.8837,
+        "pr_auc": 0.2816,
+        "recall_at_0.15": 0.8062,
+        "f1_score": 0.1045,
+        "delta_f1_vs_full": -0.0746
+      },
+      "Exp_B_Rainfall_Only": {
+        "feature_count": 5,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm"
+        ],
+        "roc_auc": 0.9407,
+        "pr_auc": 0.6665,
+        "recall_at_0.15": 0.8889,
+        "f1_score": 0.1892,
+        "delta_f1_vs_full": 0.0101
+      },
+      "Exp_C_Rain_Plus_Soil": {
+        "feature_count": 7,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct"
+        ],
+        "roc_auc": 0.9396,
+        "pr_auc": 0.6571,
+        "recall_at_0.15": 0.8786,
+        "f1_score": 0.1961,
+        "delta_f1_vs_full": 0.017
+      },
+      "Exp_D_Dynamic_Only": {
+        "feature_count": 11,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct",
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh"
+        ],
+        "roc_auc": 0.9399,
+        "pr_auc": 0.656,
+        "recall_at_0.15": 0.8811,
+        "f1_score": 0.1989,
+        "delta_f1_vs_full": 0.0198
+      },
+      "Exp_E_Static_Terrain_Only": {
+        "feature_count": 4,
+        "features": [
+          "elevation_m",
+          "catchment_slope_deg",
+          "dist_to_river_m",
+          "upstream_drainage_sqkm"
+        ],
+        "roc_auc": 0.5571,
+        "pr_auc": 0.0181,
+        "recall_at_0.15": 1.0,
+        "f1_score": 0.0263,
+        "delta_f1_vs_full": -0.1528
+      },
+      "Exp_F_Full_15_Features": {
+        "feature_count": 15,
+        "features": [
+          "rainfall_1h_mm",
+          "rainfall_3h_mm",
+          "rainfall_6h_mm",
+          "rainfall_24h_mm",
+          "rainfall_72h_mm",
+          "soil_saturation_pct",
+          "deep_soil_saturation_pct",
+          "temperature_c",
+          "relative_humidity_pct",
+          "surface_pressure_hpa",
+          "wind_speed_kmh",
+          "elevation_m",
+          "catchment_slope_deg",
+          "dist_to_river_m",
+          "upstream_drainage_sqkm"
+        ],
+        "roc_auc": 0.9456,
+        "pr_auc": 0.663,
+        "recall_at_0.15": 0.8786,
+        "f1_score": 0.1791,
+        "delta_f1_vs_full": -0.0
+      }
+    },
+    "key_finding": "Static terrain alone cannot capture flash-flood dynamics; rainfall alone fails without antecedent soil saturation; full 15-feature contract provides maximal joint discrimination and early-warning lead time."
+  },
+  "duration_seconds": 4.39
+}

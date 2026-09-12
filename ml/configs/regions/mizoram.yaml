@@ -1,0 +1,98 @@
+# ml/configs/regions/mizoram.yaml
+# Flowshield — Mizoram Regional Configuration
+# Tlawng, Tuirial, Chhimtuipui (Kolodyne) River Basins
+
+region:
+  slug: "mizoram"
+  display_name: "Mizoram"
+  state: "Mizoram"
+  primary_basin: "Tlawng, Tuirial, Chhimtuipui"
+  climate_zone: "Sub-tropical humid monsoon hills"
+
+boundary:
+  lat_min: 21.90
+  lat_max: 24.50
+  lon_min: 92.15
+  lon_max: 93.50
+
+stations:
+  AZL_TLW_01:
+    name: "Aizawl / Tlawng River"
+    latitude: 23.7271
+    longitude: 92.7176
+    elevation_m: 1132.0
+    catchment_slope_deg: 28.0
+    dist_to_river_m: 320.0
+    upstream_drainage_sqkm: 1100.0
+    role: "train"
+  KLH_TUR_02:
+    name: "Kolasib / Tuirial River"
+    latitude: 24.2260
+    longitude: 92.6780
+    elevation_m: 120.0
+    catchment_slope_deg: 12.0
+    dist_to_river_m: 40.0
+    upstream_drainage_sqkm: 2900.0
+    role: "train"
+  LWG_CHH_03:
+    name: "Lunglei / Chhimtuipui"
+    latitude: 22.8810
+    longitude: 92.7450
+    elevation_m: 930.0
+    catchment_slope_deg: 24.0
+    dist_to_river_m: 200.0
+    upstream_drainage_sqkm: 3400.0
+    role: "spatial_holdout_val"
+  SMR_TLW_04:
+    name: "Saiha / Mat River"
+    latitude: 22.4860
+    longitude: 92.9780
+    elevation_m: 720.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 80.0
+    upstream_drainage_sqkm: 1800.0
+    role: "train"
+  CHM_BRK_05:
+    name: "Champhai / Tiau River"
+    latitude: 23.4600
+    longitude: 93.3280
+    elevation_m: 1678.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 160.0
+    upstream_drainage_sqkm: 780.0
+    role: "train"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (limited CWC coverage)"
+    - "SDMA Mizoram historical records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"
+
+data_quality_notes:
+  - "Steep terrain dominates — landslide-flood coupling common"
+  - "Limited CWC gauge network"
+  - "May receive VALIDATION_ONLY if event count < 30"

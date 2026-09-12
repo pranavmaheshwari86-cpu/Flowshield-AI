@@ -1,0 +1,67 @@
+{
+  "phase": "PHASE_2_LABEL_INTEGRITY_VALIDATION",
+  "timestamp": "2026-09-12T03:23:00Z",
+  "total_observations": 15624,
+  "total_flood_hours": 1099,
+  "baseline_control_july_2022": {
+    "total_hours": 5208,
+    "positive_flood_hours": 0,
+    "pass": true
+  },
+  "monsoon_2023_events": {
+    "july_2023_flood_hours": 630,
+    "august_2023_flood_hours": 469,
+    "earliest_positive_timestamp": "2023-07-08 06:00:00",
+    "latest_positive_timestamp": "2023-08-15 18:00:00"
+  },
+  "station_distribution": {
+    "AUT_JNC_03": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "DHR_KHD_06": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "JGN_VLY_05": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "MND_URBAN_01": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "PND_DAM_02": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "SDR_BSN_07": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    },
+    "THL_GRG_04": {
+      "total_hours": 2232,
+      "flood_hours": 157,
+      "flood_rate": 0.0703
+    }
+  },
+  "period_distribution": {
+    "disaster_season_2023": {
+      "total_hours": 10416,
+      "flood_hours": 1099,
+      "flood_rate": 0.1055
+    },
+    "normal_monsoon_2022": {
+      "total_hours": 5208,
+      "flood_hours": 0,
+      "flood_rate": 0.0
+    }
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

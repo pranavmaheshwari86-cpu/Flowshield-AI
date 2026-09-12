@@ -1,0 +1,159 @@
+{
+  "benchmark_date": "2026-09-10T18:10:20.211737+00:00",
+  "pipeline_version": "flowshield-flood-risk-v2",
+  "train_samples": 8160,
+  "val_samples": 3264,
+  "test_samples": 4200,
+  "test_positive_floods": 630,
+  "models": {
+    "logistic_regression": {
+      "model_name": "logistic_regression",
+      "roc_auc": 0.925,
+      "pr_auc": 0.424,
+      "raw_brier": 0.0671,
+      "calibrated_brier": 0.0287,
+      "raw_ece": 0.0899,
+      "calibrated_ece": 0.0004,
+      "operational_recall": 0.8657,
+      "operational_fnr": 0.1343,
+      "operational_f1": 0.2986,
+      "operational_threshold": 0.08,
+      "latency_p50_ms": 0.088,
+      "model_size_kb": 0.97
+    },
+    "random_forest": {
+      "model_name": "random_forest",
+      "roc_auc": 0.8757,
+      "pr_auc": 0.164,
+      "raw_brier": 0.0529,
+      "calibrated_brier": 0.0339,
+      "raw_ece": 0.0429,
+      "calibrated_ece": 0.0,
+      "operational_recall": 0.8806,
+      "operational_fnr": 0.1194,
+      "operational_f1": 0.2616,
+      "operational_threshold": 0.1,
+      "latency_p50_ms": 37.221,
+      "model_size_kb": 775.7
+    },
+    "xgboost": {
+      "model_name": "xgboost",
+      "roc_auc": 0.8548,
+      "pr_auc": 0.14,
+      "raw_brier": 0.0719,
+      "calibrated_brier": 0.0357,
+      "raw_ece": 0.0724,
+      "calibrated_ece": 0.0,
+      "operational_recall": 0.9776,
+      "operational_fnr": 0.0224,
+      "operational_f1": 0.2137,
+      "operational_threshold": 0.04,
+      "latency_p50_ms": 0.505,
+      "model_size_kb": 150.57
+    }
+  },
+  "selected_model": "logistic_regression",
+  "calibration_method": "isotonic",
+  "threshold": 0.08,
+  "final_test_metrics": {
+    "accuracy": 0.8679,
+    "precision": 0.5361,
+    "recall": 0.8841,
+    "f1_score": 0.6675,
+    "roc_auc": 0.923,
+    "pr_auc": 0.6761,
+    "brier_score": 0.0711,
+    "log_loss": 1.7542,
+    "false_negative_rate": 0.1159,
+    "false_positive_rate": 0.135,
+    "confusion_matrix": {
+      "true_negatives": 3088,
+      "false_positives": 482,
+      "false_negatives": 73,
+      "true_positives": 557
+    },
+    "total_samples": 4200,
+    "actual_flood_hours": 630,
+    "missed_flood_hours": 73,
+    "detected_flood_hours": 557,
+    "inference_p50_latency_ms": 1.151,
+    "inference_p95_latency_ms": 1.629
+  },
+  "feature_importances": [
+    {
+      "feature": "rainfall_72h_mm",
+      "coefficient": 2.3513,
+      "abs_importance": 2.3513
+    },
+    {
+      "feature": "relative_humidity_pct",
+      "coefficient": 2.0821,
+      "abs_importance": 2.0821
+    },
+    {
+      "feature": "temperature_c",
+      "coefficient": 1.9119,
+      "abs_importance": 1.9119
+    },
+    {
+      "feature": "soil_saturation_pct",
+      "coefficient": 1.1808,
+      "abs_importance": 1.1808
+    },
+    {
+      "feature": "surface_pressure_hpa",
+      "coefficient": -1.0918,
+      "abs_importance": 1.0918
+    },
+    {
+      "feature": "deep_soil_saturation_pct",
+      "coefficient": -1.0311,
+      "abs_importance": 1.0311
+    },
+    {
+      "feature": "catchment_slope_deg",
+      "coefficient": -0.8902,
+      "abs_importance": 0.8902
+    },
+    {
+      "feature": "upstream_drainage_sqkm",
+      "coefficient": 0.6502,
+      "abs_importance": 0.6502
+    },
+    {
+      "feature": "elevation_m",
+      "coefficient": 0.5965,
+      "abs_importance": 0.5965
+    },
+    {
+      "feature": "wind_speed_kmh",
+      "coefficient": 0.264,
+      "abs_importance": 0.264
+    },
+    {
+      "feature": "rainfall_24h_mm",
+      "coefficient": 0.1946,
+      "abs_importance": 0.1946
+    },
+    {
+      "feature": "rainfall_1h_mm",
+      "coefficient": 0.0894,
+      "abs_importance": 0.0894
+    },
+    {
+      "feature": "dist_to_river_m",
+      "coefficient": -0.0612,
+      "abs_importance": 0.0612
+    },
+    {
+      "feature": "rainfall_6h_mm",
+      "coefficient": -0.0438,
+      "abs_importance": 0.0438
+    },
+    {
+      "feature": "rainfall_3h_mm",
+      "coefficient": -0.031,
+      "abs_importance": 0.031
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# ml/configs/production_config.yaml
+# FlowShield — Production MLOps & Integrity Configuration (v2.5)
+
+production_release:
+  version: "2.5.0"
+  status: "ACTIVE_PRODUCTION"
+  signoff_date: "2026-09-12"
+
+artifacts:
+  champion_model: "flood_risk_champion.joblib"
+  calibrator: "flood_risk_calibrator.joblib"
+  preprocessor: "flood_risk_preprocessor.joblib"
+  manifest: "MODEL_MANIFEST.json"
+
+expected_checksums:
+  v2_selected_model.joblib: "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb"
+  v2_calibrator.joblib: "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780"
+  v2_preprocessor.joblib: "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c"
+  v2_decision_pipeline.json: "cddbc38cc0de334d3f51095ccce8e35feeb7a62cefb9974536447bde24cc6ea9"
+
+monitoring:
+  drift_detection:
+    method: "kolmogorov_smirnov"
+    p_value_threshold: 0.01
+    min_drift_samples: 50
+  data_quality:
+    max_missing_feature_ratio: 0.20
+    out_of_bounds_action: "clip_to_physical_bounds"

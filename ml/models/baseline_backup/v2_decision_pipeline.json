@@ -1,0 +1,115 @@
+{
+  "pipeline_version": "flowshield-flood-risk-v2",
+  "created_at_utc": "2026-09-10T18:10:20.159711+00:00",
+  "random_seed": 26192,
+  "selected_model": "logistic_regression",
+  "calibration_method": "isotonic",
+  "threshold": 0.08,
+  "model_artifact": "v2_selected_model.joblib",
+  "calibrator_artifact": "v2_calibrator.joblib",
+  "preprocessor_artifact": "v2_preprocessor.joblib",
+  "features": [
+    "rainfall_1h_mm",
+    "rainfall_3h_mm",
+    "rainfall_6h_mm",
+    "rainfall_24h_mm",
+    "rainfall_72h_mm",
+    "soil_saturation_pct",
+    "deep_soil_saturation_pct",
+    "temperature_c",
+    "relative_humidity_pct",
+    "surface_pressure_hpa",
+    "wind_speed_kmh",
+    "elevation_m",
+    "catchment_slope_deg",
+    "dist_to_river_m",
+    "upstream_drainage_sqkm"
+  ],
+  "target": "flood_occurred",
+  "operational_objective": {
+    "primary": "Minimize False Negative Rate (target recall >= 0.85)",
+    "secondary": "Control False Positive Rate (target FPR <= 0.15)"
+  },
+  "split_strategy": {
+    "train": {
+      "stations": [
+        "AUT_JNC_03",
+        "JGN_VLY_05",
+        "MND_URBAN_01",
+        "SDR_BSN_07",
+        "THL_GRG_04"
+      ],
+      "samples": 8160,
+      "positive_count": 335
+    },
+    "validation": {
+      "stations": [
+        "DHR_KHD_06",
+        "PND_DAM_02"
+      ],
+      "samples": 3264,
+      "positive_count": 134
+    },
+    "test": {
+      "period": "2023-07-01 to 2023-07-25",
+      "stations": [
+        "AUT_JNC_03",
+        "DHR_KHD_06",
+        "JGN_VLY_05",
+        "MND_URBAN_01",
+        "PND_DAM_02",
+        "SDR_BSN_07",
+        "THL_GRG_04"
+      ],
+      "samples": 4200,
+      "positive_count": 630
+    }
+  },
+  "validation_metrics": {
+    "recall": 0.8657,
+    "precision": 0.1804,
+    "f1_score": 0.2986,
+    "fnr": 0.1343,
+    "fpr": 0.1684,
+    "roc_auc": 0.925,
+    "pr_auc": 0.424,
+    "brier_score": 0.0287,
+    "ece": 0.0004
+  },
+  "final_test_metrics": {
+    "accuracy": 0.8679,
+    "precision": 0.5361,
+    "recall": 0.8841,
+    "f1_score": 0.6675,
+    "roc_auc": 0.923,
+    "pr_auc": 0.6761,
+    "brier_score": 0.0711,
+    "log_loss": 1.7542,
+    "false_negative_rate": 0.1159,
+    "false_positive_rate": 0.135,
+    "confusion_matrix": {
+      "true_negatives": 3088,
+      "false_positives": 482,
+      "false_negatives": 73,
+      "true_positives": 557
+    },
+    "total_samples": 4200,
+    "actual_flood_hours": 630,
+    "missed_flood_hours": 73,
+    "detected_flood_hours": 557,
+    "inference_p50_latency_ms": 1.151,
+    "inference_p95_latency_ms": 1.629
+  },
+  "composite_selection_score": 0.7199,
+  "all_candidate_scores": {
+    "logistic_regression_isotonic": 0.7199,
+    "logistic_regression_sigmoid": 0.7085,
+    "xgboost_isotonic": 0.669,
+    "xgboost_sigmoid": 0.648,
+    "random_forest_sigmoid": 0.6112,
+    "logistic_regression_raw": 0.5506,
+    "random_forest_isotonic": 0.4605,
+    "random_forest_raw": 0.4029,
+    "xgboost_raw": 0.1406
+  }
+}

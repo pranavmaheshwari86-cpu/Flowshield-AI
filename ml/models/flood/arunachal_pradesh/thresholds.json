@@ -1,0 +1,15 @@
+{
+  "selected_threshold": 0.1524,
+  "advisory_threshold": 0.091,
+  "watch_threshold": 0.1524,
+  "warning_threshold": 0.2854,
+  "metrics_at_selected_threshold": {
+    "recall": 0.7,
+    "precision": 0.4667,
+    "f1_score": 0.56,
+    "false_positive_rate": 0.0012,
+    "false_negative_rate": 0.3
+  },
+  "recall_bar_target": 0.85,
+  "recall_bar_met": false
+}

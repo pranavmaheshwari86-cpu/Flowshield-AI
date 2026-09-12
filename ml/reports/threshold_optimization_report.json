@@ -1,0 +1,43 @@
+{
+  "phase": "PHASE_9_THRESHOLD_OPTIMIZATION",
+  "timestamp": "2026-09-11T21:57:42Z",
+  "eval_dataset": "val_tune_split.csv",
+  "total_samples": 2284,
+  "total_positives": 94,
+  "selection_reason": "Maximized F1 subject to Recall >= 0.85 (Life-Safety Priority)",
+  "decision_note": "Selected optimal threshold 0.05 per policy optimization",
+  "selected_threshold": 0.05,
+  "selected_threshold_metrics": {
+    "threshold": 0.05,
+    "recall": 1.0,
+    "precision": 0.1397,
+    "f1_score": 0.2451,
+    "fpr": 0.2644,
+    "fnr": 0.0,
+    "tp": 94,
+    "fp": 579,
+    "tn": 1611,
+    "fn": 0,
+    "satisfies_recall_bar": true,
+    "satisfies_fpr_bar": false
+  },
+  "baseline_tau_0_08_metrics": {
+    "threshold": 0.08,
+    "recall": 0.8191,
+    "precision": 0.1925,
+    "f1_score": 0.3117,
+    "fpr": 0.1475,
+    "fnr": 0.1809,
+    "tp": 77,
+    "fp": 323,
+    "tn": 1867,
+    "fn": 17,
+    "satisfies_recall_bar": false,
+    "satisfies_fpr_bar": true
+  },
+  "sweep_summary": {
+    "total_thresholds_swept": 99,
+    "qualifying_thresholds_count": 0
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

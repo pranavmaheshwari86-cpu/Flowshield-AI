@@ -1,0 +1,102 @@
+# ml/configs/regions/sikkim.yaml
+# Flowshield — Sikkim Regional Configuration
+# Teesta River Basin, Rangit River
+
+region:
+  slug: "sikkim"
+  display_name: "Sikkim"
+  state: "Sikkim"
+  primary_basin: "Teesta River Basin"
+  climate_zone: "Eastern Himalayan subtropical-to-alpine"
+
+boundary:
+  lat_min: 27.05
+  lat_max: 28.15
+  lon_min: 88.00
+  lon_max: 89.00
+
+stations:
+  GNG_TST_01:
+    name: "Gangtok / Teesta Upper"
+    latitude: 27.3389
+    longitude: 88.6065
+    elevation_m: 1650.0
+    catchment_slope_deg: 28.0
+    dist_to_river_m: 250.0
+    upstream_drainage_sqkm: 2800.0
+    role: "train"
+  SNG_TST_02:
+    name: "Singtam / Teesta Mid Valley"
+    latitude: 27.2346
+    longitude: 88.5038
+    elevation_m: 310.0
+    catchment_slope_deg: 18.0
+    dist_to_river_m: 30.0
+    upstream_drainage_sqkm: 5200.0
+    role: "train"
+  MNG_RNG_03:
+    name: "Mangan / Rangit Confluence"
+    latitude: 27.5098
+    longitude: 88.5231
+    elevation_m: 530.0
+    catchment_slope_deg: 24.0
+    dist_to_river_m: 45.0
+    upstream_drainage_sqkm: 3100.0
+    role: "spatial_holdout_val"
+  CHG_GLF_04:
+    name: "Chungthang / GLOF Risk Zone"
+    latitude: 27.6200
+    longitude: 88.6300
+    elevation_m: 1750.0
+    catchment_slope_deg: 32.0
+    dist_to_river_m: 40.0
+    upstream_drainage_sqkm: 1850.0
+    role: "train"
+  JRT_TST_05:
+    name: "Jorethang / Rangit-Teesta Confluence"
+    latitude: 27.0900
+    longitude: 88.3200
+    elevation_m: 250.0
+    catchment_slope_deg: 15.0
+    dist_to_river_m: 25.0
+    upstream_drainage_sqkm: 7200.0
+    role: "train"
+
+# SCIENTIFIC NOTE: October 2023 Sikkim GLOF on Teesta (South Lhonak Lake)
+# is a reference catastrophic event for this region.
+reference_events:
+  - event: "2023 South Lhonak GLOF"
+    date: "2023-10-04"
+    verified_peak_discharge_cumecs: ~16000
+    source: "IMD; NDMA; CWC Teesta Basin"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-10-31"
+
+holdout_period:
+  start: "2023-11-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (CWC Teesta gauges)"
+    - "SSDMA Sikkim historical records"
+    - "October 2023 GLOF reference"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

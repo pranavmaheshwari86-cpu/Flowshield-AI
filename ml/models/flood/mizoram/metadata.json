@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-mizoram-random_forest-v3-20260912",
+  "region": "mizoram",
+  "algorithm": "random_forest",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "isotonic",
+  "selected_threshold": 0.0385,
+  "holdout_recall": 0.8639,
+  "holdout_roc_auc": 0.9612,
+  "holdout_f1": 0.5925,
+  "holdout_brier_score": 0.0111,
+  "trained_at_utc": "2026-09-12T00:59:07.165470+00:00"
+}

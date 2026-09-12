@@ -1,0 +1,39 @@
+{
+  "random_seed": 26192,
+  "dataset_path": "data/real/mandi_real_hydrology_features.csv",
+  "test_split_strategy": "event_temporal_holdout",
+  "test_holdout_window": {
+    "start": "2023-07-01T00:00:00",
+    "end": "2023-07-25T23:59:59",
+    "event_description": "Historic Beas Basin July 2023 Mega Flood Catastrophe"
+  },
+  "models": {
+    "logistic_regression": {
+      "name": "LogisticRegression (Linear Baseline)",
+      "class_weight": "balanced",
+      "max_iter": 1000,
+      "C": 1.0,
+      "solver": "lbfgs"
+    },
+    "random_forest": {
+      "name": "RandomForestClassifier (Ensemble Baseline)",
+      "n_estimators": 150,
+      "max_depth": 10,
+      "min_samples_split": 10,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "n_jobs": -1
+    },
+    "xgboost": {
+      "name": "XGBClassifier (Primary Gradient Boosting)",
+      "n_estimators": 200,
+      "max_depth": 6,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "scale_pos_weight": 23.35,
+      "eval_metric": "logloss",
+      "n_jobs": -1
+    }
+  }
+}

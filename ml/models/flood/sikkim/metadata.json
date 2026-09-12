@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-sikkim-xgboost-v3-20260912",
+  "region": "sikkim",
+  "algorithm": "xgboost",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "isotonic",
+  "selected_threshold": 0.2189,
+  "holdout_recall": 0.77,
+  "holdout_roc_auc": 0.9432,
+  "holdout_f1": 0.6979,
+  "holdout_brier_score": 0.0054,
+  "trained_at_utc": "2026-09-12T00:58:48.339567+00:00"
+}

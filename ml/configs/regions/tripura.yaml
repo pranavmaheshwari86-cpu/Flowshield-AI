@@ -1,0 +1,98 @@
+# ml/configs/regions/tripura.yaml
+# Flowshield — Tripura Regional Configuration
+# Manu, Deo, Gomti, Muhuri River Basins
+
+region:
+  slug: "tripura"
+  display_name: "Tripura"
+  state: "Tripura"
+  primary_basin: "Manu, Deo, Gomti, Muhuri"
+  climate_zone: "Sub-tropical humid monsoon lowland/hills"
+
+boundary:
+  lat_min: 22.90
+  lat_max: 24.55
+  lon_min: 91.10
+  lon_max: 92.35
+
+stations:
+  AGR_GMT_01:
+    name: "Agartala / Haora River"
+    latitude: 23.8315
+    longitude: 91.2868
+    elevation_m: 12.8
+    catchment_slope_deg: 2.0
+    dist_to_river_m: 30.0
+    upstream_drainage_sqkm: 560.0
+    role: "train"
+  DMB_MNU_02:
+    name: "Dharmanagar / Manu River"
+    latitude: 24.3770
+    longitude: 92.1660
+    elevation_m: 35.0
+    catchment_slope_deg: 5.0
+    dist_to_river_m: 25.0
+    upstream_drainage_sqkm: 1200.0
+    role: "train"
+  UDP_GMT_03:
+    name: "Udaipur / Gomti River"
+    latitude: 23.5330
+    longitude: 91.4880
+    elevation_m: 20.0
+    catchment_slope_deg: 3.0
+    dist_to_river_m: 15.0
+    upstream_drainage_sqkm: 2400.0
+    role: "train"
+  BLN_DEO_04:
+    name: "Belonia / Muhuri River"
+    latitude: 23.2350
+    longitude: 91.4520
+    elevation_m: 8.0
+    catchment_slope_deg: 1.5
+    dist_to_river_m: 20.0
+    upstream_drainage_sqkm: 1100.0
+    role: "spatial_holdout_val"
+  JMP_JMP_05:
+    name: "Jampui Hills / Deo River"
+    latitude: 24.1560
+    longitude: 92.2050
+    elevation_m: 820.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 200.0
+    upstream_drainage_sqkm: 450.0
+    role: "train"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (limited CWC coverage)"
+    - "SDMA Tripura historical records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"
+
+data_quality_notes:
+  - "Low-lying riverine floodplain — annual flooding is common"
+  - "Limited CWC gauge coverage"
+  - "May receive VALIDATION_ONLY if event count < 30"

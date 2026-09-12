@@ -1,0 +1,23 @@
+{
+  "drill_id": "DRILL-DR-CHAOS-PHASE23",
+  "timestamp": "2026-09-11T22:26:50.140047+00:00",
+  "experiment": "Simulated catastrophic model artifact bit-rot & checksum invalidation",
+  "detection": {
+    "detection_latency_ms": 2.08,
+    "state_detected": "MODEL_ARTIFACT_INVALID",
+    "errors_flagged": [
+      "Checksum mismatch for v2_selected_model.joblib"
+    ]
+  },
+  "recovery": {
+    "mttr_seconds": 0.02,
+    "mttr_budget_seconds": 60.0,
+    "status": "RECOVERY_SUCCESSFUL",
+    "restored_baseline_state": "MODEL_READY"
+  },
+  "re_promotion": {
+    "re_promotion_seconds": 0.12,
+    "final_production_state": "MODEL_READY"
+  },
+  "verdict": "DRILL_PASSED_DISASTER_RECOVERY_VERIFIED"
+}

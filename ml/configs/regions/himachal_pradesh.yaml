@@ -1,0 +1,124 @@
+# ml/configs/regions/himachal_pradesh.yaml
+# Flowshield — Himachal Pradesh Regional Configuration (Reference Architecture)
+# Beas River Basin, Mandi District
+
+region:
+  slug: "himachal_pradesh"
+  display_name: "Himachal Pradesh"
+  state: "Himachal Pradesh"
+  primary_basin: "Beas River Basin"
+  climate_zone: "Western Himalayan montane"
+
+boundary:
+  lat_min: 31.40
+  lat_max: 32.10
+  lon_min: 76.60
+  lon_max: 77.40
+
+stations:
+  MND_URBAN_01:
+    name: "Mandi Urban / Victoria Bridge"
+    latitude: 31.7100
+    longitude: 76.9320
+    elevation_m: 760.0
+    catchment_slope_deg: 16.0
+    dist_to_river_m: 35.0
+    upstream_drainage_sqkm: 6350.0
+    role: "train"
+  PND_DAM_02:
+    name: "Pandoh Dam Reservoir"
+    latitude: 31.6681
+    longitude: 77.0583
+    elevation_m: 895.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 45.0
+    upstream_drainage_sqkm: 5400.0
+    role: "spatial_holdout_val"
+  AUT_JNC_03:
+    name: "Aut Junction / Larji Dam"
+    latitude: 31.7250
+    longitude: 77.2100
+    elevation_m: 980.0
+    catchment_slope_deg: 31.0
+    dist_to_river_m: 60.0
+    upstream_drainage_sqkm: 5100.0
+    role: "train"
+  THL_GRG_04:
+    name: "Thalout / Beas Gorge"
+    latitude: 31.7120
+    longitude: 77.1850
+    elevation_m: 940.0
+    catchment_slope_deg: 34.0
+    dist_to_river_m: 50.0
+    upstream_drainage_sqkm: 4920.0
+    role: "train"
+  JGN_VLY_05:
+    name: "Joginder Nagar / Uhl River"
+    latitude: 31.9820
+    longitude: 76.7720
+    elevation_m: 1220.0
+    catchment_slope_deg: 26.0
+    dist_to_river_m: 110.0
+    upstream_drainage_sqkm: 1120.0
+    role: "train"
+  DHR_KHD_06:
+    name: "Dharampur Khad / Son River"
+    latitude: 31.7850
+    longitude: 76.8200
+    elevation_m: 850.0
+    catchment_slope_deg: 19.5
+    dist_to_river_m: 95.0
+    upstream_drainage_sqkm: 850.0
+    role: "spatial_holdout_val"
+  SDR_BSN_07:
+    name: "Sundernagar / Suketi Khad"
+    latitude: 31.5320
+    longitude: 76.9110
+    elevation_m: 860.0
+    catchment_slope_deg: 15.0
+    dist_to_river_m: 140.0
+    upstream_drainage_sqkm: 1950.0
+    role: "train"
+
+reference_events:
+  - event: "July 2023 Beas Basin Catastrophic Flash Flood"
+    date_start: "2023-07-08"
+    date_end: "2023-07-11"
+    peak_discharge_cumec: 3800.0
+    source: "HPSDMA Disaster Report 2023; CWC Flood Bulletin July 2023"
+  - event: "August 2023 Dharampur Son Khad Cloudburst"
+    date_start: "2023-08-12"
+    date_end: "2023-08-15"
+    peak_discharge_cumec: 2100.0
+    source: "HPSDMA Flash Flood Assessment August 2023"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-08-31"
+
+holdout_period:
+  start: "2023-09-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (CWC Beas Basin gauges)"
+    - "HiFlo-DAT Himalayan Flood Database"
+    - "HPSDMA historical event records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

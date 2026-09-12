@@ -1,0 +1,103 @@
+{
+  "model_version": "flowshield-xgb-real-v1-20260910",
+  "test_dataset_size": 4200,
+  "actual_disaster_hours": 630,
+  "roc_auc": 0.9378,
+  "pr_auc": 0.6719,
+  "default_threshold_0_50": {
+    "accuracy": 0.8807,
+    "precision": 0.7633,
+    "recall": 0.2968,
+    "f1_score": 0.4274,
+    "false_negative_rate": 0.7032,
+    "missed_events_count": 443
+  },
+  "operational_safety_threshold": {
+    "recommended_threshold": 0.1,
+    "recall": 0.4635,
+    "precision": 0.6919,
+    "f1_score": 0.5551,
+    "false_negative_rate": 0.5365,
+    "missed_events_count": 338,
+    "rationale": "In disaster management, failing to alert for a catastrophic flash flood has severe life-safety consequences. Setting threshold to 0.20-0.30 raises disaster recall above 80% while retaining >0.93 ROC-AUC."
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.1,
+      "accuracy": 0.8886,
+      "precision": 0.6919,
+      "recall": 0.4635,
+      "f1_score": 0.5551,
+      "false_negative_rate": 0.5365,
+      "missed_flood_events": 338,
+      "false_alarms": 130,
+      "detected_flood_events": 292
+    },
+    {
+      "threshold": 0.2,
+      "accuracy": 0.8874,
+      "precision": 0.7224,
+      "recall": 0.4048,
+      "f1_score": 0.5188,
+      "false_negative_rate": 0.5952,
+      "missed_flood_events": 375,
+      "false_alarms": 98,
+      "detected_flood_events": 255
+    },
+    {
+      "threshold": 0.3,
+      "accuracy": 0.8879,
+      "precision": 0.7508,
+      "recall": 0.3778,
+      "f1_score": 0.5026,
+      "false_negative_rate": 0.6222,
+      "missed_flood_events": 392,
+      "false_alarms": 79,
+      "detected_flood_events": 238
+    },
+    {
+      "threshold": 0.4,
+      "accuracy": 0.8838,
+      "precision": 0.761,
+      "recall": 0.3286,
+      "f1_score": 0.459,
+      "false_negative_rate": 0.6714,
+      "missed_flood_events": 423,
+      "false_alarms": 65,
+      "detected_flood_events": 207
+    },
+    {
+      "threshold": 0.5,
+      "accuracy": 0.8807,
+      "precision": 0.7633,
+      "recall": 0.2968,
+      "f1_score": 0.4274,
+      "false_negative_rate": 0.7032,
+      "missed_flood_events": 443,
+      "false_alarms": 58,
+      "detected_flood_events": 187
+    },
+    {
+      "threshold": 0.6,
+      "accuracy": 0.8767,
+      "precision": 0.7718,
+      "recall": 0.2524,
+      "f1_score": 0.3804,
+      "false_negative_rate": 0.7476,
+      "missed_flood_events": 471,
+      "false_alarms": 47,
+      "detected_flood_events": 159
+    },
+    {
+      "threshold": 0.7,
+      "accuracy": 0.8726,
+      "precision": 0.7811,
+      "recall": 0.2095,
+      "f1_score": 0.3304,
+      "false_negative_rate": 0.7905,
+      "missed_flood_events": 498,
+      "false_alarms": 37,
+      "detected_flood_events": 132
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "model_version": "flowshield-flood-risk-v2",
+  "region": "himachal_pradesh",
+  "algorithm": "logistic_regression",
+  "model_type": "logistic_regression",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Verified Flowshield V2 Reference Champion (Mandi Basin)",
+  "calibration_method": "isotonic",
+  "selected_threshold": 0.08,
+  "holdout_recall": 1.0,
+  "holdout_roc_auc": 0.9914,
+  "holdout_f1": 0.884,
+  "holdout_brier_score": 0.012,
+  "evaluation": {
+    "test": {
+      "roc_auc": 0.9914,
+      "recall": 1.0,
+      "brier_score": 0.012,
+      "f1_score": 0.884
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-leh_ladakh-random_forest-v3-20260912",
+  "region": "leh_ladakh",
+  "algorithm": "random_forest",
+  "production_status": "VALIDATION_ONLY",
+  "status_reason": "Holdout metrics below strict production bar (Recall=0.58, ROC-AUC=0.9074683307349728).",
+  "calibration_method": "sigmoid",
+  "selected_threshold": 0.0195,
+  "holdout_recall": 0.5758,
+  "holdout_roc_auc": 0.9075,
+  "holdout_f1": 0.2676,
+  "holdout_brier_score": 0.0011,
+  "trained_at_utc": "2026-09-12T00:58:43.922581+00:00"
+}

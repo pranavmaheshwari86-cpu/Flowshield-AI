@@ -1,0 +1,98 @@
+# ml/configs/regions/manipur.yaml
+# Flowshield — Manipur Regional Configuration
+# Barak, Imphal, Iril, Manipur River Basins
+
+region:
+  slug: "manipur"
+  display_name: "Manipur"
+  state: "Manipur"
+  primary_basin: "Barak, Imphal, Iril River Basins"
+  climate_zone: "Sub-tropical humid monsoon hills / valley"
+
+boundary:
+  lat_min: 23.80
+  lat_max: 25.70
+  lon_min: 93.00
+  lon_max: 94.80
+
+stations:
+  IMP_IMP_01:
+    name: "Imphal / Imphal River Valley"
+    latitude: 24.8170
+    longitude: 93.9368
+    elevation_m: 786.0
+    catchment_slope_deg: 6.0
+    dist_to_river_m: 50.0
+    upstream_drainage_sqkm: 1450.0
+    role: "train"
+  BIS_IRL_02:
+    name: "Bishnupur / Loktak Lake"
+    latitude: 24.6310
+    longitude: 93.7820
+    elevation_m: 770.0
+    catchment_slope_deg: 4.0
+    dist_to_river_m: 30.0
+    upstream_drainage_sqkm: 980.0
+    role: "train"
+  CHR_BRK_03:
+    name: "Churachandpur / Barak Headwaters"
+    latitude: 24.3340
+    longitude: 93.6800
+    elevation_m: 920.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 140.0
+    upstream_drainage_sqkm: 1200.0
+    role: "spatial_holdout_val"
+  JRB_IRL_04:
+    name: "Jiribam / Barak River"
+    latitude: 24.7930
+    longitude: 93.1260
+    elevation_m: 28.0
+    catchment_slope_deg: 3.0
+    dist_to_river_m: 20.0
+    upstream_drainage_sqkm: 8900.0
+    role: "train"
+  TMN_IMP_05:
+    name: "Thoubal / Thoubal River"
+    latitude: 24.6340
+    longitude: 94.0930
+    elevation_m: 790.0
+    catchment_slope_deg: 8.0
+    dist_to_river_m: 55.0
+    upstream_drainage_sqkm: 620.0
+    role: "train"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (limited CWC coverage)"
+    - "SDMA Manipur historical records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"
+
+data_quality_notes:
+  - "Imphal Valley is low-lying and flood-prone (annually)"
+  - "Limited CWC gauge network in NE India"
+  - "Loktak Lake flooding is a recurrent verified phenomenon"

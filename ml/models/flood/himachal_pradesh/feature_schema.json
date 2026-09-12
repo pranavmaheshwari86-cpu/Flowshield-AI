@@ -1,0 +1,86 @@
+{
+  "schema_version": "3.0.0",
+  "schema_hash": "ae77179d06443b105b7e0b6d156fd2ab5415e3d4ae0b2c01ed5a006468c5853e",
+  "canonical_features": [
+    "rainfall_1h_mm",
+    "rainfall_3h_mm",
+    "rainfall_6h_mm",
+    "rainfall_24h_mm",
+    "rainfall_72h_mm",
+    "soil_saturation_pct",
+    "deep_soil_saturation_pct",
+    "temperature_c",
+    "relative_humidity_pct",
+    "surface_pressure_hpa",
+    "wind_speed_kmh",
+    "elevation_m",
+    "catchment_slope_deg",
+    "dist_to_river_m",
+    "upstream_drainage_sqkm"
+  ],
+  "target_column": "flood_occurred",
+  "feature_count": 15,
+  "region": "himachal_pradesh",
+  "feature_importances": [
+    {
+      "feature": "temperature_c",
+      "importance": 0.1986
+    },
+    {
+      "feature": "relative_humidity_pct",
+      "importance": 0.1512
+    },
+    {
+      "feature": "rainfall_72h_mm",
+      "importance": 0.1501
+    },
+    {
+      "feature": "surface_pressure_hpa",
+      "importance": 0.1469
+    },
+    {
+      "feature": "catchment_slope_deg",
+      "importance": 0.0776
+    },
+    {
+      "feature": "rainfall_6h_mm",
+      "importance": 0.0704
+    },
+    {
+      "feature": "elevation_m",
+      "importance": 0.0523
+    },
+    {
+      "feature": "upstream_drainage_sqkm",
+      "importance": 0.0522
+    },
+    {
+      "feature": "deep_soil_saturation_pct",
+      "importance": 0.0391
+    },
+    {
+      "feature": "soil_saturation_pct",
+      "importance": 0.0195
+    },
+    {
+      "feature": "rainfall_1h_mm",
+      "importance": 0.0156
+    },
+    {
+      "feature": "rainfall_3h_mm",
+      "importance": 0.008
+    },
+    {
+      "feature": "wind_speed_kmh",
+      "importance": 0.0073
+    },
+    {
+      "feature": "dist_to_river_m",
+      "importance": 0.006
+    },
+    {
+      "feature": "rainfall_24h_mm",
+      "importance": 0.0052
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "selected_threshold": 0.08,
+  "advisory": 0.02,
+  "watch": 0.04,
+  "warning": 0.08,
+  "critical": 0.15
+}

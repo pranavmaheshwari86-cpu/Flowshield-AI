@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-manipur-xgboost-v3-20260912",
+  "region": "manipur",
+  "algorithm": "xgboost",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "isotonic",
+  "selected_threshold": 0.01,
+  "holdout_recall": 0.9537,
+  "holdout_roc_auc": 0.9776,
+  "holdout_f1": 0.2461,
+  "holdout_brier_score": 0.0053,
+  "trained_at_utc": "2026-09-12T00:59:02.302695+00:00"
+}

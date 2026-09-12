@@ -1,0 +1,107 @@
+:root {
+  /* Brand & Theme Colors */
+  --bg-darkest: #001327;
+  --bg-primary: #0a1628;
+  --bg-secondary: #0f213e;
+  --bg-tertiary: #162a4d;
+  --bg-card: rgba(5, 25, 47, 0.72);
+  --bg-glass: rgba(5, 25, 47, 0.72);
+  --border-subtle: rgba(50, 100, 130, 0.20);
+  --border-medium: rgba(61, 139, 180, 0.25);
+  --border-highlight: rgba(40, 120, 170, 0.42);
+
+  /* Master Himalayan Navy Palette */
+  --flow-abyss: #001327;
+  --flow-basin: #0D1B2A;
+  --flow-ridge: #11263A;
+  --flow-boundary: #18344A;
+  --flow-surface: rgba(5, 25, 47, 0.72);
+  --flow-surface-hover: rgba(8, 33, 62, 0.82);
+  --flow-surface-elevated: rgba(12, 38, 70, 0.85);
+
+  /* Flowshield Brand */
+  --flow-primary: #14B8A6;
+  --flow-primary-bright: #22D3EE;
+  --flow-primary-glow: rgba(20, 184, 166, 0.20);
+  --flow-primary-tint: rgba(20, 184, 166, 0.16);
+  --flow-glacier: #E8F2F9;
+  --flow-snow: #F7FBFE;
+
+  /* Typography Colors */
+  --text-primary: #F1F7FA;
+  --text-secondary: #C5D4DF;
+  --text-muted: #7F95A5;
+  --text-link: #22D3EE;
+  --flow-text: #F1F7FA;
+  --flow-text-secondary: #C5D4DF;
+  --flow-text-muted: #7F95A5;
+  --flow-text-dim: #607789;
+  --flow-text-white: #FFFFFF;
+
+  /* Risk Severity Colors */
+  --risk-critical: #C62828;
+  --risk-critical-bg: rgba(198, 40, 40, 0.18);
+  --risk-critical-border: rgba(198, 40, 40, 0.65);
+  --risk-warning: #E05A33;
+  --risk-warning-bg: rgba(224, 90, 51, 0.18);
+  --risk-warning-border: rgba(224, 90, 51, 0.60);
+  --risk-advisory: #D99A06;
+  --risk-advisory-bg: rgba(217, 154, 6, 0.18);
+  --risk-advisory-border: rgba(217, 154, 6, 0.60);
+  --risk-watch: #0F766E;
+  --risk-watch-bg: rgba(15, 118, 110, 0.18);
+  --risk-watch-border: rgba(15, 118, 110, 0.60);
+  --risk-low: #2D6A4F;
+  --risk-low-bg: rgba(45, 106, 79, 0.18);
+  --risk-low-border: rgba(45, 106, 79, 0.60);
+  --risk-severe: #B71C1C;
+  --risk-severe-bg: rgba(183, 28, 28, 0.25);
+  --risk-severe-border: rgba(183, 28, 28, 0.70);
+
+  /* Physical GIS Domain Colors */
+  --domain-river: #3B82B6;
+  --domain-debris: #8B6914;
+  --domain-route: #2D6A4F;
+  --domain-ai: #8B5CF6;
+
+  /* Topographic Contour Lines */
+  --contour-minor: rgba(125, 180, 205, 0.045);
+  --contour-major: rgba(80, 150, 180, 0.10);
+  --contour-boundary: rgba(80, 150, 180, 0.14);
+
+  /* Functional Accents */
+  --accent-cyan: #22D3EE;
+  --accent-blue: #3B82B6;
+  --accent-indigo: #6366F1;
+  --accent-purple: #8B5CF6;
+  --accent-river: #3B82B6;
+  --accent-shelter: #2D6A4F;
+  --accent-danger: #C62828;
+
+  /* Shadows & Glows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-glow-cyan: 0 0 15px rgba(34, 211, 238, 0.35);
+  --shadow-glow-red: 0 0 15px rgba(198, 40, 40, 0.45);
+  --shadow-glow-amber: 0 0 15px rgba(217, 154, 6, 0.35);
+  --shadow-control: 0 8px 24px rgba(0, 0, 0, 0.30);
+  --shadow-critical-glow: 0 0 20px rgba(198, 40, 40, 0.20);
+  --shadow-active-glow: 0 0 18px rgba(20, 184, 166, 0.18);
+
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+
+  /* Layout Constants */
+  --header-height: 68px;
+  --sidebar-width: 122px;
+  --statusbar-height: 92px;
+  --radius-sm: 4px;
+  --radius-button: 8px;
+  --radius-card: 10px;
+  --radius-lg: 12px;
+  --radius-badge: 9999px;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}

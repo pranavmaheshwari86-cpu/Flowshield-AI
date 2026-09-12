@@ -1,0 +1,27 @@
+# ml/configs/evaluation_config.yaml
+# FlowShield — Model Evaluation & Validation Criteria (v2.5)
+
+evaluation_split:
+  name: "final_test_locked.csv"
+  samples: 5829
+  disaster_events: 105
+
+acceptance_criteria:
+  min_recall_at_operational_threshold: 0.85
+  min_roc_auc: 0.90
+  min_pr_auc: 0.40
+  max_expected_calibration_error: 0.05
+  max_brier_score_loss: 0.05
+
+evaluation_metrics:
+  - "accuracy"
+  - "precision"
+  - "recall"
+  - "f1_score"
+  - "roc_auc"
+  - "pr_auc"
+  - "brier_score"
+  - "expected_calibration_error"
+
+calibration_bins: 10
+strategy: "uniform"

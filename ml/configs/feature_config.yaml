@@ -1,0 +1,142 @@
+# ml/configs/feature_config.yaml
+# FlowShield — Canonical 15-Feature Contract Configuration (v2.5)
+
+schema_version: "2.5.0"
+target_column: "flood_occurred"
+
+features:
+  - name: "rainfall_1h_mm"
+    display_name: "1-Hour Rainfall"
+    unit: "mm"
+    type: "float"
+    min: 0.0
+    max: 250.0
+    impute_strategy: "median"
+    median_fallback: 0.0
+
+  - name: "rainfall_3h_mm"
+    display_name: "3-Hour Cumulative Rainfall"
+    unit: "mm"
+    type: "float"
+    min: 0.0
+    max: 450.0
+    impute_strategy: "median"
+    median_fallback: 0.0
+
+  - name: "rainfall_6h_mm"
+    display_name: "6-Hour Cumulative Rainfall"
+    unit: "mm"
+    type: "float"
+    min: 0.0
+    max: 600.0
+    impute_strategy: "median"
+    median_fallback: 0.0
+
+  - name: "rainfall_24h_mm"
+    display_name: "24-Hour Cumulative Rainfall"
+    unit: "mm"
+    type: "float"
+    min: 0.0
+    max: 1000.0
+    impute_strategy: "median"
+    median_fallback: 0.5
+
+  - name: "rainfall_72h_mm"
+    display_name: "72-Hour Cumulative Rainfall"
+    unit: "mm"
+    type: "float"
+    min: 0.0
+    max: 1800.0
+    impute_strategy: "median"
+    median_fallback: 2.0
+
+  - name: "soil_saturation_pct"
+    display_name: "Topsoil Saturation (0-7cm)"
+    unit: "%"
+    type: "float"
+    min: 0.0
+    max: 100.0
+    impute_strategy: "median"
+    median_fallback: 45.0
+
+  - name: "deep_soil_saturation_pct"
+    display_name: "Subsurface Soil Saturation (7-28cm)"
+    unit: "%"
+    type: "float"
+    min: 0.0
+    max: 100.0
+    impute_strategy: "median"
+    median_fallback: 50.0
+
+  - name: "temperature_c"
+    display_name: "Air Temperature (2m)"
+    unit: "°C"
+    type: "float"
+    min: -30.0
+    max: 55.0
+    impute_strategy: "median"
+    median_fallback: 18.0
+
+  - name: "relative_humidity_pct"
+    display_name: "Relative Humidity"
+    unit: "%"
+    type: "float"
+    min: 0.0
+    max: 100.0
+    impute_strategy: "median"
+    median_fallback: 65.0
+
+  - name: "surface_pressure_hpa"
+    display_name: "Atmospheric Surface Pressure"
+    unit: "hPa"
+    type: "float"
+    min: 500.0
+    max: 1100.0
+    impute_strategy: "median"
+    median_fallback: 920.0
+
+  - name: "wind_speed_kmh"
+    display_name: "Wind Speed (10m)"
+    unit: "km/h"
+    type: "float"
+    min: 0.0
+    max: 200.0
+    impute_strategy: "median"
+    median_fallback: 8.5
+
+  - name: "elevation_m"
+    display_name: "Digital Elevation (SRTM)"
+    unit: "m"
+    type: "float"
+    min: 200.0
+    max: 6000.0
+    impute_strategy: "median"
+    median_fallback: 1200.0
+
+  - name: "catchment_slope_deg"
+    display_name: "Terrain Slope Gradient"
+    unit: "degrees"
+    type: "float"
+    min: 0.0
+    max: 80.0
+    impute_strategy: "median"
+    median_fallback: 22.0
+
+  - name: "dist_to_river_m"
+    display_name: "Proximity to Nearest River Centerline"
+    unit: "m"
+    type: "float"
+    min: 0.0
+    max: 50000.0
+    impute_strategy: "median"
+    median_fallback: 350.0
+
+  - name: "upstream_drainage_sqkm"
+    display_name: "Upstream Contributing Catchment Area"
+    unit: "km²"
+    type: "float"
+    min: 0.0
+    max: 50000.0
+    impute_strategy: "median"
+    median_fallback: 2400.0
+

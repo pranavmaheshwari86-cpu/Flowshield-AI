@@ -1,0 +1,22 @@
+# ml/configs/model_config.yaml
+# FlowShield — Production Decision Pipeline Configuration (v2.5)
+
+model_version: "2.5.0"
+model_family: "CalibratedLogisticRegression"
+
+decision_thresholds:
+  operational_alert_threshold: 0.08
+  severity_tiers:
+    LOW: 0.08
+    MODERATE: 0.20
+    HIGH: 0.40
+    CRITICAL: 0.60
+
+operational_sla:
+  max_inference_latency_ms: 10.0
+  max_batch_latency_ms: 100.0
+  shap_sample_background_size: 100
+
+safety_guarantees:
+  minimum_catastrophe_recall: 0.85
+  fallback_mode_on_invalid_data: "INSUFFICIENT_DATA"

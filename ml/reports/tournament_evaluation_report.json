@@ -1,0 +1,68 @@
+{
+  "phase": "PHASE_6_CANDIDATE_MODEL_TOURNAMENT",
+  "timestamp": "2026-09-11T21:57:04Z",
+  "eval_split": "val_tune_split.csv (Spatial Holdout)",
+  "eval_samples": 2284,
+  "eval_positives": 94,
+  "rankings": [
+    "LogisticRegression",
+    "RandomForest_Constrained",
+    "XGBoost_Regularized"
+  ],
+  "winner": "LogisticRegression",
+  "winner_composite_score": 0.6578,
+  "candidates": {
+    "LogisticRegression": {
+      "artifact_path": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\candidate_logisticregression.joblib",
+      "train_time_sec": 0.044,
+      "latency_p99_ms": 0.01,
+      "train_roc_auc": 0.9788,
+      "val_roc_auc": 0.9318,
+      "val_pr_auc": 0.4598,
+      "val_brier_score": 0.0658,
+      "val_ece": 0.0906,
+      "recall_at_tau": 1.0,
+      "precision_at_tau": 0.1426,
+      "f1_at_tau": 0.2497,
+      "fpr_at_tau": 0.258,
+      "generalization_gap": 0.0471,
+      "composite_score": 0.6578,
+      "passes_operational_bars": false
+    },
+    "XGBoost_Regularized": {
+      "artifact_path": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\candidate_xgboost_regularized.joblib",
+      "train_time_sec": 0.29,
+      "latency_p99_ms": 0.02,
+      "train_roc_auc": 0.9999,
+      "val_roc_auc": 0.8661,
+      "val_pr_auc": 0.1506,
+      "val_brier_score": 0.0758,
+      "val_ece": 0.0798,
+      "recall_at_tau": 0.4362,
+      "precision_at_tau": 0.1367,
+      "f1_at_tau": 0.2081,
+      "fpr_at_tau": 0.1183,
+      "generalization_gap": 0.1338,
+      "composite_score": 0.5326,
+      "passes_operational_bars": false
+    },
+    "RandomForest_Constrained": {
+      "artifact_path": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\models\\tournament\\candidate_randomforest_constrained.joblib",
+      "train_time_sec": 0.581,
+      "latency_p99_ms": 0.37,
+      "train_roc_auc": 0.9991,
+      "val_roc_auc": 0.8665,
+      "val_pr_auc": 0.1656,
+      "val_brier_score": 0.0548,
+      "val_ece": 0.0531,
+      "recall_at_tau": 0.7766,
+      "precision_at_tau": 0.1362,
+      "f1_at_tau": 0.2317,
+      "fpr_at_tau": 0.2114,
+      "generalization_gap": 0.1326,
+      "composite_score": 0.5985,
+      "passes_operational_bars": false
+    }
+  },
+  "status": "ALL_CHECKS_PASSED"
+}

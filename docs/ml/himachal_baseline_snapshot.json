@@ -1,0 +1,46 @@
+{
+  "snapshot_timestamp": "2026-09-12T04:15:00Z",
+  "git_commit": "d7161cf9be40a3e5389ae37421f6ec710e553578",
+  "dataset_hashes": {
+    "mandi_era5_hourly_raw": "6193a5b678d00e314836d5a2be0f0a1e2e52850acad74f5155ed7f9bcd8913b0",
+    "india_flood_inventory_v3": "ef9ab2cd0db7bf917dcc22c7cb094ec599f5013ef1b96ba525d816f26ff1b108",
+    "beas_basin_historical_floods": "3433582fac667a7bbd988e4aedc8b41f28ed141835864a974bd82dcec9b1f057"
+  },
+  "model_hashes": {
+    "v2_selected_model": "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb",
+    "v2_calibrator": "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780",
+    "v2_preprocessor": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c",
+    "v2_decision_pipeline": "cddbc38cc0de334d3f51095ccce8e35feeb7a62cefb9974536447bde24cc6ea9"
+  },
+  "feature_schema_hash": "2c222bceb756c571ce1b4b727cdff03a1edd5936283b22f82d472816a024e36c",
+  "threshold": 0.08,
+  "temporal_partitions": {
+    "training_period": {
+      "start": "2022-07-01T00:00:00Z",
+      "end": "2022-07-31T23:00:00Z",
+      "rows": 5208,
+      "flood_hours": 462
+    },
+    "validation_period": {
+      "start": "2023-07-01T00:00:00Z",
+      "end": "2023-07-31T23:00:00Z",
+      "rows": 5208,
+      "flood_hours": 917
+    },
+    "locked_holdout_period": {
+      "start": "2023-08-01T00:00:00Z",
+      "end": "2023-08-31T23:00:00Z",
+      "rows": 5208,
+      "flood_hours": 1204
+    }
+  },
+  "metrics_summary_holdout": {
+    "ladder_rung_2_heuristic_roc": 0.8447,
+    "ladder_rung_2_heuristic_pr": 0.6506,
+    "ladder_rung_3_rainfall_only_f1": 0.5855,
+    "ladder_rung_7_full_15_calibrated_f1_tau_0_08": 0.3755,
+    "ladder_rung_7_full_15_calibrated_recall_tau_0_08": 1.0,
+    "brier_score": 0.1676,
+    "ece": 0.121
+  }
+}

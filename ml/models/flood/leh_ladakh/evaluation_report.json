@@ -1,0 +1,51 @@
+{
+  "region": "leh_ladakh",
+  "model_architecture": "random_forest",
+  "production_status": "VALIDATION_ONLY",
+  "status_reason": "Holdout metrics below strict production bar (Recall=0.58, ROC-AUC=0.9074683307349728).",
+  "threshold_used": 0.0195,
+  "holdout_sample_count": 21725,
+  "actual_floods_count": 33,
+  "missed_floods_count": 14,
+  "detected_floods_count": 19,
+  "false_alarms_count": 90,
+  "metrics": {
+    "accuracy": 0.9952,
+    "precision": 0.1743,
+    "recall": 0.5758,
+    "f1_score": 0.2676,
+    "macro_f1": 0.6326,
+    "roc_auc": 0.9075,
+    "pr_auc": 0.4744,
+    "brier_score": 0.0011,
+    "expected_calibration_error": 0.0006,
+    "false_negative_rate": 0.4242,
+    "false_positive_rate": 0.0041
+  },
+  "confusion_matrix": {
+    "true_negatives": 21602,
+    "false_positives": 90,
+    "false_negatives": 14,
+    "true_positives": 19
+  },
+  "multi_tier_alert_performance": {
+    "advisory_threshold": {
+      "threshold": 0.014,
+      "recall": 0.5758,
+      "precision": 0.1429,
+      "predicted_alerts": 133
+    },
+    "watch_threshold": {
+      "threshold": 0.0195,
+      "recall": 0.5758,
+      "precision": 0.1743,
+      "predicted_alerts": 109
+    },
+    "warning_threshold": {
+      "threshold": 0.0292,
+      "recall": 0.5455,
+      "precision": 0.2022,
+      "predicted_alerts": 89
+    }
+  }
+}

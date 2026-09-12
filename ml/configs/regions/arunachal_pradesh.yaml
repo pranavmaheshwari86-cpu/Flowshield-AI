@@ -1,0 +1,102 @@
+# ml/configs/regions/arunachal_pradesh.yaml
+# Flowshield — Arunachal Pradesh Regional Configuration
+# Siang (Brahmaputra), Subansiri, Kameng, Lohit River Basins
+
+region:
+  slug: "arunachal_pradesh"
+  display_name: "Arunachal Pradesh"
+  state: "Arunachal Pradesh"
+  primary_basin: "Siang, Subansiri, Kameng, Lohit"
+  climate_zone: "Eastern Himalayan subtropical / monsoon"
+
+boundary:
+  lat_min: 26.50
+  lat_max: 29.50
+  lon_min: 91.50
+  lon_max: 97.50
+
+stations:
+  ITN_SNG_01:
+    name: "Itanagar / Dikrong River"
+    latitude: 27.0844
+    longitude: 93.6053
+    elevation_m: 350.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 120.0
+    upstream_drainage_sqkm: 1800.0
+    role: "train"
+  PSG_SNG_02:
+    name: "Pasighat / Siang River"
+    latitude: 28.0650
+    longitude: 95.3280
+    elevation_m: 155.0
+    catchment_slope_deg: 12.0
+    dist_to_river_m: 30.0
+    upstream_drainage_sqkm: 22300.0
+    role: "train"
+  ALN_SUB_03:
+    name: "Aalo / Siyom River"
+    latitude: 28.1700
+    longitude: 94.7900
+    elevation_m: 310.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 60.0
+    upstream_drainage_sqkm: 4500.0
+    role: "spatial_holdout_val"
+  DPR_SUB_04:
+    name: "Daporijo / Subansiri River"
+    latitude: 27.9900
+    longitude: 94.2200
+    elevation_m: 370.0
+    catchment_slope_deg: 24.0
+    dist_to_river_m: 50.0
+    upstream_drainage_sqkm: 17600.0
+    role: "train"
+  SEP_KMG_05:
+    name: "Seppa / Kameng River"
+    latitude: 27.3400
+    longitude: 92.9700
+    elevation_m: 490.0
+    catchment_slope_deg: 26.0
+    dist_to_river_m: 80.0
+    upstream_drainage_sqkm: 6100.0
+    role: "train"
+  TWN_LOH_06:
+    name: "Tezu / Lohit River"
+    latitude: 27.9200
+    longitude: 96.1600
+    elevation_m: 210.0
+    catchment_slope_deg: 15.0
+    dist_to_river_m: 70.0
+    upstream_drainage_sqkm: 28200.0
+    role: "spatial_holdout_val"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (CWC Brahmaputra tributaries)"
+    - "ASDMA/SDMA AP historical records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"

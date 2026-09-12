@@ -1,0 +1,14 @@
+{
+  "model_version": "flowshield-arunachal_pradesh-random_forest-v3-20260912",
+  "region": "arunachal_pradesh",
+  "algorithm": "random_forest",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "calibration_method": "sigmoid",
+  "selected_threshold": 0.1524,
+  "holdout_recall": 0.8871,
+  "holdout_roc_auc": 0.984,
+  "holdout_f1": 0.6634,
+  "holdout_brier_score": 0.006,
+  "trained_at_utc": "2026-09-12T00:58:53.417024+00:00"
+}

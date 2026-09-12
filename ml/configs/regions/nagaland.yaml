@@ -1,0 +1,98 @@
+# ml/configs/regions/nagaland.yaml
+# Flowshield — Nagaland Regional Configuration
+# Doyang, Dhansiri, Tizu River Basins
+
+region:
+  slug: "nagaland"
+  display_name: "Nagaland"
+  state: "Nagaland"
+  primary_basin: "Doyang, Dhansiri, Tizu"
+  climate_zone: "Sub-tropical humid monsoon hills"
+
+boundary:
+  lat_min: 25.20
+  lat_max: 27.05
+  lon_min: 93.20
+  lon_max: 95.25
+
+stations:
+  KHM_DHN_01:
+    name: "Kohima / Dzükou Valley"
+    latitude: 25.6700
+    longitude: 94.1100
+    elevation_m: 1444.0
+    catchment_slope_deg: 28.0
+    dist_to_river_m: 300.0
+    upstream_drainage_sqkm: 420.0
+    role: "train"
+  DMP_DOY_02:
+    name: "Dimapur / Dhansiri River"
+    latitude: 25.9065
+    longitude: 93.7266
+    elevation_m: 154.0
+    catchment_slope_deg: 8.0
+    dist_to_river_m: 40.0
+    upstream_drainage_sqkm: 3200.0
+    role: "train"
+  MOK_DOY_03:
+    name: "Mokokchung / Doyang River"
+    latitude: 26.3220
+    longitude: 94.5210
+    elevation_m: 1325.0
+    catchment_slope_deg: 22.0
+    dist_to_river_m: 180.0
+    upstream_drainage_sqkm: 1500.0
+    role: "spatial_holdout_val"
+  WKH_TIZ_04:
+    name: "Wokha / Doyang Dam"
+    latitude: 26.1050
+    longitude: 94.2600
+    elevation_m: 1313.0
+    catchment_slope_deg: 20.0
+    dist_to_river_m: 100.0
+    upstream_drainage_sqkm: 2100.0
+    role: "train"
+  ZHT_TIZ_05:
+    name: "Zunheboto / Tizu River"
+    latitude: 25.9600
+    longitude: 94.5200
+    elevation_m: 1400.0
+    catchment_slope_deg: 24.0
+    dist_to_river_m: 150.0
+    upstream_drainage_sqkm: 980.0
+    role: "train"
+
+training_period:
+  start: "2018-01-01"
+  end: "2023-06-30"
+
+validation_period:
+  start: "2023-07-01"
+  end: "2023-12-31"
+
+holdout_period:
+  start: "2024-01-01"
+  end: "2024-06-30"
+
+data_sources:
+  meteorology: "ERA5-Land via Open-Meteo Archive"
+  flood_events:
+    - "IndoFloods (limited CWC coverage)"
+    - "SDMA Nagaland historical records"
+  terrain: "SRTM 30m / Copernicus DEM (pre-computed)"
+
+model_defaults:
+  candidates:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost"
+  recall_bar: 0.85
+  fpr_bar: 0.15
+  calibration_methods:
+    - "isotonic"
+    - "sigmoid"
+
+data_quality_notes:
+  - "Limited CWC gauge coverage in NE India"
+  - "Fewer verified flood events compared to Himalayan basins"
+  - "Model may receive VALIDATION_ONLY status if event count < 30"

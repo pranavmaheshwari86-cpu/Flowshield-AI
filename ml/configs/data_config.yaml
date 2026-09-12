@@ -1,0 +1,53 @@
+# ml/configs/data_config.yaml
+# FlowShield — Authoritative Hydrological Data Configuration (v2.5)
+
+project:
+  name: "FlowShield Flash Flood Early Warning System"
+  problem_statement_id: 26192
+  region: "Mandi District, Himachal Pradesh, India (Beas River Basin)"
+
+raw_sources:
+  era5_hourly:
+    filename: "mandi_era5_hourly_raw.csv"
+    provider: "ECMWF ERA5-Land Reanalysis"
+    temporal_resolution: "Hourly"
+    span: "2014-01-01 to 2023-12-31"
+    total_records: 15624
+  indofloods_catalog:
+    directory: "indofloods"
+    provider: "IIT Gandhinagar & National Hydrology Project"
+    doi: "10.5281/zenodo.14584654"
+    total_events: 4548
+  beas_historical_floods:
+    filename: "beas_basin_historical_floods.csv"
+    provider: "HPSDMA & CWC Historical Event Registry"
+    total_events: 34
+
+processed_data:
+  filename: "mandi_real_hydrology_features.csv"
+  total_rows: 15624
+  total_features: 15
+  target_column: "flood_occurred"
+  class_distribution:
+    negative_count: 14981
+    positive_count: 643
+    imbalance_ratio: 23.3
+
+splits:
+  directory: "ml/data/splits"
+  train_split:
+    filename: "train_split.csv"
+    ratio: 0.70
+    rows: 6857
+  val_tune_split:
+    filename: "val_tune_split.csv"
+    ratio: 0.15
+    rows: 1469
+  val_cal_split:
+    filename: "val_cal_split.csv"
+    ratio: 0.15
+    rows: 1469
+  final_test_locked:
+    filename: "final_test_locked.csv"
+    chronological_holdout: "Zero-leakage test holdout"
+    rows: 5829

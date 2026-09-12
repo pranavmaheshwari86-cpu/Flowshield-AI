@@ -1,0 +1,48 @@
+# ml/configs/training_config.yaml
+# FlowShield — Model Training & Optimization Configuration (v2.5)
+
+reproducibility:
+  random_seed: 26192
+  deterministic: true
+
+champion_algorithm: "LogisticRegression"
+
+preprocessing:
+  scaler: "StandardScaler"
+  imputer:
+    strategy: "median"
+    add_indicator: false
+
+hyperparameters:
+  C: 0.01
+  penalty: "l2"
+  solver: "lbfgs"
+  max_iter: 1000
+  class_weight: "balanced"
+  tol: 1.0e-4
+
+calibration:
+  method: "isotonic"
+  cv: "prefit"
+  evaluation_bins: 10
+
+tournament:
+  candidates:
+    - name: "LogisticRegression_Balanced"
+      model_type: "logistic_regression"
+      C: 0.01
+      penalty: "l2"
+      class_weight: "balanced"
+    - name: "RandomForest_Constrained"
+      model_type: "random_forest"
+      n_estimators: 100
+      max_depth: 6
+      min_samples_leaf: 20
+      class_weight: "balanced"
+    - name: "XGBoost_Regularized"
+      model_type: "xgboost"
+      n_estimators: 100
+      max_depth: 4
+      learning_rate: 0.05
+      scale_pos_weight: 23.35
+      subsample: 0.8

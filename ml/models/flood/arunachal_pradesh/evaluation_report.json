@@ -1,0 +1,51 @@
+{
+  "region": "arunachal_pradesh",
+  "model_architecture": "random_forest",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "threshold_used": 0.1524,
+  "holdout_sample_count": 26070,
+  "actual_floods_count": 381,
+  "missed_floods_count": 43,
+  "detected_floods_count": 338,
+  "false_alarms_count": 300,
+  "metrics": {
+    "accuracy": 0.9868,
+    "precision": 0.5298,
+    "recall": 0.8871,
+    "f1_score": 0.6634,
+    "macro_f1": 0.8283,
+    "roc_auc": 0.984,
+    "pr_auc": 0.7888,
+    "brier_score": 0.006,
+    "expected_calibration_error": 0.0024,
+    "false_negative_rate": 0.1129,
+    "false_positive_rate": 0.0117
+  },
+  "confusion_matrix": {
+    "true_negatives": 25389,
+    "false_positives": 300,
+    "false_negatives": 43,
+    "true_positives": 338
+  },
+  "multi_tier_alert_performance": {
+    "advisory_threshold": {
+      "threshold": 0.091,
+      "recall": 0.9134,
+      "precision": 0.4854,
+      "predicted_alerts": 717
+    },
+    "watch_threshold": {
+      "threshold": 0.1524,
+      "recall": 0.8871,
+      "precision": 0.5298,
+      "predicted_alerts": 638
+    },
+    "warning_threshold": {
+      "threshold": 0.2854,
+      "recall": 0.8425,
+      "precision": 0.6126,
+      "predicted_alerts": 524
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "region": "manipur",
+  "model_architecture": "xgboost",
+  "production_status": "PRODUCTION_READY",
+  "status_reason": "Model passed holdout discrimination, recall, and calibration gates.",
+  "threshold_used": 0.01,
+  "holdout_sample_count": 21725,
+  "actual_floods_count": 324,
+  "missed_floods_count": 15,
+  "detected_floods_count": 309,
+  "false_alarms_count": 1878,
+  "metrics": {
+    "accuracy": 0.9129,
+    "precision": 0.1413,
+    "recall": 0.9537,
+    "f1_score": 0.2461,
+    "macro_f1": 0.5999,
+    "roc_auc": 0.9776,
+    "pr_auc": 0.7976,
+    "brier_score": 0.0053,
+    "expected_calibration_error": 0.0019,
+    "false_negative_rate": 0.0463,
+    "false_positive_rate": 0.0878
+  },
+  "confusion_matrix": {
+    "true_negatives": 19523,
+    "false_positives": 1878,
+    "false_negatives": 15,
+    "true_positives": 309
+  },
+  "multi_tier_alert_performance": {
+    "advisory_threshold": {
+      "threshold": 0.007,
+      "recall": 0.966,
+      "precision": 0.1162,
+      "predicted_alerts": 2694
+    },
+    "watch_threshold": {
+      "threshold": 0.01,
+      "recall": 0.9537,
+      "precision": 0.1413,
+      "predicted_alerts": 2187
+    },
+    "warning_threshold": {
+      "threshold": 0.02,
+      "recall": 0.8765,
+      "precision": 0.3224,
+      "predicted_alerts": 881
+    }
+  }
+}

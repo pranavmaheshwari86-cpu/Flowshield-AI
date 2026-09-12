@@ -1,0 +1,97 @@
+{
+  "timestamp_utc": "2026-09-12T00:58:32.975335Z",
+  "total_regions": 10,
+  "regions": {
+    "himachal_pradesh": {
+      "status": "PRODUCTION_READY",
+      "champion": "logistic_regression",
+      "threshold": 0.029,
+      "recall": 1.0,
+      "roc_auc": 0.9914,
+      "f1_score": 0.0183,
+      "brier_score": 0.1633
+    },
+    "jammu_kashmir": {
+      "status": "PRODUCTION_READY",
+      "champion": "random_forest",
+      "threshold": 0.01,
+      "recall": 0.9043,
+      "roc_auc": 0.9735,
+      "f1_score": 0.407,
+      "brier_score": 0.01
+    },
+    "leh_ladakh": {
+      "status": "VALIDATION_ONLY",
+      "champion": "random_forest",
+      "threshold": 0.0195,
+      "recall": 0.5758,
+      "roc_auc": 0.9075,
+      "f1_score": 0.2676,
+      "brier_score": 0.0011
+    },
+    "sikkim": {
+      "status": "PRODUCTION_READY",
+      "champion": "xgboost",
+      "threshold": 0.2189,
+      "recall": 0.77,
+      "roc_auc": 0.9432,
+      "f1_score": 0.6979,
+      "brier_score": 0.0054
+    },
+    "arunachal_pradesh": {
+      "status": "PRODUCTION_READY",
+      "champion": "random_forest",
+      "threshold": 0.1524,
+      "recall": 0.8871,
+      "roc_auc": 0.984,
+      "f1_score": 0.6634,
+      "brier_score": 0.006
+    },
+    "nagaland": {
+      "status": "PRODUCTION_READY",
+      "champion": "xgboost",
+      "threshold": 0.0195,
+      "recall": 0.8775,
+      "roc_auc": 0.9542,
+      "f1_score": 0.5678,
+      "brier_score": 0.0113
+    },
+    "manipur": {
+      "status": "PRODUCTION_READY",
+      "champion": "xgboost",
+      "threshold": 0.01,
+      "recall": 0.9537,
+      "roc_auc": 0.9776,
+      "f1_score": 0.2461,
+      "brier_score": 0.0053
+    },
+    "mizoram": {
+      "status": "PRODUCTION_READY",
+      "champion": "random_forest",
+      "threshold": 0.0385,
+      "recall": 0.8639,
+      "roc_auc": 0.9612,
+      "f1_score": 0.5925,
+      "brier_score": 0.0111
+    },
+    "meghalaya": {
+      "status": "PRODUCTION_READY",
+      "champion": "random_forest",
+      "threshold": 0.01,
+      "recall": 0.8695,
+      "roc_auc": 0.9231,
+      "f1_score": 0.6355,
+      "brier_score": 0.045
+    },
+    "tripura": {
+      "status": "PRODUCTION_READY",
+      "champion": "random_forest",
+      "threshold": 0.048,
+      "recall": 0.9,
+      "roc_auc": 0.9849,
+      "f1_score": 0.4902,
+      "brier_score": 0.0037
+    }
+  },
+  "duration_seconds": 45.38
+}

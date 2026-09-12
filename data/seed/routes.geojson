@@ -1,0 +1,127 @@
+{
+  "type": "FeatureCollection",
+  "crs": {
+    "type": "name",
+    "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "rt01",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [79.0669, 30.7346],
+          [79.0612, 30.6821],
+          [79.0528, 30.6355],
+          [79.0354, 30.5891],
+          [79.0360, 30.5980]
+        ]
+      },
+      "properties": {
+        "id": "44444444-0000-0000-0000-000000000001",
+        "name": "Kedarnath - Sonprayag Valley Footpath Corridor",
+        "origin_village_id": "11111111-0000-0000-0000-000000000001",
+        "destination_shelter_id": "22222222-0000-0000-0000-000000000001",
+        "distance_km": 16.5,
+        "assessed_risk_score": 25,
+        "is_river_crossing": true,
+        "crossing_coordinates": [79.0528, 30.6355],
+        "notes": "Trek route through Rambara; vulnerable to river surge at bridge points"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rt02",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [79.0354, 30.5891],
+          [79.0125, 30.5512],
+          [79.0018, 30.5280],
+          [79.0250, 30.4990]
+        ]
+      },
+      "properties": {
+        "id": "44444444-0000-0000-0000-000000000002",
+        "name": "Sonprayag - Guptkashi NH107 Motor Road",
+        "origin_village_id": "11111111-0000-0000-0000-000000000004",
+        "destination_shelter_id": "22222222-0000-0000-0000-000000000002",
+        "distance_km": 18.2,
+        "assessed_risk_score": 15,
+        "is_river_crossing": false,
+        "crossing_coordinates": null,
+        "notes": "NH107 all-weather highway, high road embankment"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rt03",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [78.9880, 30.4720],
+          [78.9720, 30.4350],
+          [78.9890, 30.4010]
+        ]
+      },
+      "properties": {
+        "id": "44444444-0000-0000-0000-000000000003",
+        "name": "Kund - Agastyamuni Bypass Road",
+        "origin_village_id": "11111111-0000-0000-0000-000000000009",
+        "destination_shelter_id": "22222222-0000-0000-0000-000000000004",
+        "distance_km": 9.4,
+        "assessed_risk_score": 20,
+        "is_river_crossing": true,
+        "crossing_coordinates": [78.9720, 30.4350],
+        "notes": "Crosses Kakragad low-level causeway; flooded at high river stages"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rt04",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [78.9850, 30.3950],
+          [78.9950, 30.3620],
+          [78.9860, 30.2920]
+        ]
+      },
+      "properties": {
+        "id": "44444444-0000-0000-0000-000000000004",
+        "name": "Tilwara - Rudraprayag Central Highway",
+        "origin_village_id": "11111111-0000-0000-0000-000000000013",
+        "destination_shelter_id": "22222222-0000-0000-0000-000000000005",
+        "distance_km": 11.2,
+        "assessed_risk_score": 10,
+        "is_river_crossing": false,
+        "crossing_coordinates": null,
+        "notes": "Major four-lane road elevated above 100-year flood line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rt05",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [78.9810, 30.2850],
+          [78.9450, 30.2750],
+          [78.9300, 30.2720]
+        ]
+      },
+      "properties": {
+        "id": "44444444-0000-0000-0000-000000000005",
+        "name": "Rudraprayag - Srinagar Garhwal Valley Highway",
+        "origin_village_id": "11111111-0000-0000-0000-000000000014",
+        "destination_shelter_id": "22222222-0000-0000-0000-000000000006",
+        "distance_km": 14.8,
+        "assessed_risk_score": 15,
+        "is_river_crossing": false,
+        "crossing_coordinates": null,
+        "notes": "Direct corridor to Srinagar University relief shelter"
+      }
+    }
+  ]
+}
