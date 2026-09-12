@@ -1,0 +1,11 @@
+{
+  "name": "flowshield-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "build": "npm --prefix apps/web run build",
+    "dev": "npm --prefix apps/web run dev"
+  }
+}
