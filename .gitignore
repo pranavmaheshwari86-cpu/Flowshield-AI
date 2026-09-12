@@ -27,3 +27,8 @@ apps/web/dist/
 # OS Artifacts
 .DS_Store
 Thumbs.db
+
+# Local Database Backups
+*.db.bak
+*.db-journal
+
