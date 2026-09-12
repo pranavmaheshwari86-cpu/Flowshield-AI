@@ -427,6 +427,25 @@ def _seed_extended_settlements_and_routes(db):
             db.add(record)
     db.commit()
 
+    # Automatically synchronize multi-region model coverage, stations, and corridors
+    try:
+        from scripts.seed_all_model_states_coverage import seed_model_coverage
+        seed_model_coverage()
+    except Exception as e:
+        print(f"Notice: skipped or completed model coverage: {e}")
+
+    try:
+        from scripts.seed_regional_model_villages import seed_regional_model_villages
+        seed_regional_model_villages()
+    except Exception as e:
+        print(f"Notice: skipped or completed regional villages: {e}")
+
+    try:
+        from scripts.seed_multi_district_corridors import seed_corridors
+        seed_corridors()
+    except Exception as e:
+        print(f"Notice: skipped or completed corridors: {e}")
+
 
 if __name__ == "__main__":
     seed_database()

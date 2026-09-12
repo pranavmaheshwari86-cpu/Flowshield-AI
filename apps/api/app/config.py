@@ -23,13 +23,16 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def resolve_sqlite_path(cls, v: str) -> str:
-        if isinstance(v, str) and v.startswith("sqlite:///./"):
-            rel_file = v.replace("sqlite:///./", "")
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-            root_db = os.path.join(base_dir, rel_file)
-            if os.path.exists(root_db):
-                norm_path = root_db.replace("\\", "/")
-                return f"sqlite:///{norm_path}"
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql://", 1)
+            elif v.startswith("sqlite:///./"):
+                rel_file = v.replace("sqlite:///./", "")
+                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+                root_db = os.path.join(base_dir, rel_file)
+                if os.path.exists(root_db):
+                    norm_path = root_db.replace("\\", "/")
+                    return f"sqlite:///{norm_path}"
         return v
 
     # Auth & JWT
