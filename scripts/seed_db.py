@@ -12,9 +12,12 @@ from datetime import datetime, timezone
 from shapely.geometry import Point, Polygon, box, mapping
 from scipy.spatial import Voronoi
 
-# Ensure app package is reachable
+# Ensure app package is reachable both locally and inside container
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../apps/api")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../ml")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append("/app")
+sys.path.append("/app/ml")
 
 from app.database import engine, Base, SessionLocal
 from app.models.village import Village, RiskZone

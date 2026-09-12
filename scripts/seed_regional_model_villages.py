@@ -18,6 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT / "apps" / "api"))
 sys.path.append(str(ROOT / "ml"))
+sys.path.append("/app")
+sys.path.append("/app/ml")
 
 from app.database import SessionLocal, engine, Base
 from app.models.village import Village

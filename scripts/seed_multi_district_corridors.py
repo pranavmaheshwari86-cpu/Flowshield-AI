@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "apps", "api")))
+sys.path.append("/app")
 from app.database import SessionLocal
 from app.models.village import Village
 from app.models.shelter import Shelter

@@ -16,6 +16,9 @@ COPY ml /app/ml
 COPY scripts /app/scripts
 COPY data /app/data
 
+# Ensure Python can import from /app in container
+ENV PYTHONPATH="/app"
+
 EXPOSE 8000
 
 CMD ["sh", "-c", "python scripts/seed_db.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
