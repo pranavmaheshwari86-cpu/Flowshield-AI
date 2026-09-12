@@ -1,4 +1,3 @@
-import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +7,7 @@ from .utils.ssl_context import configure_ssl_context
 configure_ssl_context()
 
 from .config import settings
-from .database import engine, Base, SessionLocal, reconcile_sqlite_schema
+from .database import engine, Base, reconcile_sqlite_schema
 from .services.prediction_service import prediction_service
 from .routers import (
     health_router,

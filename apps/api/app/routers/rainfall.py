@@ -4,7 +4,6 @@ Flowshield — Real-Time Rainfall & Precipitation API Endpoints
 Serves live normalized precipitation telemetry for Leaflet GIS visualization.
 """
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 

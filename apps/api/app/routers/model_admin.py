@@ -10,12 +10,10 @@ Manages model lifecycle:
 - Drift monitoring integration
 """
 
-import os
-import json
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from typing import Optional, Dict
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -23,7 +21,7 @@ from ..models.verified_outcome import VerifiedOutcome
 from ..models.model_version import ModelVersion
 from ..models.village import Village
 from ml.retraining.retrain_pipeline import retrain_pipeline
-from ml.inference.predict import load_inference_artifacts, V2_PIPELINE_PATH
+from ml.inference.predict import load_inference_artifacts
 
 router = APIRouter(prefix="/model", tags=["MLOps & Model Lifecycle"])
 

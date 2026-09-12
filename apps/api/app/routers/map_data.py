@@ -7,7 +7,6 @@ from ..models.shelter import Shelter
 from ..models.river import River
 from ..models.route import Route
 from ..models.risk_snapshot import RiskSnapshot
-from ..models.prediction import Prediction
 from ..models.alert import Alert
 
 router = APIRouter(prefix="/map", tags=["GIS Map Data"])

@@ -7,7 +7,6 @@ Strict Non-Fabrication Policy:
 - Authoritative source provenance and verification tracking.
 """
 
-import math
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func

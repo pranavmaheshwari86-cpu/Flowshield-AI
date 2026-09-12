@@ -1,5 +1,4 @@
-import math
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import numpy as np
 from sqlalchemy.orm import Session

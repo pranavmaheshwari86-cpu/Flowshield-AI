@@ -5,12 +5,9 @@ Delivers structured +1h to +48h forecasts with honest uncertainty semantics.
 Zero fabricated decay curves; explicitly declares UNCERTAINTY_UNAVAILABLE when variance is absent.
 """
 
-import json
 import logging
-import urllib.request
-import urllib.parse
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from ..models.village import Village
@@ -19,7 +16,6 @@ from ..schemas.hazard import ForecastHorizon, MultiHorizonForecastResponse
 from ..schemas.data_types import DataType, FreshnessStatus
 from ..schemas.provenance import DataProvenance
 from ..schemas.precipitation import PrecipitationPoint, PrecipitationForecastResponse
-from ..utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.forecast_service")
 

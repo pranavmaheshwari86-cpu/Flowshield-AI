@@ -5,7 +5,7 @@ Exposes active disaster events, affected perimeters, and interactive demo simula
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..schemas.disaster_event import DisasterEventResponse, DisasterSimulationRequest

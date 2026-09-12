@@ -7,14 +7,12 @@ Tracks real-time ground-reality flood disasters across Northern & Eastern India
 (Bihar, Uttar Pradesh, Uttarakhand, Assam, Madhya Pradesh) for September 2026.
 """
 
-from typing import Dict, Any, List
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.village import Village
 from ..models.alert import Alert
-from ..models.risk_snapshot import RiskSnapshot
 
 router = APIRouter(prefix="/national", tags=["National Flood Watch"])
 

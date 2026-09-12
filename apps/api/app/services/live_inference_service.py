@@ -8,14 +8,13 @@ ML inference pipeline, persisting predictions, risk snapshots, and alert trigger
 import uuid
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
 from ..models.prediction import Prediction
 from ..models.risk_snapshot import RiskSnapshot
-from ..models.alert import Alert
 from .prediction_service import prediction_service
 from .risk_engine import risk_engine
 from .alert_engine import alert_engine

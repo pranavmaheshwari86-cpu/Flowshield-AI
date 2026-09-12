@@ -17,7 +17,6 @@ from .forecast_service import forecast_service
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
 from ml.inference.predict import predict_flood_risk
-from ml.features.feature_definitions import CANONICAL_FEATURE_NAMES
 
 logger = logging.getLogger("flowshield.future_risk")
 

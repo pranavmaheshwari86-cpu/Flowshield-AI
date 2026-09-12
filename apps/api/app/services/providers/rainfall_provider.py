@@ -867,66 +867,19 @@ class TomorrowIORainfallProvider(RainfallProvider):
     BASE_URL = "https://api.tomorrow.io/v4"
 
     def __init__(self, api_key: Optional[str] = None):
-        import os
-        import threading
-        from ...config import settings
-
-        self.api_key = (
-            api_key
-            or getattr(settings, "TOMORROW_API_KEY", "")
-            or os.getenv("TOMORROW_API_KEY", "")
-        ).strip()
-        self.base_url = (
-            getattr(settings, "TOMORROW_API_BASE_URL", "")
-            or os.getenv("TOMORROW_API_BASE_URL", self.BASE_URL)
-        ).rstrip("/")
-
-        self.cache_dir = Path("scratch")
-        self.cache_file = self.cache_dir / "tomorrow_rainfall_cache.json"
-
-        self._lock = threading.Lock()
-        self._min_request_interval = 0.4  # seconds
-        self._last_request_time = 0.0
-        self._rate_limited_until = 0.0
-        self._rate_limit_error: Optional[str] = None
-        self._cached_stations: Dict[str, Dict[str, Any]] = {}
-        self._cache_ttl_sec = 900  # 15 minutes
-
-        self._load_cache_from_disk()
+        # ponytail: reuse existing TomorrowIOProvider to avoid duplicate HTTP, rate-limit, and cache logic
+        from .tomorrow_io import TomorrowIOProvider
+        self._io = TomorrowIOProvider(api_key=api_key)
+        self.api_key = self._io.api_key
+        self.base_url = self._io.base_url
 
     @property
     def name(self) -> str:
         return "Tomorrow.io High-Resolution Nowcasting Network"
 
-    def _load_cache_from_disk(self):
-        try:
-            if self.cache_file.exists():
-                with open(self.cache_file, "r", encoding="utf-8") as f:
-                    self._cached_stations = json.load(f)
-                logger.info(f"Loaded {len(self._cached_stations)} cached Tomorrow.io rainfall stations from disk.")
-        except Exception as e:
-            logger.debug(f"Could not load Tomorrow.io disk cache: {e}")
-
-    def _save_cache_to_disk(self):
-        try:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_file, "w", encoding="utf-8") as f:
-                json.dump(self._cached_stations, f)
-        except Exception as e:
-            logger.debug(f"Could not save Tomorrow.io disk cache: {e}")
-
-    def _pace_request(self):
-        import time
-        with self._lock:
-            now = time.time()
-            elapsed = now - self._last_request_time
-            if elapsed < self._min_request_interval:
-                time.sleep(self._min_request_interval - elapsed)
-            self._last_request_time = time.time()
-
     def get_provider_status(self) -> Dict[str, Any]:
         import time
-        is_rate_limited = time.time() < self._rate_limited_until
+        is_rate_limited = time.time() < self._io._rate_limited_until
         return {
             "provider": self.name,
             "api_endpoint": f"{self.base_url}/weather/forecast",
@@ -935,51 +888,19 @@ class TomorrowIORainfallProvider(RainfallProvider):
             "update_frequency": "Real-Time (15 min cache)",
             "citation": "Tomorrow.io Weather Intelligence Platform",
             "is_synthetic": False,
-            "cached_stations": len(self._cached_stations),
+            "cached_stations": len(self._io._cached_payloads),
             "status": "RATE_LIMITED" if is_rate_limited else ("OPERATIONAL" if self.api_key else "UNCONFIGURED"),
-            "rate_limit_message": self._rate_limit_error if is_rate_limited else None,
+            "rate_limit_message": self._io._rate_limit_error if is_rate_limited else None,
         }
 
     def fetch_station(self, target: LocationTarget) -> Tuple[Optional[Dict[str, Any]], Optional[str], Optional[int]]:
-        """Fetches forecast & nowcast payload with rate-limit and backoff defense."""
-        import time
-        if not self.api_key:
-            return None, "Tomorrow.io API key not configured", 401
-
-        now = time.time()
-        if now < self._rate_limited_until:
-            return None, self._rate_limit_error or "Tomorrow.io rate limit reached. Retrying later.", 429
-
-        self._pace_request()
-        params = {
-            "location": f"{target.latitude:.4f},{target.longitude:.4f}",
-            "timesteps": "1m,1h,1d",
-            "units": "metric",
-            "apikey": self.api_key,
-        }
-        url = f"{self.base_url}/weather/forecast?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Emergency-Intelligence/2.5"})
-
-        try:
-            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=7) as resp:
-                if resp.status == 200:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    return data, None, 200
-                return None, f"HTTP {resp.status}", resp.status
-        except urllib.error.HTTPError as he:
-            err_body = he.read().decode("utf-8", errors="ignore")
-            logger.warning(f"Tomorrow.io HTTP {he.code} for {target.name}: {err_body}")
-            if he.code == 429:
-                self._rate_limited_until = time.time() + 180.0
-                self._rate_limit_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
-                return None, self._rate_limit_error, 429
-            elif he.code in (401, 403):
-                self._rate_limit_error = "Tomorrow.io API authentication error (invalid key)"
-                return None, self._rate_limit_error, he.code
-            return None, f"Tomorrow.io error HTTP {he.code}: {err_body}", he.code
-        except Exception as e:
-            logger.warning(f"Tomorrow.io connection error for {target.name}: {e}")
-            return None, f"Weather service temporarily unavailable: {e}", 503
+        """Fetches forecast & nowcast payload with rate-limit and backoff defense via TomorrowIOProvider."""
+        res = self._io.fetch_target(target)
+        if "data" in res and res["data"]:
+            return res["data"], res.get("warning"), 200
+        err = res.get("error", "Unknown error")
+        status = 429 if "rate limit" in err.lower() else (401 if "authentication" in err.lower() or "missing" in err.lower() else 500)
+        return None, err, status
 
     def _process_horizons(self, hourly_points: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Processes 120-hour forecast into standard Flowshield horizons (1h, 3h, 6h, 12h, 24h, 48h)."""
@@ -994,44 +915,27 @@ class TomorrowIORainfallProvider(RainfallProvider):
             v = item.get("values", {})
             return float(v.get("precipitationProbability", 0.0) or 0.0)
 
-        p0 = hourly_points[0] if hourly_points else {}
-        rain_1h = get_rain(p0)
+        p0 = hourly_points[0]
         pop_1h = get_pop(p0)
         temp_1h = float(p0.get("values", {}).get("temperature", 20.0))
 
-        p3 = hourly_points[:3]
-        rain_3h = round(sum(get_rain(p) for p in p3), 2)
-        pop_3h = max((get_pop(p) for p in p3), default=pop_1h)
-        temp_3h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p3) / max(1, len(p3)), 1)
+        # ponytail: concise horizon aggregation loop replacing 50 lines of duplicate slices
+        horizons = {}
+        for hours, cond in [
+            (1, "Nowcasting"),
+            (3, "Short-Range"),
+            (6, "Catchment Loading"),
+            (12, "Precipitation Window"),
+            (24, "Diurnal Total"),
+            (48, "Synoptic Trend"),
+        ]:
+            slice_pts = hourly_points[:hours]
+            rain = round(sum(get_rain(p) for p in slice_pts), 2)
+            pop = max((get_pop(p) for p in slice_pts), default=pop_1h)
+            temp = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in slice_pts) / max(1, len(slice_pts)), 1)
+            horizons[f"{hours}h"] = {"rain_mm": rain, "pop_pct": pop, "temp_c": temp, "condition": cond}
 
-        p6 = hourly_points[:6]
-        rain_6h = round(sum(get_rain(p) for p in p6), 2)
-        pop_6h = max((get_pop(p) for p in p6), default=pop_3h)
-        temp_6h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p6) / max(1, len(p6)), 1)
-
-        p12 = hourly_points[:12]
-        rain_12h = round(sum(get_rain(p) for p in p12), 2)
-        pop_12h = max((get_pop(p) for p in p12), default=pop_6h)
-        temp_12h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p12) / max(1, len(p12)), 1)
-
-        p24 = hourly_points[:24]
-        rain_24h = round(sum(get_rain(p) for p in p24), 2)
-        pop_24h = max((get_pop(p) for p in p24), default=pop_12h)
-        temp_24h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p24) / max(1, len(p24)), 1)
-
-        p48 = hourly_points[:48]
-        rain_48h = round(sum(get_rain(p) for p in p48), 2)
-        pop_48h = max((get_pop(p) for p in p48), default=pop_24h)
-        temp_48h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p48) / max(1, len(p48)), 1)
-
-        return {
-            "1h": {"rain_mm": rain_1h, "pop_pct": pop_1h, "temp_c": temp_1h, "condition": "Nowcasting"},
-            "3h": {"rain_mm": rain_3h, "pop_pct": pop_3h, "temp_c": temp_3h, "condition": "Short-Range"},
-            "6h": {"rain_mm": rain_6h, "pop_pct": pop_6h, "temp_c": temp_6h, "condition": "Catchment Loading"},
-            "12h": {"rain_mm": rain_12h, "pop_pct": pop_12h, "temp_c": temp_12h, "condition": "Precipitation Window"},
-            "24h": {"rain_mm": rain_24h, "pop_pct": pop_24h, "temp_c": temp_24h, "condition": "Diurnal Total"},
-            "48h": {"rain_mm": rain_48h, "pop_pct": pop_48h, "temp_c": temp_48h, "condition": "Synoptic Trend"},
-        }
+        return horizons
 
     def _parse_to_reading(self, target: LocationTarget, payload: Dict[str, Any], quality: str = "live") -> RainfallReading:
         timelines = payload.get("timelines", {})
@@ -1113,88 +1017,21 @@ class TomorrowIORainfallProvider(RainfallProvider):
         )
 
     def get_current_rainfall(self, targets: List[LocationTarget]) -> Tuple[List[RainfallReading], Optional[str]]:
-        import time
         if not targets:
             return [], None
-
         if not self.api_key:
             return [], "Tomorrow.io API key not configured"
 
-        now = time.time()
-        ttl = self._cache_ttl_sec
-        stale_threshold = 3600
-
         readings: List[RainfallReading] = []
-        uncached_targets: List[LocationTarget] = []
+        last_error = None
 
-        # 1. Inspect existing station cache
         for t in targets:
-            coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
-            entry = self._cached_stations.get(t.id) or self._cached_stations.get(coord_key)
-            if entry and (now - entry.get("cached_at", 0)) < ttl:
-                reading = self._parse_to_reading(t, entry["data"], quality="live")
-                readings.append(reading)
-            else:
-                uncached_targets.append(t)
-
-        if not uncached_targets:
-            return readings, None
-
-        # 2. Check if currently rate limited
-        if now < self._rate_limited_until:
-            for t in uncached_targets:
-                coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
-                entry = self._cached_stations.get(t.id) or self._cached_stations.get(coord_key)
-                if entry and (now - entry.get("cached_at", 0)) < stale_threshold:
-                    reading = self._parse_to_reading(t, entry["data"], quality="stale")
-                    readings.append(reading)
-            return readings, self._rate_limit_error or "Tomorrow.io rate limit reached (25 req/hr). Retrying later."
-
-        # 3. Paced fetching for uncached targets
-        logger.info(f"Fetching fresh Tomorrow.io telemetry for {len(uncached_targets)} stations (paced)...")
-        encountered_error: Optional[str] = None
-        newly_fetched = 0
-
-        for t in uncached_targets:
-            data, err, status = self.fetch_station(t)
+            data, err, _ = self.fetch_station(t)
             if data:
-                coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
-                cache_entry = {
-                    "data": data,
-                    "cached_at": time.time(),
-                }
-                self._cached_stations[t.id] = cache_entry
-                self._cached_stations[coord_key] = cache_entry
-                newly_fetched += 1
-                reading = self._parse_to_reading(t, data, quality="live")
-                readings.append(reading)
+                quality = "stale" if err and "stale" in err.lower() else "live"
+                readings.append(self._parse_to_reading(t, data, quality=quality))
+            elif err:
+                last_error = err
 
-            elif status == 429:
-                encountered_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
-                logger.warning(f"Tomorrow.io 429 reached on station {t.name}; aborting uncached batch.")
-                break
-            elif status in (401, 403):
-                encountered_error = "Tomorrow.io API authentication error (invalid key)"
-                break
-            else:
-                if err:
-                    encountered_error = err
-                entry = self._cached_stations.get(t.id)
-                if entry:
-                    reading = self._parse_to_reading(t, entry["data"], quality="stale")
-                    readings.append(reading)
-
-        if newly_fetched > 0:
-            self._save_cache_to_disk()
-
-        # If rate limited during execution, fill missing stations with older cache if available
-        if now < self._rate_limited_until or encountered_error:
-            for t in uncached_targets:
-                if not any(r.id == f"rain_{t.id}" for r in readings):
-                    entry = self._cached_stations.get(t.id)
-                    if entry and (time.time() - entry.get("cached_at", 0)) < stale_threshold:
-                        reading = self._parse_to_reading(t, entry["data"], quality="stale")
-                        readings.append(reading)
-
-        return readings, encountered_error
+        return readings, last_error
 

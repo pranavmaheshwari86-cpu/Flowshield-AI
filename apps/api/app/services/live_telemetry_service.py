@@ -15,7 +15,6 @@ from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
 from ..models.prediction import Prediction
 from ..models.risk_snapshot import RiskSnapshot
-from ..models.alert import Alert
 from ..models.telemetry_sync_log import TelemetrySyncLog
 
 from .providers.base import LocationTarget
@@ -24,7 +23,7 @@ from .providers.open_meteo import OpenMeteoProvider
 from .providers.open_weather import OpenWeatherProvider
 from .providers.cwc_gauge import CwcRiverGaugeProvider
 
-from .freshness_service import freshness_service, FreshnessState, DegradationTier
+from .freshness_service import freshness_service, DegradationTier
 from .prediction_service import prediction_service
 from .risk_engine import risk_engine
 from .alert_engine import alert_engine

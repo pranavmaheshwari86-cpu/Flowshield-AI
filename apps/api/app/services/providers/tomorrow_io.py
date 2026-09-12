@@ -11,7 +11,7 @@ import time
 import threading
 import urllib.request
 import urllib.parse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timezone
@@ -49,9 +49,6 @@ class TomorrowIOProvider(DataProvider):
         ).rstrip("/")
 
         # Caching configuration (15-min TTL)
-        self.cache_dir = Path("scratch")
-        self.cache_file = self.cache_dir / "tomorrow_cache.json"
-        self._cached_payloads: Dict[str, Dict[str, Any]] = {}
         self._cache_ttl_sec = 900  # 15 minutes
 
         # Rate Limiting & Health state
@@ -60,8 +57,7 @@ class TomorrowIOProvider(DataProvider):
         self._last_request_time = 0.0
         self._rate_limited_until = 0.0
         self._rate_limit_error: Optional[str] = None
-
-        self._load_cache_from_disk()
+        self._cached_payloads = self._load_cache()
 
     @property
     def name(self) -> str:
@@ -94,27 +90,29 @@ class TomorrowIOProvider(DataProvider):
             "is_synthetic": False,
         }
 
-    def _load_cache_from_disk(self):
-        try:
-            if self.cache_file.exists():
-                with open(self.cache_file, "r", encoding="utf-8") as f:
-                    self._cached_payloads = json.load(f)
-                logger.info(f"Loaded {len(self._cached_payloads)} cached Tomorrow.io locations from disk.")
-        except Exception as e:
-            logger.debug(f"Could not load Tomorrow.io disk cache: {e}")
+    def _cache_path(self) -> Path:
+        # ponytail: standard scratch cache path
+        Path("scratch").mkdir(exist_ok=True)
+        return Path("scratch") / "tomorrow_cache.json"
 
-    def _save_cache_to_disk(self):
-        try:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_file, "w", encoding="utf-8") as f:
-                json.dump(self._cached_payloads, f)
-        except Exception as e:
-            logger.debug(f"Could not save Tomorrow.io disk cache: {e}")
+    def _load_cache(self) -> Dict[str, Any]:
+        p = self._cache_path()
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        return {}
 
-    def _pace_request(self):
+    def _save_cache(self) -> None:
+        try:
+            self._cache_path().write_text(json.dumps(self._cached_payloads), encoding="utf-8")
+        except Exception as e:
+            logger.debug(f"Cache write skipped: {e}")
+
+    def _pace_request(self) -> None:
         with self._lock:
-            now = time.time()
-            elapsed = now - self._last_request_time
+            elapsed = time.time() - self._last_request_time
             if elapsed < self._min_request_interval:
                 time.sleep(self._min_request_interval - elapsed)
             self._last_request_time = time.time()
@@ -124,148 +122,78 @@ class TomorrowIOProvider(DataProvider):
         if not self.api_key:
             return False
         try:
-            test_url = f"{self.base_url}/weather/realtime?location=31.70,76.93&apikey={self.api_key}&units=metric"
-            req = urllib.request.Request(test_url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.5"})
+            url = f"{self.base_url}/weather/realtime?location=31.70,76.93&apikey={self.api_key}&units=metric"
+            req = urllib.request.Request(url, headers={"User-Agent": "Flowshield/2.5"})
             with urllib.request.urlopen(req, context=get_ssl_context(), timeout=5) as resp:
                 return resp.status == 200
         except urllib.error.HTTPError as he:
-            # 429 proves the API key is authenticated and valid, but currently throttled by rate limit window
-            if he.code == 429:
-                return True
-            logger.debug(f"Tomorrow.io health check HTTP error {he.code}: {he}")
+            return he.code == 429
+        except Exception:
             return False
-        except Exception as e:
-            logger.debug(f"Tomorrow.io health check failed: {e}")
-            return False
-
 
     def fetch_target(self, target: LocationTarget) -> Dict[str, Any]:
         """Fetches forecast & minutely nowcast for a single target, with caching and rate limit defense."""
         now = time.time()
         cache_key = f"{round(target.latitude, 2):.2f}_{round(target.longitude, 2):.2f}"
-
-
-        # 1. Check in-memory / disk cache (15-min TTL)
         cached = self._cached_payloads.get(cache_key)
+
+        # 1. Fresh cache hit (15-min TTL)
         if cached and (now - cached.get("cached_at", 0)) < self._cache_ttl_sec:
-            payload = cached.get("data", {})
-            return {
-                "target_id": target.id,
-                "target_name": target.name,
-                "data": payload,
-                "from_cache": True,
-            }
+            return {"target_id": target.id, "target_name": target.name, "data": cached.get("data", {}), "from_cache": True}
 
-        # 2. Check if currently under 429 rate limit backoff
         if not self.api_key:
-            return {
-                "target_id": target.id,
-                "target_name": target.name,
-                "error": "Missing TOMORROW_API_KEY",
-            }
+            return {"target_id": target.id, "target_name": target.name, "error": "Missing TOMORROW_API_KEY"}
 
+        # 2. Rate limited backoff check
         if now < self._rate_limited_until:
             if cached:
-                return {
-                    "target_id": target.id,
-                    "target_name": target.name,
-                    "data": cached.get("data", {}),
-                    "from_cache": True,
-                    "warning": "Served from stale cache due to Tomorrow.io rate limiting",
-                }
-            return {
-                "target_id": target.id,
-                "target_name": target.name,
-                "error": self._rate_limit_error or "Tomorrow.io rate limit reached (backoff active)",
-            }
+                return {"target_id": target.id, "target_name": target.name, "data": cached.get("data", {}), "from_cache": True, "warning": "Served from stale cache due to rate limit"}
+            return {"target_id": target.id, "target_name": target.name, "error": self._rate_limit_error or "Tomorrow.io rate limit active"}
 
-        # 3. Perform paced outbound request
+        # 3. Network request
         self._pace_request()
-        params = {
-            "location": f"{target.latitude:.4f},{target.longitude:.4f}",
-            "timesteps": "1m,1h,1d",
-            "units": "metric",
-            "apikey": self.api_key,
-        }
+        params = {"location": f"{target.latitude:.4f},{target.longitude:.4f}", "timesteps": "1m,1h,1d", "units": "metric", "apikey": self.api_key}
         url = f"{self.base_url}/weather/forecast?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.5"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield/2.5"})
 
         try:
             with urllib.request.urlopen(req, context=get_ssl_context(), timeout=7) as resp:
                 if resp.status == 200:
                     payload = json.loads(resp.read().decode("utf-8"))
                     self._cached_payloads[cache_key] = {"data": payload, "cached_at": now}
-                    self._save_cache_to_disk()
-                    return {
-                        "target_id": target.id,
-                        "target_name": target.name,
-                        "data": payload,
-                        "from_cache": False,
-                    }
-                return {
-                    "target_id": target.id,
-                    "target_name": target.name,
-                    "error": f"Tomorrow.io HTTP {resp.status}",
-                }
+                    self._save_cache()
+                    return {"target_id": target.id, "target_name": target.name, "data": payload, "from_cache": False}
+                return {"target_id": target.id, "target_name": target.name, "error": f"Tomorrow.io HTTP {resp.status}"}
         except urllib.error.HTTPError as he:
             err_body = he.read().decode("utf-8", errors="ignore")
             logger.warning(f"Tomorrow.io HTTP {he.code} for {target.name}: {err_body}")
             if he.code == 429:
-                self._rate_limited_until = time.time() + 180.0  # 3-minute backoff
+                self._rate_limited_until = time.time() + 180.0
                 self._rate_limit_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
-                if cached:
-                    return {
-                        "target_id": target.id,
-                        "target_name": target.name,
-                        "data": cached.get("data", {}),
-                        "from_cache": True,
-                        "warning": "Served from cache due to 429 rate limit",
-                    }
-                return {
-                    "target_id": target.id,
-                    "target_name": target.name,
-                    "error": self._rate_limit_error,
-                }
             elif he.code in (401, 403):
-                return {
-                    "target_id": target.id,
-                    "target_name": target.name,
-                    "error": "Tomorrow.io API authentication error (invalid key)",
-                }
-            return {
-                "target_id": target.id,
-                "target_name": target.name,
-                "error": f"Tomorrow.io HTTP {he.code}: {err_body}",
-            }
+                return {"target_id": target.id, "target_name": target.name, "error": "Tomorrow.io API authentication error (invalid key)"}
+
+            if cached:
+                return {"target_id": target.id, "target_name": target.name, "data": cached.get("data", {}), "from_cache": True, "warning": "Served from cache due to HTTP error"}
+            return {"target_id": target.id, "target_name": target.name, "error": self._rate_limit_error or f"Tomorrow.io HTTP {he.code}"}
         except Exception as e:
             logger.warning(f"Tomorrow.io connection exception for {target.name}: {e}")
             if cached:
-                return {
-                    "target_id": target.id,
-                    "target_name": target.name,
-                    "data": cached.get("data", {}),
-                    "from_cache": True,
-                }
-            return {
-                "target_id": target.id,
-                "target_name": target.name,
-                "error": str(e),
-            }
+                return {"target_id": target.id, "target_name": target.name, "data": cached.get("data", {}), "from_cache": True}
+            return {"target_id": target.id, "target_name": target.name, "error": str(e)}
 
     def fetch(self, targets: List[LocationTarget]) -> Dict[str, Any]:
         if not targets:
             return {"results": []}
-
         if not self.api_key:
             return {"error": "Missing TOMORROW_API_KEY", "results": []}
 
-        results = []
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            future_to_target = {executor.submit(self.fetch_target, t): t for t in targets}
-            for future in as_completed(future_to_target):
-                results.append(future.result())
+        # ponytail: sequential fetch if 1 target, ThreadPoolExecutor with 2 workers if batch
+        if len(targets) == 1:
+            return {"results": [self.fetch_target(targets[0])]}
 
-        return {"results": results}
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            return {"results": list(executor.map(self.fetch_target, targets))}
 
     def validate(self, raw_payload: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []

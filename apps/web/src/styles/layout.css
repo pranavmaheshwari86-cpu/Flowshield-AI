@@ -172,30 +172,6 @@
   overflow-y: auto;
 }
 
-/* Slide-over Drawer for Village Details */
-.detail-drawer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 480px;
-  max-width: 100vw;
-  height: 100%;
-  background: rgba(10, 22, 40, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-left: 1px solid var(--border-medium);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow-y: auto;
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
 
 /* Citizen Mode Mobile Layout (320px responsive) */
 .citizen-page {

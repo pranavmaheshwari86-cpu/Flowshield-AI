@@ -15,13 +15,9 @@ Strictly adheres to the No Fake Data Policy:
 import os
 import json
 import logging
-import urllib.request
-import urllib.parse
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Literal
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from ..utils.ssl_context import get_ssl_context
 
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
@@ -47,18 +43,13 @@ from ..schemas.timeline import (
     DistrictHierarchyItem,
     SettlementHierarchyItem,
 )
-from ml.inference.predict import predict_flood_risk
 from ..config import settings
 from .rainfall_accumulator import rainfall_accumulator
 from .model_adapter import flood_prediction_adapter
-from .risk_classification import classify_flood_probability, classify_risk_score, format_probability_percentage
 from .providers.cwc_gauge import VERIFIED_CWC_GAUGES
 from .feature_assembler import feature_assembler, FeatureAssemblyError
 from .location_capability_service import location_capability_service
 from .forecast_service import forecast_service
-from ..schemas.data_types import DataType, FreshnessStatus
-from ..schemas.location_capability import LocationCapability
-from ..schemas.precipitation import PrecipitationForecastResponse, PrecipitationPoint
 
 logger = logging.getLogger("flowshield.timeline_service")
 

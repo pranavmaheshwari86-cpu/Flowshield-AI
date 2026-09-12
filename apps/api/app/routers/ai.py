@@ -10,8 +10,6 @@ claims of operational sub-hourly river-stage or dam-gate telemetry.
 import os
 import sys
 import json
-import numpy as np
-import pandas as pd
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, status
 

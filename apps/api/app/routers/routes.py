@@ -12,8 +12,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.route import Route
 from ..models.village import Village
-from ..models.shelter import Shelter
-from ..models.road_incident import RoadIncident
 from ..models.user import User
 from ..auth.dependencies import RoleChecker
 from ..schemas.route import (

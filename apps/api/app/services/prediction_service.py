@@ -9,7 +9,6 @@ import os
 import sys
 import logging
 from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime, timezone
 
 logger = logging.getLogger("flowshield.prediction_service")
 
@@ -18,7 +17,6 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from ml.features.feature_definitions import CANONICAL_FEATURE_NAMES, FEATURE_METADATA
 from ml.inference.predict import predict_flood_risk, get_explainer
 from .model_integrity import model_integrity_checker, ModelIntegrityState
 from .risk_engine import risk_engine
