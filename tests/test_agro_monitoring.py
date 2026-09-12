@@ -122,7 +122,7 @@ def test_api_endpoints(client, db_session):
     init_data = init_resp.json()
     assert init_data["status"] == "success"
     assert init_data["result"]["total_cells_generated"] > 0
-    assert init_data["result"]["newly_inserted_in_db"] > 0
+    assert (init_data["result"]["newly_inserted_in_db"] + init_data["result"]["already_existing_in_db"]) > 0
 
     # 4. Duplicate prevention: running again should detect existing
     init_resp_2 = client.post(

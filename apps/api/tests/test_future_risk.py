@@ -10,8 +10,11 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_future_risk_forecast_endpoint():
+def test_future_risk_forecast_endpoint(monkeypatch):
     """Tests GET /api/v1/risk/forecast for a known village."""
+    from app.services.forecast_service import forecast_service
+    monkeypatch.setattr(forecast_service, "_fetch_precipitation_projections", lambda v, db: [2.0] * 48)
+
     response = client.get("/api/v1/risk/forecast?village_id=mandi_sadar")
     assert response.status_code == 200
     data = response.json()
@@ -35,8 +38,11 @@ def test_future_risk_forecast_endpoint():
     assert first_horizon["uncertainty_band"]["p10"] <= first_horizon["uncertainty_band"]["p90"]
 
 
-def test_future_risk_summary():
+def test_future_risk_summary(monkeypatch):
     """Tests GET /api/v1/risk/forecast/summary for regional overview."""
+    from app.services.forecast_service import forecast_service
+    monkeypatch.setattr(forecast_service, "_fetch_precipitation_projections", lambda v, db: [2.0] * 48)
+
     response = client.get("/api/v1/risk/forecast/summary")
     assert response.status_code == 200
     data = response.json()

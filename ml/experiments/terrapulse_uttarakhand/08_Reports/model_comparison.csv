@@ -1,5 +1,0 @@
-model,feature_set,threshold,TP,FP,FN,precision,recall,F1,ROC_AUC,PR_AUC
-Original Logistic Regression,Original,0.65,26,817,29,0.0308,0.4727,0.0579,0.7509,0.046
-Original Random Forest,Original,0.05,7,232,48,0.0293,0.1273,0.0476,0.6551,0.0237
-Improved Logistic Regression,Improved Rainfall Features,0.65,30,867,25,0.0334,0.5455,0.063,0.7914,0.04
-Improved Random Forest,Improved Rainfall Features,0.01,26,635,29,0.0393,0.4727,0.0726,0.7619,0.0374

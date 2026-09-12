@@ -10,6 +10,7 @@ claims of operational sub-hourly river-stage or dam-gate telemetry.
 import os
 import sys
 import json
+from datetime import datetime, timezone
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, status
 
@@ -209,7 +210,7 @@ async def get_web_intelligence(region: str = "Himachal Pradesh / Mandi"):
         raw_items = await ai_provider.get_web_intelligence(region=region)
         summary = await ai_provider.summarize_intelligence(raw_items, region=region)
         items = [WebIntelligenceItem(**item) for item in raw_items]
-        now_str = pd.Timestamp.now(tz="UTC").isoformat()
+        now_str = datetime.now(timezone.utc).isoformat()
         return WebIntelligenceResponse(
             items=items,
             total=len(items),

@@ -182,20 +182,29 @@ def test_unavailable_cache_degradation():
 
 def test_rainfall_api_endpoints():
     """Validates GET /api/v1/rainfall/current and /status contracts."""
-    resp = client.get("/api/v1/rainfall/current")
-    assert resp.status_code == 200
-    data = resp.json()
+    from app.services.rainfall_service import rainfall_service
+    orig = rainfall_service.provider
+    orig_sec = getattr(rainfall_service, "secondary_provider", None)
+    rainfall_service.provider = MockDeterministicProvider()
+    rainfall_service.secondary_provider = None
+    try:
+        resp = client.get("/api/v1/rainfall/current")
+        assert resp.status_code == 200
+        data = resp.json()
 
-    assert "status" in data
-    assert "units" in data
-    assert "mm" in data["units"]
-    assert "source" in data
-    assert "thresholds" in data
-    assert "data" in data
-    assert isinstance(data["data"], list)
+        assert "status" in data
+        assert "units" in data
+        assert "mm" in data["units"]
+        assert "source" in data
+        assert "thresholds" in data
+        assert "data" in data
+        assert isinstance(data["data"], list)
 
-    status_resp = client.get("/api/v1/rainfall/status")
-    assert status_resp.status_code == 200
-    sdata = status_resp.json()
-    assert "active_provider" in sdata
-    assert "cache_ttl_seconds" in sdata
+        status_resp = client.get("/api/v1/rainfall/status")
+        assert status_resp.status_code == 200
+        sdata = status_resp.json()
+        assert "active_provider" in sdata
+        assert "cache_ttl_seconds" in sdata
+    finally:
+        rainfall_service.provider = orig
+        rainfall_service.secondary_provider = orig_sec

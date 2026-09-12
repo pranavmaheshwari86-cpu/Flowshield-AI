@@ -15,9 +15,12 @@ Strictly adheres to the No Fake Data Policy:
 import os
 import json
 import logging
+import urllib.request
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Literal
 from sqlalchemy.orm import Session
+from ..utils.ssl_context import get_ssl_context
 
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
@@ -843,7 +846,7 @@ class TimelineService:
             humidity_pct=round(hum_pct, 1) if hum_pct is not None else None,
             wind_speed_kmh=round(wind_kmh, 1) if wind_kmh is not None else None,
             atmospheric_telemetry_source=source_name,
-            atmospheric_freshness_status=q_status,
+            atmospheric_freshness_status=q_status if temp_c is not None else "UNAVAILABLE",
             provenance=provenance
         )
         return snapshot, qualities, obs_dicts

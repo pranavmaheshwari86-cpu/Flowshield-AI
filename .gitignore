@@ -27,8 +27,12 @@ apps/web/dist/
 .pytest_cache/
 *.pyc
 
-# Tooling & Scratch
+# Tooling, Graphs & Scratch
 .playwright-mcp/
+.code-review-graph/
+graphify-out/
+memory/
+.turbo/
 scratch/
 
 # OS Artifacts

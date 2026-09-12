@@ -20,9 +20,11 @@ def test_network_blackout_graceful_fallback(client, db_session):
     def mock_broken_fetch(targets):
         return {"error": "Connection refused: api.open-meteo.com unreachable (Blackout Simulation)"}
 
-    with patch.object(live_telemetry_service.open_meteo_provider, "fetch", side_effect=mock_broken_fetch), \
+    live_telemetry_service.last_sync_time = None
+    with patch.object(live_telemetry_service.tomorrow_provider, "fetch", side_effect=mock_broken_fetch), \
+         patch.object(live_telemetry_service.open_meteo_provider, "fetch", side_effect=mock_broken_fetch), \
          patch.object(live_telemetry_service.open_weather_provider, "fetch", side_effect=mock_broken_fetch):
-        response = client.post("/api/v1/telemetry/sync-live")
+        response = client.post("/api/v1/telemetry/sync-live?force=true")
 
         # Must return 200 OK — zero unhandled 500 crashes
         assert response.status_code == 200

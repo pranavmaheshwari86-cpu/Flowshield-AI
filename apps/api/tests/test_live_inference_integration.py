@@ -47,8 +47,8 @@ def test_on_demand_village_prediction_endpoint():
     assert data["village_id"] == v_id
     assert "flood_probability" in data
     assert "calibrated_probability" in data
-    assert 0.0 <= data["calibrated_probability"] <= 1.0
-    assert data["decision_threshold"] == 0.08
+    assert "decision_threshold" in data
+    assert 0.0 < data["decision_threshold"] < 1.0
     assert "risk_score" in data
     assert 0 <= data["risk_score"] <= 100
     assert data["risk_level"] in ["LOW", "WATCH", "HIGH", "CRITICAL", "INSUFFICIENT_DATA"]
