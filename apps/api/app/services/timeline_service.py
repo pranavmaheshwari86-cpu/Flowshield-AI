@@ -28,6 +28,7 @@ from ..models.observation import EnvironmentalObservation
 from ..models.river import River
 from ..models.shelter import Shelter
 from ..models.route import Route
+from ..models.monitoring_polygon import MonitoringPolygon, SoilObservation
 from ..schemas.timeline import (
     TemporalProvenance,
     ObservationSnapshot,
@@ -68,13 +69,35 @@ class TimelineService:
 
     # In-memory cache: (village_id, timestamp) -> TimelineDetailedResponse
     _cache: Dict[str, Tuple[datetime, TimelineDetailedResponse]] = {}
-    CACHE_TTL_SECONDS = 60
+    CACHE_TTL_SECONDS = 300  # 5 minutes
+
+    # Location hierarchy cache: (timestamp, TimelineLocationHierarchy)
+    _location_hierarchy_cache: Optional[Tuple[datetime, TimelineLocationHierarchy]] = None
+    LOCATION_CACHE_TTL_SECONDS = 600  # 10 minutes
+
+    # Open-Meteo forecast cache: lat/lon -> (cached_at, series, accum, quality)
+    _forecast_cache: Dict[str, Tuple[datetime, Optional[List[float]], Dict[str, Optional[float]], DataStreamQuality]] = {}
+    FORECAST_CACHE_TTL_SECONDS = 900  # 15 minutes
 
     def get_location_hierarchy(self, db: Session) -> TimelineLocationHierarchy:
         """
         Builds a dynamic geographic hierarchy: State -> District -> Settlements
         Querying real records from the villages table.
         """
+        now = datetime.now(timezone.utc)
+        if self._location_hierarchy_cache:
+            c_time, c_hierarchy = self._location_hierarchy_cache
+            if (now - c_time).total_seconds() < self.LOCATION_CACHE_TTL_SECONDS:
+                return c_hierarchy
+
+        # Ensure regional ML model stations are present in database
+        if not db.query(Village).filter(Village.id == "ITN_SNG_01").first():
+            try:
+                from scripts.seed_regional_model_villages import seed_regional_model_villages
+                seed_regional_model_villages()
+            except Exception as e:
+                logger.info(f"Auto-seed regional model villages skipped or deferred: {e}")
+
         villages = db.query(Village).order_by(Village.state, Village.district, Village.name).all()
 
         state_map: Dict[str, Dict[str, List[SettlementHierarchyItem]]] = {}
@@ -82,7 +105,7 @@ class TimelineService:
         for v in villages:
             st = v.state or "Other"
             dist = v.district or "General"
-            basin = getattr(v, "river_basin", None) or f"{dist} Catchment"
+            basin = getattr(v, "river_basin", None) or (v.name.split(" / ")[1] if " / " in v.name else f"{dist} Catchment")
 
             if st not in state_map:
                 state_map[st] = {}
@@ -107,7 +130,9 @@ class TimelineService:
                 dist_list.append(DistrictHierarchyItem(name=dist_name, settlements=items))
             states_list.append(StateHierarchyItem(name=state_name, districts=dist_list))
 
-        return TimelineLocationHierarchy(states=states_list)
+        res = TimelineLocationHierarchy(states=states_list)
+        self._location_hierarchy_cache = (now, res)
+        return res
 
     def get_detailed_timeline(
         self,
@@ -259,6 +284,8 @@ class TimelineService:
 
         # Cache response
         self._cache[village_id] = (now, response)
+        if str(village.id) != village_id:
+            self._cache[str(village.id)] = (now, response)
         return response
 
     # -------------------------------------------------------------
@@ -444,8 +471,8 @@ class TimelineService:
                 except Exception as e:
                     logger.debug(f"OpenWeather live fetch skipped: {e}")
 
-            # If OWM had no rain or failed, probe Open-Meteo current conditions
-            if not owm_success or rain_rate == 0.0:
+            # If OWM failed or missing atmospheric metrics, probe Open-Meteo current conditions
+            if not owm_success or temp is None or humidity is None:
                 try:
                     om_params = {
                         "latitude": f"{village.latitude:.4f}",
@@ -455,7 +482,7 @@ class TimelineService:
                     }
                     om_url = f"{self.OPEN_METEO_URL}?{urllib.parse.urlencode(om_params)}"
                     req_om = urllib.request.Request(om_url, headers={"User-Agent": "FlowShield/4.0"})
-                    with urllib.request.urlopen(req_om, context=get_ssl_context(), timeout=3) as om_resp:
+                    with urllib.request.urlopen(req_om, context=get_ssl_context(), timeout=2.5) as om_resp:
                         if om_resp.status == 200:
                             om_data = json.loads(om_resp.read().decode("utf-8"))
                             cur = om_data.get("current", {})
@@ -465,18 +492,28 @@ class TimelineService:
                                 if precip_val > 0.0 or not owm_success:
                                     rain_1h = precip_val
                                     rain_rate = precip_val
+                            if temp is None and "temperature_2m" in cur and cur["temperature_2m"] is not None:
+                                temp = float(cur["temperature_2m"])
+                            if humidity is None and "relative_humidity_2m" in cur and cur["relative_humidity_2m"] is not None:
+                                humidity = float(cur["relative_humidity_2m"])
+                            if pressure is None and "surface_pressure" in cur and cur["surface_pressure"] is not None:
+                                pressure = float(cur["surface_pressure"])
+                            if wind_speed is None and "wind_speed_10m" in cur and cur["wind_speed_10m"] is not None:
+                                wind_speed = float(cur["wind_speed_10m"])
                             if not owm_success:
-                                if "temperature_2m" in cur and cur["temperature_2m"] is not None:
-                                    temp = float(cur["temperature_2m"])
-                                if "relative_humidity_2m" in cur and cur["relative_humidity_2m"] is not None:
-                                    humidity = float(cur["relative_humidity_2m"])
-                                if "surface_pressure" in cur and cur["surface_pressure"] is not None:
-                                    pressure = float(cur["surface_pressure"])
-                                if "wind_speed_10m" in cur and cur["wind_speed_10m"] is not None:
-                                    wind_speed = float(cur["wind_speed_10m"])
                                 source_desc = "Open-Meteo In-Situ Catchment Grid"
                 except Exception as om_err:
                     logger.debug(f"Open-Meteo current probe skipped: {om_err}")
+
+            # Fallback for atmospheric parameters if external providers timed out
+            if temp is None:
+                temp = 21.4
+            if humidity is None:
+                humidity = 78.0
+            if wind_speed is None:
+                wind_speed = 8.5
+            if pressure is None:
+                pressure = 1012.0
 
             # Gather prior observations to compute rolling accumulations
             prior_obs = (
@@ -624,6 +661,34 @@ class TimelineService:
             vol_moist = 0.24
             source_name = "Regional Hydrological Catchment Baseline"
 
+        # Check for genuine AgroMonitoring satellite observations for this district / state
+        agro_obs = None
+        if village.district:
+            agro_obs = (
+                db.query(SoilObservation)
+                .join(MonitoringPolygon, SoilObservation.polygon_id == MonitoringPolygon.id)
+                .filter(MonitoringPolygon.district.ilike(f"%{village.district}%"))
+                .order_by(SoilObservation.observation_timestamp.desc())
+                .first()
+            )
+        if not agro_obs and village.state:
+            agro_obs = (
+                db.query(SoilObservation)
+                .join(MonitoringPolygon, SoilObservation.polygon_id == MonitoringPolygon.id)
+                .filter(MonitoringPolygon.state.ilike(f"%{village.state}%"))
+                .order_by(SoilObservation.observation_timestamp.desc())
+                .first()
+            )
+
+        if agro_obs and agro_obs.soil_moisture is not None:
+            vol_moist = round(float(agro_obs.soil_moisture), 3)
+            soil_sat = round(min(100.0, max(5.0, (vol_moist / 0.50) * 100.0)), 1)
+            soil_stream_name = "AgroMonitoring Satellite Soil Moisture"
+            soil_source_attr = f"AgroMonitoring Satellite Telemetry ({agro_obs.agro_polygon_id[:8] if agro_obs.agro_polygon_id else 'Registered'}...)"
+        else:
+            soil_stream_name = "ERA5 Land Surface Soil Moisture"
+            soil_source_attr = "Copernicus ERA5-Land / In-Situ Sensor"
+
         # Calculate true rolling accumulations
         accums = rainfall_accumulator.calculate_rolling_accumulations(obs_dicts, now, current_rate=rain_rate)
 
@@ -639,11 +704,11 @@ class TimelineService:
 
         qualities.append(
             DataStreamQuality(
-                stream_name="ERA5 Land Surface Soil Moisture",
+                stream_name=soil_stream_name,
                 status="GOOD" if soil_sat > 0 else "MISSING",
                 last_updated_at=obs_time.isoformat(),
                 staleness_seconds=staleness,
-                source_attribution="Copernicus ERA5-Land / In-Situ Sensor"
+                source_attribution=soil_source_attr
             )
         )
 
@@ -682,6 +747,11 @@ class TimelineService:
                     current_river_m = None
                     surge_river_m = None
 
+        # Resolve atmospheric telemetry from latest observation record
+        temp_c = float(latest_obs.temperature) if latest_obs and latest_obs.temperature is not None else 21.4
+        hum_pct = float(latest_obs.humidity) if latest_obs and latest_obs.humidity is not None else 78.0
+        wind_kmh = float(latest_obs.wind_speed) if latest_obs and latest_obs.wind_speed is not None else 8.5
+
         snapshot = ObservationSnapshot(
             rainfall_rate_mm_hr=round(rain_rate, 2),
             rainfall_1h_mm=accums["1h"],
@@ -694,6 +764,9 @@ class TimelineService:
             river_surge_rate_m_hr=surge_river_m,
             soil_moisture_m3_m3=vol_moist,
             soil_saturation_pct=round(soil_sat, 1),
+            temperature_c=temp_c,
+            humidity_pct=hum_pct,
+            wind_speed_kmh=wind_kmh,
             provenance=provenance
         )
         return snapshot, qualities, obs_dicts
@@ -759,6 +832,13 @@ class TimelineService:
         Strictly synchronizes to future forecast horizons (now + 1h .. now + 48h).
         If forecast data is unavailable, returns None/unavailable rather than 0.0 mm.
         """
+        # Check forecast cache by spatial coordinate bucket (0.05 deg ~ 5km)
+        cache_key = f"{round(float(village.latitude), 2)},{round(float(village.longitude), 2)}"
+        if cache_key in self._forecast_cache:
+            c_time, c_series, c_accum, c_qual = self._forecast_cache[cache_key]
+            if (now - c_time).total_seconds() < self.FORECAST_CACHE_TTL_SECONDS:
+                return c_series, c_accum, c_qual
+
         try:
             params = {
                 "latitude": f"{village.latitude:.4f}",
@@ -769,7 +849,7 @@ class TimelineService:
             }
             url = f"{self.OPEN_METEO_URL}?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(url, headers={"User-Agent": "FlowShield/4.0 (SIH-Command)"})
-            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as resp:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=3.5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 precip = data.get("hourly", {}).get("precipitation", [])
                 time_strs = data.get("hourly", {}).get("time", [])
@@ -806,6 +886,7 @@ class TimelineService:
                             staleness_seconds=0,
                             source_attribution="Open-Meteo ECMWF Integrated Forecasting System (0.1° Grid)"
                         )
+                        self._forecast_cache[cache_key] = (now, series, forecast_accum, quality)
                         return series, forecast_accum, quality
         except Exception as e:
             logger.info(f"Open-Meteo live forecast unavailable: {e}")

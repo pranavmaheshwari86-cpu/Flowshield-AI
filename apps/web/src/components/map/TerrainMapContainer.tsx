@@ -22,6 +22,11 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ShieldAlert,
+  Wind,
+  Gauge,
+  Eye,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Village,
@@ -30,6 +35,7 @@ import {
   GeoJSONFeatureCollection,
   RainfallReading,
   RainfallQuality,
+  SoilGeoJSONFeatureCollection,
 } from '../../types';
 import { api } from '../../services/api';
 import {
@@ -37,11 +43,14 @@ import {
   getRainfallGlowColor,
   getRainfallCategoryLabel,
   formatRelativeTime,
+  formatIST,
+  getRiskBadge,
+  calculateTelemetryBreakdown,
   RAINFALL_SCALE_TIERS,
 } from '../../utils/rainfall';
 
 const REGION_MAPPING: Record<string, string[]> = {
-  NORTH: ['Delhi', 'Himachal Pradesh', 'Uttarakhand', 'Punjab', 'Haryana', 'Jammu & Kashmir', 'Jammu and Kashmir', 'Uttar Pradesh', 'Rajasthan', 'Chandigarh', 'Ladakh'],
+  NORTH: ['Delhi', 'Himachal Pradesh', 'Uttarakhand', 'Punjab', 'Haryana', 'Jammu & Kashmir', 'Jammu and Kashmir', 'Uttar Pradesh', 'Rajasthan', 'Chandigarh', 'Ladakh', 'Leh & Ladakh'],
   SOUTH: ['Karnataka', 'Tamil Nadu', 'Kerala', 'Andhra Pradesh', 'Telangana', 'Puducherry', 'Goa', 'Lakshadweep', 'Andaman and Nicobar Islands'],
   EAST: ['West Bengal', 'Odisha', 'Bihar', 'Jharkhand'],
   WEST: ['Maharashtra', 'Gujarat', 'Goa', 'Dadra and Nagar Haveli and Daman and Diu'],
@@ -173,16 +182,20 @@ const createHazardPinIcon = (name: string, tier: string, score: number) => {
 };
 
 // Custom Leaflet DivIcon for Real-Time Rainfall Radar & 24h Cumulative Points
-const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Village) => {
+const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Village, isSelected: boolean = false) => {
   const sev = reading.severity;
   const color = getRainfallColor(sev);
   const glow = getRainfallGlowColor(sev);
   const isPurple = sev === 'purple';
   const isRed = sev === 'red';
   const size = isPurple ? 22 : isRed ? 20 : sev === 'orange' ? 18 : sev === 'yellow' ? 16 : 14;
-  const rain24h = (reading.rainfall_24h_mm || 0).toFixed(1);
-  const rate1h = (reading.rainfallMmPerHour || 0).toFixed(1);
   const isCurrentlyRaining = (reading.rainfallMmPerHour || 0) > 0.0;
+  const rateLabel = isCurrentlyRaining ? `${(reading.rainfallMmPerHour || 0).toFixed(1)} mm/h` : 'Dry';
+  const temp = reading.temperature_c != null ? `${Math.round(reading.temperature_c)}°C` : '';
+  const riskScore = reading.risk_score ?? matchedVillage?.current_risk_score ?? 0;
+  const borderStyle = isSelected
+    ? 'border: 2px solid #38BDF8; box-shadow: 0 0 16px #38BDF8, 0 4px 12px rgba(0,0,0,0.8);'
+    : `border: 1px solid ${color}; box-shadow: 0 3px 8px rgba(0,0,0,0.7);`;
 
   const html = `
     <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(-50%, -50%); cursor: pointer;">
@@ -205,34 +218,33 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
       </div>
       <div style="
         margin-top: 2px;
-        background: rgba(2, 14, 32, 0.94);
-        border: 1px solid ${color};
+        background: rgba(2, 14, 32, 0.95);
+        ${borderStyle}
         color: #F8FAFC;
         font-family: var(--font-mono, monospace);
         font-size: 8.5px;
         font-weight: 700;
-        padding: 1.5px 5px;
+        padding: 2px 6px;
         border-radius: 4px;
         white-space: nowrap;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.6);
         display: flex;
         align-items: center;
-        gap: 3px;
+        gap: 4px;
         z-index: 2;
       ">
         <span style="width: 4px; height: 4px; border-radius: 50%; background: ${color};"></span>
-        <span style="font-weight: 600; color: #E2E8F0;">${reading.name.split(' ')[0]}</span>
-        <span style="color: ${color}; font-weight: 800;">${(reading.rainfall_24h_mm || 0) > 0 ? `${rain24h}mm` : `${(reading.temperature_c || 25).toFixed(0)}°C`}</span>
-        ${isCurrentlyRaining ? `<span style="font-size: 7.5px; opacity: 0.85; color: #38BDF8;">(${rate1h}/h)</span>` : ''}
-        ${matchedVillage ? `<span style="font-size: 7.5px; font-weight: 700; color: ${matchedVillage.current_risk_score >= 75 ? '#F87171' : matchedVillage.current_risk_score >= 50 ? '#FBBF24' : '#34D399'}; padding-left: 2px;">• ${matchedVillage.current_risk_score}</span>` : ''}
+        <span style="font-weight: 700; color: #E2E8F0;">${reading.name.split(' ')[0]}</span>
+        ${temp ? `<span style="color: #93C5FD; font-weight: 700;">${temp}</span>` : ''}
+        <span style="color: ${isCurrentlyRaining ? '#38BDF8' : '#94A3B8'}; font-weight: 700;">${rateLabel}</span>
+        ${riskScore > 0 ? `<span style="font-size: 7.5px; font-weight: 800; padding: 0.5px 3.5px; border-radius: 2px; background: ${color}25; color: ${color}; border: 1px solid ${color}50;">${riskScore}</span>` : ''}
       </div>
     </div>
   `;
   return L.divIcon({
     html,
     className: 'rainfall-pin',
-    iconSize: [matchedVillage ? 82 : 68, 44],
-    iconAnchor: [matchedVillage ? 41 : 34, 22],
+    iconSize: [94, 46],
+    iconAnchor: [47, 23],
   });
 };
 
@@ -252,7 +264,6 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
   const [zoom, setZoom] = useState<number>(5);
   const [mapMode, setMapMode] = useState<'satellite' | 'terrain' | 'dark'>(isFullPage ? 'satellite' : 'terrain');
   const [zonesGeoJSON, setZonesGeoJSON] = useState<GeoJSONFeatureCollection | null>(null);
-  const [riversGeoJSON, setRiversGeoJSON] = useState<GeoJSONFeatureCollection | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
   // Real-Time Rainfall Layer States
@@ -260,11 +271,40 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
   const [rainfallData, setRainfallData] = useState<RainfallReading[]>([]);
   const [rainfallQuality, setRainfallQuality] = useState<RainfallQuality>('live');
   const [rainfallTimestamp, setRainfallTimestamp] = useState<string | null>(null);
-  const [rainfallSource, setRainfallSource] = useState<string>('Open-Meteo ECMWF');
+  const [rainfallSource, setRainfallSource] = useState<string>('OpenWeather');
   const [rainfallLoading, setRainfallLoading] = useState<boolean>(false);
   const [activeRainCount, setActiveRainCount] = useState<number>(0);
   const [totalMonitored, setTotalMonitored] = useState<number>(0);
   const [highestRainPoint, setHighestRainPoint] = useState<any>(null);
+  const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+
+  // Selected Station for Weather Intelligence Card & Forecast Horizons
+  const [selectedReading, setSelectedReading] = useState<RainfallReading | null>(null);
+  const [stationDetailsLoading, setStationDetailsLoading] = useState<boolean>(false);
+  const [stationForecastHorizons, setStationForecastHorizons] = useState<Record<string, any> | null>(null);
+
+  // Open detailed Weather Intelligence for a station
+  const openStationIntelligence = async (reading: RainfallReading) => {
+    setSelectedReading(reading);
+    setStationForecastHorizons(reading.forecast_horizons || null);
+    try {
+      setStationDetailsLoading(true);
+      const res = await api.getRainfallStationDetails(reading.id);
+      if (res) {
+        if (res.forecast_horizons) {
+          setStationForecastHorizons(res.forecast_horizons);
+        }
+        if (res.reading) {
+          setSelectedReading(prev => prev ? { ...prev, ...res.reading } : res.reading);
+        }
+      }
+    } catch (err) {
+      console.debug('Detailed station forecast retrieval info:', err);
+    } finally {
+      setStationDetailsLoading(false);
+    }
+  };
 
   // Real-time active rain and 24h rain counts
   const liveActiveRainingCount = useMemo(() => {
@@ -291,15 +331,28 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         setRainfallData(report.data || []);
         setRainfallQuality(report.status || 'live');
         setRainfallTimestamp(report.timestamp);
-        setRainfallSource(report.source || 'Open-Meteo ECMWF');
+        setRainfallSource(report.source || 'OpenWeather');
+        setIsRateLimited(Boolean(report.rate_limited || report.status === 'rate_limited'));
+        if (report.error && (report.rate_limited || report.status === 'rate_limited')) {
+          setRateLimitMessage(report.error);
+        } else {
+          setRateLimitMessage(null);
+        }
         const rainTodayCount = (report as any).rain_today_points_count ?? report.active_rainfall_points_count ?? (report.data?.filter((r: any) => (r.rainfall_24h_mm || 0) >= 0.1 || (r.rainfallMmPerHour || 0) > 0.0).length ?? 0);
         setActiveRainCount(rainTodayCount);
         setTotalMonitored(report.total_monitored_points || report.data?.length || 0);
         if (report.highest_rainfall_point) {
           setHighestRainPoint(report.highest_rainfall_point);
         }
-        if (rainTodayCount === 0) {
+        if (rainTodayCount === 0 && rainfallFilterMode === 'all_today') {
           setRainfallFilterMode('all_stations');
+        }
+        // Smoothly update selected reading if open
+        if (selectedReading) {
+          const updated = report.data?.find((r: RainfallReading) => r.id === selectedReading.id);
+          if (updated) {
+            setSelectedReading(prev => prev ? { ...prev, ...updated } : updated);
+          }
         }
       }
     } catch (err) {
@@ -318,6 +371,66 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     }, 300000); // 5 minutes
     return () => clearInterval(timer);
   }, []);
+
+  // AgroMonitoring Soil Moisture Layer States & Fetcher
+  const [showSoilMoistureLayer] = useState<boolean>(true);
+  const [soilGeoJSON, setSoilGeoJSON] = useState<SoilGeoJSONFeatureCollection | null>(null);
+
+  const fetchSoilGeoJSON = async () => {
+    try {
+      const data = await api.getSoilGeoJSON({
+        state: selectedState !== 'ALL' ? selectedState : undefined,
+      });
+      if (data && data.features) {
+        setSoilGeoJSON(data);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch soil moisture GeoJSON', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSoilGeoJSON();
+  }, [selectedState]);
+
+  const soilPolygonStyle = (feature: any) => {
+    const tier = feature?.properties?.moisture_tier || 'UNKNOWN';
+    let fillColor = '#64748B';
+    let fillOpacity = 0.25;
+
+    switch (tier) {
+      case 'VERY_HIGH':
+        fillColor = '#EF4444';
+        fillOpacity = 0.55;
+        break;
+      case 'HIGH':
+        fillColor = '#3B82F6';
+        fillOpacity = 0.45;
+        break;
+      case 'MODERATE':
+        fillColor = '#10B981';
+        fillOpacity = 0.40;
+        break;
+      case 'LOW':
+        fillColor = '#F59E0B';
+        fillOpacity = 0.35;
+        break;
+      default:
+        fillColor = '#64748B';
+        fillOpacity = 0.2;
+        break;
+    }
+
+    const isRegistered = feature?.properties?.status === 'REGISTERED';
+    return {
+      fillColor,
+      fillOpacity,
+      color: isRegistered ? '#38BDF8' : '#64748B',
+      weight: isRegistered ? 2 : 1,
+      dashArray: isRegistered ? undefined : '3, 4',
+      opacity: 0.85,
+    };
+  };
 
   // Filtered Rainfall Readings based on Search Query, Region, and Filter Mode
   const filteredRainfallData = useMemo(() => {
@@ -344,6 +457,11 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     }
     return list;
   }, [rainfallData, rainfallFilterMode, selectedRegion, searchQuery]);
+
+  // Dynamic live IMD category breakdown across active filtered dataset
+  const liveTelemetryBreakdown = useMemo(() => {
+    return calculateTelemetryBreakdown(filteredRainfallData);
+  }, [filteredRainfallData]);
 
   // Quick Autocomplete search suggestions
   const searchSuggestions = useMemo(() => {
@@ -417,12 +535,6 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     api.getMapLayer('zones', selectedState)
       .then((data) => {
         if (isMounted) setZonesGeoJSON(data);
-      })
-      .catch(() => {});
-
-    api.getMapLayer('rivers', selectedState)
-      .then((data) => {
-        if (isMounted) setRiversGeoJSON(data);
       })
       .catch(() => {});
 
@@ -594,8 +706,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                background: rainfallQuality === 'live' ? '#10B981' : rainfallQuality === 'stale' ? '#F59E0B' : '#EF4444',
-                boxShadow: `0 0 8px ${rainfallQuality === 'live' ? '#10B981' : rainfallQuality === 'stale' ? '#F59E0B' : '#EF4444'}`,
+                background: isRateLimited ? '#EF4444' : rainfallQuality === 'live' ? '#10B981' : rainfallQuality === 'stale' ? '#F59E0B' : '#EF4444',
+                boxShadow: `0 0 8px ${isRateLimited ? '#EF4444' : rainfallQuality === 'live' ? '#10B981' : rainfallQuality === 'stale' ? '#F59E0B' : '#EF4444'}`,
               }}
             />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -609,18 +721,15 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                   fontWeight: 700,
                   padding: '1px 5px',
                   borderRadius: '3px',
-                  background: rainfallQuality === 'live' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  color: rainfallQuality === 'live' ? '#10B981' : '#F59E0B',
+                  background: isRateLimited ? 'rgba(239, 68, 68, 0.2)' : rainfallQuality === 'live' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  color: isRateLimited ? '#F87171' : rainfallQuality === 'live' ? '#10B981' : '#F59E0B',
+                  border: `1px solid ${isRateLimited ? 'rgba(239, 68, 68, 0.4)' : rainfallQuality === 'live' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
                 }}>
-                  {rainfallQuality.toUpperCase()}
+                  {isRateLimited ? 'RATE LIMIT' : rainfallQuality.toUpperCase()}
                 </span>
               </div>
               <span style={{ fontSize: '9.5px', color: '#94A3B8' }}>
-                {rainfallFilterMode === 'active_rain'
-                  ? `${liveActiveRainingCount} stations actively raining now`
-                  : rainfallFilterMode === 'all_stations'
-                  ? `${totalMonitored} total stations monitored across India`
-                  : `${liveRainTodayCount} zones with rain today (24h)`} • {rainfallTimestamp ? formatRelativeTime(rainfallTimestamp) : 'Syncing'}
+                {filteredRainfallData.length} / {totalMonitored || 120} stations monitored across India • {rainfallTimestamp ? formatIST(rainfallTimestamp) : 'Syncing'}
               </span>
             </div>
           </div>
@@ -666,6 +775,30 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Rate Limit Alert Banner */}
+        {isRateLimited && (
+          <div style={{
+            marginTop: '8px',
+            background: 'rgba(239, 68, 68, 0.16)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '6px',
+            padding: '6px 9px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '7px',
+            fontSize: '9.5px',
+            color: '#FECACA',
+          }}>
+            <AlertTriangle size={14} color="#F87171" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 700 }}>Weather API rate limit reached • Retrying later</span>
+              <span style={{ fontSize: '8.5px', color: '#FCA5A5' }}>
+                {rateLimitMessage || `Serving cached telemetry from ${rainfallTimestamp ? formatIST(rainfallTimestamp) : 'recent sync'}.`}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Panel Expanded Content */}
         {isPanelExpanded && (
@@ -739,6 +872,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                         onClick={() => {
                           setSearchQuery(s.name);
                           handleFlyToLocation(s.lat, s.lon, 9);
+                          openStationIntelligence(s);
                         }}
                         style={{
                           padding: '7px 10px',
@@ -881,6 +1015,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                   const match = rainfallData.find(r => r.name.toLowerCase().includes(highestRainPoint.name.toLowerCase()));
                   if (match) {
                     handleFlyToLocation(match.lat, match.lon, 9);
+                    openStationIntelligence(match);
                   }
                 }}
                 style={{
@@ -1021,14 +1156,31 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           />
         )}
 
-        {/* Beas River Vector Reach with Glow */}
-        {riversGeoJSON && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (
+        {/* AgroMonitoring Satellite Soil Moisture Layer */}
+        {showSoilMoistureLayer && soilGeoJSON && soilGeoJSON.features && soilGeoJSON.features.length > 0 && (
           <GeoJSON
-            data={riversGeoJSON as any}
-            style={{
-              color: '#38BDF8',
-              weight: 3.5,
-              opacity: 0.9,
+            key={`agro-soil-layer-${soilGeoJSON.features.length}-${soilGeoJSON.metadata?.generated_at || '1'}`}
+            data={soilGeoJSON as any}
+            style={soilPolygonStyle}
+            onEachFeature={(feature: any, layer: any) => {
+              const p = feature?.properties || {};
+              const moistureVal = p.soil_moisture !== undefined && p.soil_moisture !== null
+                ? `${p.soil_moisture.toFixed(3)} m³/m³`
+                : 'Pending satellite pass';
+              const tempVal = p.soil_temp_c !== undefined && p.soil_temp_c !== null
+                ? ` • ${p.soil_temp_c}°C`
+                : '';
+              const isAgroRegistered = p.status === 'REGISTERED';
+              layer.bindTooltip(`
+                <div style="font-family: sans-serif; font-size: 11px; line-height: 1.4;">
+                  <strong style="color: #0284C7;">${p.name || 'Monitoring Cell'}</strong><br/>
+                  <span style="color: #64748B;">${p.district || ''}, ${p.state || ''} (${p.area_ha?.toFixed(1)} ha)</span><br/>
+                  <span>Soil Moisture: <strong>${moistureVal}</strong>${tempVal}</span><br/>
+                  <span style="font-size: 9.5px; font-weight: 700; color: ${isAgroRegistered ? '#10B981' : '#F59E0B'};">
+                    ● ${p.status} ${p.agro_polygon_id ? `[Agro ID: ${p.agro_polygon_id.substring(0, 8)}...]` : ''}
+                  </span>
+                </div>
+              `);
             }}
           />
         )}
@@ -1117,50 +1269,31 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         {/* Real-Time Precipitation / Rainfall Layer Markers */}
         {showRainfallLayer && filteredRainfallData.map((r) => {
           const matchedVillage = findMatchingVillage(r.name, r.lat, r.lon);
+          const isSelected = selectedReading?.id === r.id;
           return (
             <Marker
               key={`rain-${r.id}`}
               position={[r.lat, r.lon]}
-              icon={createRainfallPinIcon(r, matchedVillage)}
+              icon={createRainfallPinIcon(r, matchedVillage, isSelected)}
               eventHandlers={{
                 click: () => {
+                  openStationIntelligence(r);
                   if (matchedVillage && onSelectVillage) {
                     onSelectVillage(matchedVillage);
-                  } else {
-                    handleFlyToLocation(r.lat, r.lon, 9);
                   }
+                  handleFlyToLocation(r.lat, r.lon, 8);
                 },
               }}
             >
               <Tooltip direction="top" offset={[0, -20]} opacity={0.95}>
                 <div style={{ fontSize: '11px', color: '#0F172A', lineHeight: 1.35 }}>
                   <strong style={{ color: '#0369A1' }}>{r.name}</strong> {r.state ? `(${r.state})` : ''}<br />
-                  🌧️ <strong>24H Rain:</strong> {(r.rainfall_24h_mm || 0).toFixed(1)} mm<br />
-                  ⚡ <strong>Rate:</strong> {(r.rainfallMmPerHour || 0).toFixed(1)} mm/h {r.weather_description ? `• ${r.weather_description}` : ''}<br />
-                  🌡️ <strong>Temp:</strong> {(r.temperature_c || 25).toFixed(1)}°C • <strong>Humidity:</strong> {(r.humidity_pct || 70).toFixed(0)}%<br />
-                  {matchedVillage && (
-                    <div style={{ margin: '3px 0', padding: '2px 5px', borderRadius: '3px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#991B1B', fontWeight: 600, fontSize: '10px' }}>
-                      🚨 Flood Risk: <strong>{matchedVillage.current_risk_tier}</strong> (Score: {matchedVillage.current_risk_score}/100)
-                    </div>
-                  )}
-                  <span style={{
-                    display: 'inline-block',
-                    marginTop: '3px',
-                    padding: '1px 6px',
-                    borderRadius: '4px',
-                    background: `${getRainfallColor(r.severity)}18`,
-                    color: getRainfallColor(r.severity),
-                    fontWeight: 700,
-                    fontSize: '9.5px',
-                    border: `1px solid ${getRainfallColor(r.severity)}50`,
-                  }}>
-                    {getRainfallCategoryLabel(r.severity, r.rainfall_24h_mm)}
+                  🌧️ <strong>Rate:</strong> {(r.rainfallMmPerHour || 0).toFixed(1)} mm/h {r.weather_description ? `• ${r.weather_description}` : ''}<br />
+                  🌡️ <strong>Temp:</strong> {r.temperature_c != null ? `${r.temperature_c.toFixed(1)}°C` : 'N/A'} • <strong>Humidity:</strong> {r.humidity_pct != null ? `${r.humidity_pct.toFixed(0)}%` : 'N/A'}<br />
+                  🎯 <strong>Risk Tier:</strong> <strong>{r.risk_level || 'Low'}</strong> (Score: {r.risk_score || 0}/100)<br />
+                  <span style={{ fontSize: '9px', color: '#64748B', fontStyle: 'italic', display: 'block', marginTop: '2px' }}>
+                    Click marker to open Weather Intelligence Dashboard
                   </span>
-                  {matchedVillage && (
-                    <div style={{ fontSize: '9px', color: '#64748B', marginTop: '3px', fontStyle: 'italic' }}>
-                      Click to inspect settlement intelligence
-                    </div>
-                  )}
                 </div>
               </Tooltip>
             </Marker>
@@ -1376,49 +1509,57 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
-              {RAINFALL_SCALE_TIERS.map((tier) => (
-                <div
-                  key={tier.severity}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: '9.5px',
-                    color: '#F1F7FA',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: tier.color,
-                        boxShadow: `0 0 6px ${tier.color}`,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span>{tier.category}</span>
-                  </div>
-                  <span
+              {RAINFALL_SCALE_TIERS.map((tier) => {
+                const stats = liveTelemetryBreakdown[tier.severity] || { count: 0, min_rate: 0, max_rate: 0, percentage: 0 };
+                return (
+                  <div
+                    key={tier.severity}
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '9px',
-                      color: tier.color,
-                      fontWeight: 600,
-                      marginLeft: '8px',
-                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '9.5px',
+                      color: '#F1F7FA',
+                      padding: '1px 0',
                     }}
                   >
-                    {tier.label}
-                  </span>
-                </div>
-              ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: tier.color,
+                          boxShadow: `0 0 6px ${tier.color}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span>{tier.category}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-mono, monospace)' }}>
+                      <span style={{ fontSize: '8.5px', color: '#94A3B8' }}>
+                        {stats.count > 0 ? `${stats.count} (${stats.percentage}%)` : '0 (0%)'}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          color: tier.color,
+                          fontWeight: 700,
+                          minWidth: '52px',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {stats.count > 0 ? `${stats.max_rate} mm/h` : tier.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div style={{ marginTop: '6px', fontSize: '8px', color: '#64748B', display: 'flex', justifyContent: 'space-between' }}>
               <span>Source: {rainfallSource}</span>
-              <span>{activeRainCount} of {totalMonitored} Zones</span>
+              <span>{rainfallTimestamp ? formatIST(rainfallTimestamp) : 'Active Sync'}</span>
             </div>
           </div>
         </div>
@@ -1493,6 +1634,332 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           <span>India Overview</span>
         </div>
       </div>
+
+      {/* Floating EOC Weather Intelligence Card for Selected Station */}
+      {selectedReading && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '14px',
+            right: isFullPage ? '62px' : '14px',
+            maxWidth: '430px',
+            width: 'min(430px, calc(100% - 28px))',
+            maxHeight: 'calc(100% - 28px)',
+            overflowY: 'auto',
+            background: 'rgba(2, 12, 28, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            borderRadius: '12px',
+            padding: '14px',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.8), 0 0 16px rgba(56, 189, 248, 0.15)',
+            zIndex: 490,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          {/* Card Header: Station & Location */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: getRainfallColor(selectedReading.severity),
+                    boxShadow: `0 0 8px ${getRainfallColor(selectedReading.severity)}`,
+                  }}
+                />
+                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.01em' }}>
+                  {selectedReading.name}
+                </h3>
+              </div>
+              <span style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
+                {selectedReading.district ? `${selectedReading.district}, ` : ''}{selectedReading.state || 'India'} • {selectedReading.lat.toFixed(2)}°N, {selectedReading.lon.toFixed(2)}°E
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  fontSize: '8.5px',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: selectedReading.quality === 'live' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  color: selectedReading.quality === 'live' ? '#10B981' : '#F59E0B',
+                  border: `1px solid ${selectedReading.quality === 'live' ? '#10B981' : '#F59E0B'}40`,
+                }}
+              >
+                {selectedReading.quality ? selectedReading.quality.toUpperCase() : 'LIVE'}
+              </span>
+              <button
+                onClick={() => setSelectedReading(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#CBD5E1',
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Close Intelligence Card"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Current Weather Banner */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              padding: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: '#F8FAFC' }}>
+                  {selectedReading.temperature_c != null ? `${selectedReading.temperature_c.toFixed(1)}°C` : '--'}
+                </span>
+                {selectedReading.feels_like_c != null && (
+                  <span style={{ fontSize: '10px', color: '#94A3B8' }}>
+                    Feels like {selectedReading.feels_like_c.toFixed(1)}°C
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: 600, textTransform: 'capitalize', marginTop: '2px' }}>
+                {selectedReading.weather_description || selectedReading.weather_main || 'Clear Sky'}
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: '5px',
+                  background: `${getRainfallColor(selectedReading.severity)}20`,
+                  color: getRainfallColor(selectedReading.severity),
+                  border: `1px solid ${getRainfallColor(selectedReading.severity)}50`,
+                  display: 'inline-block',
+                }}
+              >
+                {getRainfallCategoryLabel(selectedReading.severity, selectedReading.rainfall_24h_mm)}
+              </span>
+              <div style={{ fontSize: '9px', color: '#64748B', marginTop: '4px' }}>
+                IMD Category
+              </div>
+            </div>
+          </div>
+
+          {/* Rainfall Intelligence Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Droplets size={12} color="#38BDF8" />
+              <span>Precipitation Intelligence</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <div style={{ background: 'rgba(2, 10, 24, 0.7)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '6px 8px' }}>
+                <span style={{ fontSize: '9px', color: '#94A3B8', display: 'block' }}>Current Hourly Rate</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: (selectedReading.rainfallMmPerHour || 0) > 0 ? '#38BDF8' : '#F8FAFC' }}>
+                  {(selectedReading.rainfallMmPerHour || 0).toFixed(1)} mm/h
+                </span>
+              </div>
+
+              <div style={{ background: 'rgba(2, 10, 24, 0.7)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '6px 8px' }}>
+                <span style={{ fontSize: '9px', color: '#94A3B8', display: 'block' }}>3-Hour Volume</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#F8FAFC' }}>
+                  {(selectedReading.rainfall_3h_mm || 0).toFixed(1)} mm
+                </span>
+              </div>
+
+              <div style={{ background: 'rgba(2, 10, 24, 0.7)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '6px 8px' }}>
+                <span style={{ fontSize: '9px', color: '#94A3B8', display: 'block' }}>Past 24H Observed</span>
+                <span style={{ fontSize: selectedReading.historical_24h_available ? '13px' : '9.5px', fontWeight: 700, color: selectedReading.historical_24h_available ? '#F8FAFC' : '#94A3B8' }}>
+                  {selectedReading.historical_24h_available ? `${(selectedReading.rainfall_24h_mm || 0).toFixed(1)} mm` : 'Historical rainfall unavailable'}
+                </span>
+              </div>
+
+              <div style={{ background: 'rgba(2, 10, 24, 0.7)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '6px 8px' }}>
+                <span style={{ fontSize: '9px', color: '#94A3B8', display: 'block' }}>Next 24H Forecast Accumulation</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: (selectedReading.forecast_24h_mm || 0) > 15 ? '#F59E0B' : '#F8FAFC' }}>
+                  {(selectedReading.forecast_24h_mm || 0).toFixed(1)} mm
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Atmospheric Telemetry Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Atmospheric Telemetry
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B' }}>Humidity</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.humidity_pct != null ? `${selectedReading.humidity_pct}%` : 'N/A'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Gauge size={10} color="#64748B" /> Pressure
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.pressure_hpa != null ? `${selectedReading.pressure_hpa} hPa` : 'N/A'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Wind size={10} color="#64748B" /> Wind Speed
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.wind_speed_kmh != null ? `${selectedReading.wind_speed_kmh.toFixed(1)} km/h` : 'N/A'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Eye size={10} color="#64748B" /> Visibility
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.visibility_km != null ? `${selectedReading.visibility_km.toFixed(1)} km` : 'N/A'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B' }}>Cloud Cover</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.cloud_cover_pct != null ? `${selectedReading.cloud_cover_pct}%` : 'N/A'}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '6px', padding: '5px 7px' }}>
+                <div style={{ fontSize: '8.5px', color: '#64748B' }}>Wind Heading</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#F1F5F9' }}>
+                  {selectedReading.wind_deg != null ? `${selectedReading.wind_deg}°` : 'N/A'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6 Forecast Horizons (1h, 3h, 6h, 12h, 24h, 48h) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Forecast Horizons (NWP Ensemble)
+              </div>
+              {stationDetailsLoading && (
+                <span style={{ fontSize: '8px', color: '#38BDF8', animation: 'pulse 1s infinite' }}>Updating...</span>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
+              {['1h', '3h', '6h', '12h', '24h', '48h'].map((h) => {
+                const horizons = stationForecastHorizons || selectedReading.forecast_horizons;
+                const hData = horizons ? horizons[h] : null;
+                return (
+                  <div
+                    key={`horizon-${h}`}
+                    style={{
+                      background: 'rgba(2, 10, 24, 0.8)',
+                      border: '1px solid rgba(56, 189, 248, 0.2)',
+                      borderRadius: '6px',
+                      padding: '5px 3px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      gap: '2px',
+                    }}
+                  >
+                    <span style={{ fontSize: '8.5px', fontWeight: 800, color: '#38BDF8' }}>{h.toUpperCase()}</span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: hData && hData.rain_mm > 0 ? '#60A5FA' : '#CBD5E1' }}>
+                      {hData ? `${hData.rain_mm}m` : '--'}
+                    </span>
+                    <span style={{ fontSize: '7.5px', color: hData && hData.pop_pct > 30 ? '#F59E0B' : '#64748B' }}>
+                      {hData ? `${Math.round(hData.pop_pct)}%` : '--'}
+                    </span>
+                    <span style={{ fontSize: '8px', color: '#94A3B8' }}>
+                      {hData ? `${Math.round(hData.temp_c)}°` : '--'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* FLOWSHIELD RISK MODEL Badge & Explainable Reasons */}
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: `1px solid ${getRiskBadge(selectedReading.risk_level).accentColor}40`,
+              borderRadius: '8px',
+              padding: '8px 10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ShieldAlert size={13} color={getRiskBadge(selectedReading.risk_level).accentColor} />
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.02em' }}>
+                  FLOWSHIELD RISK MODEL
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  ...getRiskBadge(selectedReading.risk_level),
+                }}
+                className={getRiskBadge(selectedReading.risk_level).colorClass}
+              >
+                {selectedReading.risk_level?.toUpperCase() || 'LOW'} • {selectedReading.risk_score || 0}/100
+              </span>
+            </div>
+
+            {selectedReading.risk_reasons && selectedReading.risk_reasons.length > 0 ? (
+              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '9px', color: '#CBD5E1', lineHeight: '1.4' }}>
+                {selectedReading.risk_reasons.map((r, i) => (
+                  <li key={`reason-${i}`}>{r}</li>
+                ))}
+              </ul>
+            ) : (
+              <div style={{ fontSize: '9px', color: '#94A3B8', fontStyle: 'italic' }}>
+                Atmospheric conditions within baseline safety thresholds. Continuous monitoring active.
+              </div>
+            )}
+          </div>
+
+          {/* Footer & Source Attribution */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '8px', color: '#64748B', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <span>Updated: {formatIST(selectedReading.timestamp, true)}</span>
+            <span>Source: OpenWeather Radar / Synoptic Gateway</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

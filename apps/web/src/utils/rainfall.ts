@@ -178,16 +178,147 @@ export function formatRelativeTime(isoString: string): string {
 }
 
 /**
- * Quality badge display metadata.
+ * Format timestamp in Indian Standard Time (IST - UTC+5:30).
  */
-export function getQualityBadge(quality: RainfallQuality) {
+export function formatIST(isoString?: string | null, includeDate: boolean = false): string {
+  if (!isoString) return 'N/A';
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    // Formatting with Asia/Kolkata timezone
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    };
+    if (includeDate) {
+      options.day = '2-digit';
+      options.month = 'short';
+      options.year = 'numeric';
+    }
+    const formatted = new Intl.DateTimeFormat('en-IN', options).format(date);
+    return `${formatted} IST`;
+  } catch {
+    return 'N/A';
+  }
+}
+
+/**
+ * Quality badge display metadata including rate limiting.
+ */
+export function getQualityBadge(quality: RainfallQuality, isRateLimited: boolean = false) {
+  if (isRateLimited || quality === 'rate_limited') {
+    return {
+      label: 'RATE LIMIT REACHED',
+      badgeLabel: 'RATE LIMIT',
+      colorClass: 'text-rose-400 bg-rose-950/70 border-rose-500/50',
+      dotClass: 'bg-rose-500',
+      status: 'rate_limited' as const,
+    };
+  }
   switch (quality) {
     case 'live':
-      return { label: 'LIVE TELEMETRY', colorClass: 'text-emerald-400 bg-emerald-950/70 border-emerald-500/50' };
+      return {
+        label: 'LIVE SYNOPTIC RADAR & AWS',
+        badgeLabel: 'LIVE',
+        colorClass: 'text-emerald-400 bg-emerald-950/70 border-emerald-500/50',
+        dotClass: 'bg-emerald-500',
+        status: 'live' as const,
+      };
     case 'stale':
-      return { label: 'STALE CACHE (<1h)', colorClass: 'text-amber-400 bg-amber-950/70 border-amber-500/50' };
+      return {
+        label: 'CACHED TELEMETRY (<1h)',
+        badgeLabel: 'STALE',
+        colorClass: 'text-amber-400 bg-amber-950/70 border-amber-500/50',
+        dotClass: 'bg-amber-500',
+        status: 'stale' as const,
+      };
     case 'unavailable':
     default:
-      return { label: 'OFFLINE / UNAVAILABLE', colorClass: 'text-rose-400 bg-rose-950/70 border-rose-500/50' };
+      return {
+        label: 'OFFLINE / UNAVAILABLE',
+        badgeLabel: 'OFFLINE',
+        colorClass: 'text-rose-400 bg-rose-950/70 border-rose-500/50',
+        dotClass: 'bg-rose-500',
+        status: 'unavailable' as const,
+      };
   }
+}
+
+/**
+ * Risk badge configuration for the FLOWSHIELD RISK MODEL.
+ */
+export function getRiskBadge(level: string = 'Low') {
+  switch (level.toLowerCase()) {
+    case 'critical':
+      return {
+        label: 'CRITICAL',
+        colorClass: 'bg-red-500/20 text-red-300 border-red-500/60',
+        glowClass: 'shadow-[0_0_12px_rgba(239,68,68,0.5)]',
+        accentColor: '#EF4444',
+      };
+    case 'warning':
+      return {
+        label: 'WARNING',
+        colorClass: 'bg-orange-500/20 text-orange-300 border-orange-500/60',
+        glowClass: 'shadow-[0_0_10px_rgba(249,115,22,0.4)]',
+        accentColor: '#F97316',
+      };
+    case 'advisory':
+      return {
+        label: 'ADVISORY',
+        colorClass: 'bg-amber-500/20 text-amber-300 border-amber-500/60',
+        glowClass: 'shadow-[0_0_8px_rgba(245,158,11,0.3)]',
+        accentColor: '#F59E0B',
+      };
+    case 'watch':
+      return {
+        label: 'WATCH',
+        colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/60',
+        glowClass: 'shadow-[0_0_6px_rgba(59,130,246,0.3)]',
+        accentColor: '#3B82F6',
+      };
+    case 'low':
+    default:
+      return {
+        label: 'LOW RISK',
+        colorClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        glowClass: '',
+        accentColor: '#10B981',
+      };
+  }
+}
+
+/**
+ * Calculate dynamic category stats across a list of rainfall readings.
+ */
+export function calculateTelemetryBreakdown(readings: any[]) {
+  const breakdown: Record<string, { category: string; count: number; min_rate: number; max_rate: number; percentage: number }> = {
+    purple: { category: 'Extremely Heavy ⛈️', count: 0, min_rate: 0, max_rate: 0, percentage: 0 },
+    red: { category: 'Very Heavy 🌧️🌧️', count: 0, min_rate: 0, max_rate: 0, percentage: 0 },
+    orange: { category: 'Heavy 🌧️', count: 0, min_rate: 0, max_rate: 0, percentage: 0 },
+    yellow: { category: 'Moderate', count: 0, min_rate: 0, max_rate: 0, percentage: 0 },
+    green: { category: 'Very light to light', count: 0, min_rate: 0, max_rate: 0, percentage: 0 },
+  };
+
+  const total = readings.length;
+  if (total === 0) return breakdown;
+
+  const cats = ['purple', 'red', 'orange', 'yellow', 'green'] as const;
+  cats.forEach((cat) => {
+    const matched = readings.filter((r) => r.severity === cat);
+    const count = matched.length;
+    breakdown[cat].count = count;
+    breakdown[cat].percentage = Math.round((count / total) * 1000) / 10;
+    if (count > 0) {
+      const rates = matched.map((r) => (typeof r.rainfallMmPerHour === 'number' ? r.rainfallMmPerHour : 0));
+      breakdown[cat].min_rate = Math.round(Math.min(...rates) * 10) / 10;
+      breakdown[cat].max_rate = Math.round(Math.max(...rates) * 10) / 10;
+    }
+  });
+
+  return breakdown;
 }

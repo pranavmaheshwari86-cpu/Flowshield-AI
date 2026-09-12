@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Village,
-  VillageDetail,
   Alert,
   Shelter,
   EvacuationRoute,
@@ -18,12 +18,21 @@ import { RiverGaugePanel } from '../components/dashboard/RiverGaugePanel';
 import { TerrainMapContainer } from '../components/map/TerrainMapContainer';
 import { AlertCenter } from '../components/dashboard/AlertCenter';
 import { QuickActions } from '../components/dashboard/QuickActions';
-import { VillageDetailDrawer } from '../components/village/VillageDetailDrawer';
+
 import { AIRiskExplanationCard } from '../components/dashboard/AIRiskExplanationCard';
 import { WebIntelligencePanel } from '../components/dashboard/WebIntelligencePanel';
 import { TimelineView } from '../components/timeline/TimelineView';
 
-export const DashboardPage: React.FC = () => {
+interface DashboardPageProps {
+  initialTab?: string;
+}
+
+export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map' }) => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get('tab');
+  const isTimelineRoute = location.pathname.includes('/timeline') || tabParam?.toLowerCase() === 'timeline';
+
   // Core Data State
   const [villages, setVillages] = useState<Village[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -35,10 +44,12 @@ export const DashboardPage: React.FC = () => {
 
   // Selection & Telemetry State
   const [selectedVillageId, setSelectedVillageId] = useState<string | number | null>(null);
-  const [villageDetail, setVillageDetail] = useState<VillageDetail | null>(null);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
-  const [activeSidebarItem, setActiveSidebarItem] = useState<string>('Map');
+  const [activeSidebarItem, setActiveSidebarItem] = useState<string>(
+    isTimelineRoute ? 'Timeline' : initialTab
+  );
 
   // Fetch all core dashboard telemetry
   const fetchData = useCallback(async () => {
@@ -69,6 +80,12 @@ export const DashboardPage: React.FC = () => {
 
   // Initial load and live telemetry synchronization
   useEffect(() => {
+    // If on the dedicated Timeline route, skip the heavy 7-endpoint dashboard polling
+    // and skip global multi-settlement live telemetry synchronization
+    if (isTimelineRoute) {
+      return;
+    }
+
     fetchData();
     api.syncLiveTelemetry()
       .then(() => {
@@ -78,13 +95,15 @@ export const DashboardPage: React.FC = () => {
       })
       .catch((err) => console.warn('Live telemetry initial sync:', err));
 
-    // Poll status every 15 seconds
+    // Poll status every 15 seconds (only when on Map or Overview dashboards)
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, isTimelineRoute]);
 
   // Connect to Real-Time SSE Event Stream
   useEffect(() => {
+    if (isTimelineRoute) return;
+
     const unsub = api.subscribeRealtimeStream(
       selectedVillageId ? String(selectedVillageId) : undefined,
       (evt) => {
@@ -97,18 +116,9 @@ export const DashboardPage: React.FC = () => {
     return () => {
       unsub();
     };
-  }, [selectedVillageId, fetchData]);
+  }, [selectedVillageId, fetchData, isTimelineRoute]);
 
-  // Load detailed village info when a node or marker is selected
-  useEffect(() => {
-    if (selectedVillageId) {
-      api.getVillageDetail(selectedVillageId)
-        .then(setVillageDetail)
-        .catch((err) => console.error('Error loading village detail:', err));
-    } else {
-      setVillageDetail(null);
-    }
-  }, [selectedVillageId]);
+
 
   // Simulation Step Action
   const handleStepSimulation = async () => {
@@ -119,10 +129,6 @@ export const DashboardPage: React.FC = () => {
         setSimStatus(stepRes.status);
       }
       await fetchData();
-      if (selectedVillageId) {
-        const detail = await api.getVillageDetail(selectedVillageId);
-        setVillageDetail(detail);
-      }
     } catch (err) {
       console.error('Simulation step error:', err);
     } finally {
@@ -219,7 +225,7 @@ export const DashboardPage: React.FC = () => {
               }}
             >
               <TimelineView
-                initialVillageId={selectedVillageId ? String(selectedVillageId) : 'bh-07-buxar'}
+                initialVillageId={selectedVillageId ? String(selectedVillageId) : 'vil-hp-mnd-01'}
                 onVillageChange={(id) => setSelectedVillageId(id)}
               />
             </div>
@@ -361,13 +367,7 @@ export const DashboardPage: React.FC = () => {
         );
       })()}
 
-      {/* Slide-over Analytical Village Detail Drawer */}
-      {villageDetail && (
-        <VillageDetailDrawer
-          village={villageDetail}
-          onClose={() => setSelectedVillageId(null)}
-        />
-      )}
+
     </div>
   );
 };

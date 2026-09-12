@@ -58,6 +58,7 @@ DEFAULT_SYNOPTIC_TARGETS = [
     LocationTarget(id="syn_muzaffarpur", name="Muzaffarpur", state="Bihar", district="Muzaffarpur", latitude=26.1209, longitude=85.3647),
     LocationTarget(id="syn_darbhanga", name="Darbhanga", state="Bihar", district="Darbhanga", latitude=26.1542, longitude=85.8918),
     LocationTarget(id="syn_bhagalpur", name="Bhagalpur", state="Bihar", district="Bhagalpur", latitude=25.2425, longitude=86.9842),
+    LocationTarget(id="syn_ranchi", name="Ranchi", state="Jharkhand", district="Ranchi", latitude=23.3441, longitude=85.3096),
     LocationTarget(id="syn_bhopal", name="Bhopal", state="Madhya Pradesh", district="Bhopal", latitude=23.2599, longitude=77.4126),
     LocationTarget(id="syn_indore", name="Indore", state="Madhya Pradesh", district="Indore", latitude=22.7196, longitude=75.8577),
     LocationTarget(id="syn_jabalpur", name="Jabalpur", state="Madhya Pradesh", district="Jabalpur", latitude=23.1815, longitude=79.9864),
@@ -124,7 +125,7 @@ class RainfallService:
     stale degradation handling, full-day (24h) accumulation analysis, and nationwide aggregation.
     """
 
-    def __init__(self, provider: Optional[RainfallProvider] = None, cache_ttl_seconds: int = 300):
+    def __init__(self, provider: Optional[RainfallProvider] = None, cache_ttl_seconds: int = 600):
         # Prefer OpenWeather when API key is configured in settings/.env
         if provider:
             self.provider = provider
@@ -179,7 +180,7 @@ class RainfallService:
         """
         Returns normalized real-time rainfall observations across India.
         - active_only=True: Returns locations with measurable 24h accumulation (> 0.0 mm) OR current rain (> 0.0 mm/h).
-        - Includes national highlights, top wettest districts, and state breakdown.
+        - Includes national highlights, top wettest districts, and dynamic telemetry breakdowns.
         """
         now = datetime.now(timezone.utc)
         use_cache = (
@@ -213,7 +214,11 @@ class RainfallService:
                 self._last_fetch_time = now
                 self._last_error = error
                 readings = fresh_readings
-                quality = "live"
+                # If any reading is tagged stale, reflect degraded state
+                if any(r.quality == "stale" for r in fresh_readings):
+                    quality = "stale"
+                else:
+                    quality = "live"
             else:
                 self._last_error = error
                 logger.warning(f"Rainfall fetch encountered error: {error}")
@@ -227,15 +232,14 @@ class RainfallService:
                     ]
                     quality = "stale"
                 else:
-                    # Final safety net: generate fallback readings for targets
-                    fallback = self.provider._generate_fallback_readings(targets) if hasattr(self.provider, "_generate_fallback_readings") else []
-                    readings = fallback
-                    quality = "live" if fallback else "unavailable"
+                    readings = []
+                    is_429 = error and ("rate limit" in error.lower() or "429" in error.lower())
+                    quality = "rate_limited" if is_429 else "unavailable"
 
         # Filter points that received rain today (24h accumulation >= 0.1 mm)
         rain_today_points = [
             r for r in readings
-            if r.rainfall_24h_mm >= 0.1 or r.rainfallMmPerHour > 0.0
+            if r.rainfall_24h_mm >= 0.1 or r.rainfallMmPerHour > 0.0 or (r.forecast_24h_mm and r.forecast_24h_mm >= 0.1)
         ]
         # Filter points that are actively raining right now (hourly rate > 0.0 mm/h)
         currently_raining_points = [
@@ -244,19 +248,39 @@ class RainfallService:
         ]
         output_points = rain_today_points if active_only else readings
 
-        # Sort output points by highest 24h rainfall descending
-        output_points.sort(key=lambda x: (x.rainfall_24h_mm, x.rainfallMmPerHour), reverse=True)
+        # Sort output points by highest rainfall rate or forecast descending
+        output_points.sort(key=lambda x: (x.rainfallMmPerHour, x.forecast_24h_mm, x.rainfall_24h_mm), reverse=True)
 
         # Calculate National Highlights
-        highest_point = max(readings, key=lambda x: x.rainfall_24h_mm, default=None)
+        highest_point = max(readings, key=lambda x: (x.rainfallMmPerHour, x.forecast_24h_mm, x.rainfall_24h_mm), default=None)
         highest_summary = {
             "name": highest_point.name if highest_point else "N/A",
             "state": highest_point.state if highest_point else "N/A",
             "district": highest_point.district if highest_point else "N/A",
             "rainfall_24h_mm": highest_point.rainfall_24h_mm if highest_point else 0.0,
+            "forecast_24h_mm": getattr(highest_point, "forecast_24h_mm", 0.0) if highest_point else 0.0,
             "rainfall_rate_mm_hr": highest_point.rainfallMmPerHour if highest_point else 0.0,
             "weather": highest_point.weather_description if highest_point else "Clear",
         } if highest_point else None
+
+        # Calculate dynamic IMD Category Breakdown
+        telemetry_breakdown = {
+            "purple": {"category": "Extremely Heavy", "count": 0, "min_rate": 0.0, "max_rate": 0.0, "percentage": 0.0},
+            "red": {"category": "Very Heavy", "count": 0, "min_rate": 0.0, "max_rate": 0.0, "percentage": 0.0},
+            "orange": {"category": "Heavy", "count": 0, "min_rate": 0.0, "max_rate": 0.0, "percentage": 0.0},
+            "yellow": {"category": "Moderate", "count": 0, "min_rate": 0.0, "max_rate": 0.0, "percentage": 0.0},
+            "green": {"category": "Very light to light", "count": 0, "min_rate": 0.0, "max_rate": 0.0, "percentage": 0.0},
+        }
+        total_valid = len(readings)
+        for cat in ["purple", "red", "orange", "yellow", "green"]:
+            cat_readings = [r for r in readings if r.severity == cat]
+            c_count = len(cat_readings)
+            if c_count > 0:
+                rates = [r.rainfallMmPerHour for r in cat_readings]
+                telemetry_breakdown[cat]["count"] = c_count
+                telemetry_breakdown[cat]["min_rate"] = round(min(rates), 1)
+                telemetry_breakdown[cat]["max_rate"] = round(max(rates), 1)
+                telemetry_breakdown[cat]["percentage"] = round((c_count / total_valid) * 100.0, 1) if total_valid else 0.0
 
         last_sync_iso = (
             self._last_fetch_time.isoformat()
@@ -265,7 +289,7 @@ class RainfallService:
         )
 
         return {
-            "success": quality != "unavailable",
+            "success": quality not in ("unavailable", "rate_limited") or len(readings) > 0,
             "status": quality,
             "source": self.provider.name,
             "timestamp": last_sync_iso,
@@ -275,8 +299,54 @@ class RainfallService:
             "rain_today_points_count": len(rain_today_points),
             "active_rainfall_points_count": len(currently_raining_points),
             "highest_rainfall_point": highest_summary,
+            "telemetry_breakdown": telemetry_breakdown,
+            "rate_limited": quality == "rate_limited" or ("rate limit" in (self._last_error or "").lower()),
             "data": [r.model_dump() for r in output_points],
-            "error": self._last_error if quality == "unavailable" else None,
+            "error": self._last_error if quality in ("unavailable", "rate_limited") and not readings else None,
+        }
+
+    def get_station_details(self, station_id: str, db: Optional[Session] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves comprehensive weather details, 48h forecast horizons, and risk assessment for a specific station."""
+        targets = self.get_effective_targets(db)
+        target = next((t for t in targets if t.id == station_id or f"rain_{t.id}" == station_id or f"syn_{t.id}" == station_id), None)
+        if not target:
+            # Try fuzzy match by name
+            clean_id = station_id.replace("rain_", "").replace("syn_", "").replace("vil_", "").lower()
+            target = next((t for t in targets if clean_id in t.name.lower() or clean_id in t.id.lower()), None)
+        if not target:
+            return None
+
+        # Fetch / retrieve forecast horizons from provider if available
+        forecast_horizons = None
+        if hasattr(self.provider, "fetch_station_forecast"):
+            forecast_horizons = self.provider.fetch_station_forecast(target.latitude, target.longitude, target.id)
+
+        # Get reading from cache or fetch
+        reading = None
+        if self._cached_readings:
+            reading = next((r for r in self._cached_readings if r.id == f"rain_{target.id}" or r.id == target.id), None)
+
+        if not reading and hasattr(self.provider, "fetch_single_weather"):
+            data, _, _ = self.provider.fetch_single_weather(target)
+            if data:
+                reading = self.provider._parse_weather_to_reading(target, data, quality="live")
+
+        reading_dict = reading.model_dump() if reading else None
+        if reading_dict and forecast_horizons:
+            reading_dict["forecast_horizons"] = forecast_horizons
+
+        return {
+            "station": {
+                "id": target.id,
+                "name": target.name,
+                "state": target.state,
+                "district": target.district,
+                "latitude": target.latitude,
+                "longitude": target.longitude,
+                "elevation_m": getattr(target, "elevation_m", 500.0),
+            },
+            "reading": reading_dict,
+            "forecast_horizons": forecast_horizons,
         }
 
     def get_status(self) -> Dict[str, Any]:

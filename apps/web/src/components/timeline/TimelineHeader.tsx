@@ -4,7 +4,6 @@ import {
   RefreshCw,
   Activity,
   Clock,
-  Radio,
 } from 'lucide-react';
 import { TimelineLocationHierarchy } from '../../types';
 
@@ -30,7 +29,7 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
   selectedDistrict,
   selectedVillageId,
   onSelectLocation,
-  activeMode,
+  // activeMode intentionally removed (DATA_MODE badge removed)
   overallHealth,
   isRefreshing,
   onRefresh,
@@ -218,25 +217,7 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
 
       {/* Right: Mode, Quality & Refresh Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Mode Badge (LIVE vs DEMO) */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            padding: '4px 10px',
-            borderRadius: '6px',
-            fontSize: '11px',
-            fontWeight: 700,
-            background: activeMode === 'LIVE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-            color: activeMode === 'LIVE' ? '#10B981' : '#F59E0B',
-            border: `1px solid ${activeMode === 'LIVE' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-          }}
-          title={activeMode === 'LIVE' ? 'All telemetry originating from live stations & ECMWF runs' : 'Demo Mode Active — Synthetic Simulation'}
-        >
-          <Radio size={12} className={activeMode === 'LIVE' ? 'animate-pulse' : ''} />
-          <span>{activeMode === 'LIVE' ? 'DATA_MODE: LIVE' : 'DATA_MODE: DEMO'}</span>
-        </div>
+
 
         {/* SLA Telemetry Quality Indicator */}
         <div

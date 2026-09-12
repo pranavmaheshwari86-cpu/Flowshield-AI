@@ -72,8 +72,111 @@ def compute_rainfall_severity(mm_per_hour: float, rainfall_24h_mm: float = 0.0) 
     return "none"
 
 
+def calculate_flood_risk(
+    rainfall_rate_mm_hr: float,
+    forecast_24h_mm: float = 0.0,
+    observed_24h_mm: float = 0.0,
+    elevation_m: Optional[float] = None,
+    pop_pct_next6h: float = 0.0,
+    weather_main: str = "",
+    has_alert: bool = False,
+) -> Dict[str, Any]:
+    """
+    FLOWSHIELD RISK MODEL
+    Transparent, explainable risk scoring model combining:
+    - Current precipitation rate (mm/h)
+    - 24h rainfall volume (forecast accumulation + observed)
+    - Short-term precipitation probability (next 6h)
+    - Convective storm / atmospheric conditions
+    - Montane elevation / flash flood risk factor
+    """
+    score = 0
+    reasons: List[str] = []
+
+    # 1. Current Rainfall Rate (0-40 pts)
+    rate = max(0.0, rainfall_rate_mm_hr)
+    if rate >= 30.0:
+        score += 40
+        reasons.append(f"Extreme precipitation rate active ({rate:.1f} mm/h > 30 mm/h threshold)")
+    elif rate >= 15.0:
+        score += 30
+        reasons.append(f"Very heavy rainfall currently occurring ({rate:.1f} mm/h)")
+    elif rate >= 7.5:
+        score += 20
+        reasons.append(f"Heavy rainfall intensity detected ({rate:.1f} mm/h)")
+    elif rate >= 2.5:
+        score += 10
+        reasons.append(f"Moderate rainfall active ({rate:.1f} mm/h)")
+    elif rate >= 0.1:
+        score += 4
+        reasons.append(f"Light precipitation recorded ({rate:.1f} mm/h)")
+
+    # 2. 24-Hour Cumulative / Forecast Rainfall (0-30 pts)
+    eff_24h = max(forecast_24h_mm, observed_24h_mm)
+    if eff_24h >= 115.6:
+        score += 30
+        reasons.append(f"Critical 24h rainfall volume ({eff_24h:.1f} mm exceeding Very Heavy IMD category)")
+    elif eff_24h >= 64.5:
+        score += 22
+        reasons.append(f"Significant 24h rainfall accumulation ({eff_24h:.1f} mm)")
+    elif eff_24h >= 30.0:
+        score += 14
+        reasons.append(f"Elevated 24h precipitation load ({eff_24h:.1f} mm)")
+    elif eff_24h >= 15.6:
+        score += 7
+        reasons.append(f"Moderate 24h precipitation accumulation ({eff_24h:.1f} mm)")
+
+    # 3. Forecast Probability of Precipitation (0-15 pts)
+    pop = max(0.0, min(100.0, pop_pct_next6h))
+    if pop >= 80.0:
+        score += 15
+        reasons.append(f"High precipitation probability over next 6h ({pop:.0f}%)")
+    elif pop >= 50.0:
+        score += 10
+        reasons.append(f"Substantial precipitation probability next 6h ({pop:.0f}%)")
+    elif pop >= 30.0:
+        score += 5
+        reasons.append(f"Moderate rain probability next 6h ({pop:.0f}%)")
+
+    # 4. Severe Convective Activity or Alerts (0-15 pts)
+    if has_alert:
+        score += 15
+        reasons.append("Active weather alert issued for catchment")
+    elif weather_main.lower() in ["thunderstorm", "squall", "tornado"]:
+        score += 12
+        reasons.append(f"Severe convective weather detected ({weather_main})")
+
+    # 5. High-Altitude / Mountainous Flash Flood Susceptibility
+    if elevation_m and elevation_m > 1500 and rate >= 5.0:
+        score += 5
+        reasons.append(f"High-altitude montane terrain ({elevation_m:.0f}m) accelerates steep runoff")
+
+    score = min(100, max(0, score))
+
+    if score >= 75:
+        level = "Critical"
+    elif score >= 50:
+        level = "Warning"
+    elif score >= 30:
+        level = "Advisory"
+    elif score >= 15:
+        level = "Watch"
+    else:
+        level = "Low"
+
+    if not reasons:
+        reasons.append("Atmospheric and precipitation indicators within safe operational baseline.")
+
+    return {
+        "level": level,
+        "score": score,
+        "reasons": reasons,
+        "model_label": "FLOWSHIELD RISK MODEL",
+    }
+
+
 class RainfallReading(BaseModel):
-    """Normalized real-time precipitation observation model including full-day (24h) accumulation."""
+    """Normalized real-time precipitation observation model including full-day (24h) accumulation and risk."""
     id: str = Field(..., description="Unique station or grid node identifier")
     name: str = Field(..., description="Location or station name")
     state: str = Field("National", description="State or Union Territory")
@@ -81,13 +184,27 @@ class RainfallReading(BaseModel):
     lat: float = Field(..., description="Latitude in WGS84")
     lon: float = Field(..., description="Longitude in WGS84")
     rainfallMmPerHour: float = Field(..., ge=0.0, le=500.0, description="Current hourly precipitation rate (mm/h)")
-    rainfall_24h_mm: float = Field(0.0, ge=0.0, le=3000.0, description="Total 24-hour accumulated rainfall for today (mm)")
+    rainfall_24h_mm: float = Field(0.0, ge=0.0, le=3000.0, description="Total 24-hour accumulated rainfall (mm)")
     rainfall_3h_mm: float = Field(0.0, ge=0.0, le=1500.0, description="3-hour precipitation accumulation (mm)")
     rainfall_6h_mm: float = Field(0.0, ge=0.0, le=2000.0, description="6-hour precipitation accumulation (mm)")
-    weather_description: str = Field("Clear", description="Current weather/sky condition")
-    temperature_c: float = Field(22.0, description="Current ambient temperature (°C)")
-    humidity_pct: float = Field(75.0, description="Relative humidity (%)")
+    forecast_24h_mm: float = Field(0.0, ge=0.0, le=3000.0, description="Projected 24-hour rainfall accumulation (mm)")
+    historical_24h_available: bool = Field(False, description="True if 24h observed historical rainfall is verified available")
+    weather_main: str = Field("Clear", description="Primary weather condition (Clear, Rain, Clouds, etc.)")
+    weather_description: str = Field("Clear", description="Detailed weather description")
+    temperature_c: Optional[float] = Field(None, description="Current ambient temperature (°C)")
+    feels_like_c: Optional[float] = Field(None, description="Feels-like temperature (°C)")
+    humidity_pct: Optional[float] = Field(None, description="Relative humidity (%)")
+    pressure_hpa: Optional[float] = Field(None, description="Atmospheric pressure (hPa)")
+    wind_speed_kmh: Optional[float] = Field(None, description="Wind speed (km/h)")
+    wind_deg: Optional[float] = Field(None, description="Wind direction (degrees)")
+    visibility_km: Optional[float] = Field(None, description="Visibility in km")
+    cloud_cover_pct: Optional[float] = Field(None, description="Cloud cover percentage")
     severity: str = Field(..., description="Intensity classification: green | yellow | orange | red | purple | none")
+    risk_level: str = Field("Low", description="FLOWSHIELD risk tier: Critical | Warning | Advisory | Watch | Low")
+    risk_score: int = Field(0, ge=0, le=100, description="FLOWSHIELD risk score (0-100)")
+    risk_reasons: List[str] = Field(default_factory=list, description="Explainable physical risk reasons")
+    forecast_horizons: Optional[Dict[str, Any]] = Field(None, description="Detailed forecast horizons (1h, 3h, 6h, 12h, 24h, 48h)")
+    alerts: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Official weather alerts if available")
     timestamp: str = Field(..., description="Observation timestamp in UTC ISO format")
     source: str = Field(..., description="Upstream meteorological data source")
     quality: str = Field("live", description="Data quality state: live | stale | unavailable")
@@ -272,175 +389,432 @@ class OpenMeteoRainfallProvider(RainfallProvider):
                 )
 
         if not readings:
-            return self._generate_fallback_readings(targets), "Deployed IMD assimilated fallback telemetry"
+            return [], "Open-Meteo returned no readings for targets"
 
         return readings, None
-
-    def _generate_fallback_readings(self, targets: List[LocationTarget]) -> List[RainfallReading]:
-        """Returns verified offline telemetry for targets during upstream API degradation without fabricating data."""
-        readings: List[RainfallReading] = []
-        now_iso = datetime.now(timezone.utc).isoformat()
-
-        for target in targets:
-            target_state = getattr(target, "state", "India")
-            target_district = getattr(target, "district", target.name)
-
-            readings.append(
-                RainfallReading(
-                    id=f"rain_{target.id}",
-                    name=target.name,
-                    state=target_state,
-                    district=target_district,
-                    lat=target.latitude,
-                    lon=target.longitude,
-                    rainfallMmPerHour=0.0,
-                    rainfall_24h_mm=0.0,
-                    rainfall_3h_mm=0.0,
-                    rainfall_6h_mm=0.0,
-                    weather_description="Offline / Upstream Weather Telemetry Unavailable",
-                    temperature_c=25.0,
-                    humidity_pct=70.0,
-                    severity="normal",
-                    timestamp=now_iso,
-                    source=f"{self.name} (Offline Cache)",
-                    quality="offline_cache",
-                    station_type="synoptic_grid",
-                )
-            )
-        return readings
 
 
 class OpenWeatherRainfallProvider(RainfallProvider):
     """
-    Live real-time precipitation and synoptic telemetry provider backed by OpenWeatherMap API.
-    Fetches live precipitation rates, current weather conditions, temperatures, and relative humidity.
+    Live real-time precipitation and atmospheric telemetry provider backed by OpenWeatherMap API.
+    Features:
+    - Paced rate-limiting (min 1.15s delay between requests, max ~50 req/min)
+    - Persistent disk & memory caching (10 min TTL, 1 hour stale threshold)
+    - Stale-While-Revalidate pattern
+    - Resilient 429 rate limit backoff and transparent error reporting
+    - Zero fake/synthetic fallback generation
     """
 
-    API_URL = "https://api.openweathermap.org/data/2.5/weather"
+    API_URL_WEATHER = "https://api.openweathermap.org/data/2.5/weather"
+    API_URL_FORECAST = "https://api.openweathermap.org/data/2.5/forecast"
 
     def __init__(self, api_key: Optional[str] = None):
         import os
         from ...config import settings
         self.api_key = (api_key or getattr(settings, "OPENWEATHER_API_KEY", "") or os.getenv("OPENWEATHER_API_KEY", "")).strip()
 
+        # Cache file configuration
+        self.cache_dir = Path("scratch")
+        self.cache_file = self.cache_dir / "openweather_cache.json"
+        self.forecast_cache_file = self.cache_dir / "openweather_forecast_cache.json"
+
+        # Rate Limiting & Health state
+        self._min_request_interval = 1.15  # seconds between requests
+        self._last_request_time = 0.0
+        self._rate_limited_until = 0.0
+        self._rate_limit_error: Optional[str] = None
+        self._cached_station_readings: Dict[str, Dict[str, Any]] = {}
+        self._cached_forecasts: Dict[str, Dict[str, Any]] = {}
+        self._load_cache_from_disk()
+
     @property
     def name(self) -> str:
         return "OpenWeatherMap Live Synoptic Network"
 
+    def _load_cache_from_disk(self):
+        try:
+            if self.cache_file.exists():
+                with open(self.cache_file, "r", encoding="utf-8") as f:
+                    self._cached_station_readings = json.load(f)
+                logger.info(f"Loaded {len(self._cached_station_readings)} cached OpenWeather stations from disk.")
+        except Exception as e:
+            logger.debug(f"Could not load OpenWeather disk cache: {e}")
+
+        try:
+            if self.forecast_cache_file.exists():
+                with open(self.forecast_cache_file, "r", encoding="utf-8") as f:
+                    self._cached_forecasts = json.load(f)
+        except Exception:
+            pass
+
+    def _save_cache_to_disk(self):
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.cache_file, "w", encoding="utf-8") as f:
+                json.dump(self._cached_station_readings, f)
+        except Exception as e:
+            logger.debug(f"Could not save OpenWeather disk cache: {e}")
+
+    def _save_forecast_cache_to_disk(self):
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.forecast_cache_file, "w", encoding="utf-8") as f:
+                json.dump(self._cached_forecasts, f)
+        except Exception:
+            pass
+
     def get_provider_status(self) -> Dict[str, Any]:
+        import time
+        is_rate_limited = time.time() < self._rate_limited_until
         return {
             "provider": self.name,
-            "api_endpoint": self.API_URL,
+            "api_endpoint": self.API_URL_WEATHER,
             "is_configured": bool(self.api_key),
-            "resolution": "Point Observation & Doppler Radar Grid",
-            "update_frequency": "Real-Time (10-30 min)",
+            "resolution": "Station point / 0.1 deg synoptic grid",
+            "update_frequency": "Real-Time (10 min cache)",
             "citation": "OpenWeather Meteorological Network",
             "is_synthetic": False,
-            "status": "OPERATIONAL" if self.api_key else "UNCONFIGURED",
+            "cached_stations": len(self._cached_station_readings),
+            "status": "RATE_LIMITED" if is_rate_limited else ("OPERATIONAL" if self.api_key else "UNCONFIGURED"),
+            "rate_limit_message": self._rate_limit_error if is_rate_limited else None,
         }
 
+    def _pace_request(self):
+        import time
+        now = time.time()
+        elapsed = now - self._last_request_time
+        if elapsed < self._min_request_interval:
+            time.sleep(self._min_request_interval - elapsed)
+        self._last_request_time = time.time()
+
+    def fetch_single_weather(self, target: LocationTarget) -> Tuple[Optional[Dict[str, Any]], Optional[str], Optional[int]]:
+        """
+        Executes a rate-limited request to OpenWeather 2.5/weather.
+        Returns: (data_dict, error_message, http_status)
+        """
+        import time
+        if not self.api_key:
+            return None, "OpenWeather API key not configured", 401
+
+        if time.time() < self._rate_limited_until:
+            return None, self._rate_limit_error or "Weather API rate limit reached. Retrying later.", 429
+
+        self._pace_request()
+
+        params = {
+            "lat": f"{target.latitude:.4f}",
+            "lon": f"{target.longitude:.4f}",
+            "appid": self.api_key,
+            "units": "metric",
+        }
+        url = f"{self.API_URL_WEATHER}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Emergency-Intelligence/2.5"})
+
+        try:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=7) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    return data, None, 200
+                return None, f"HTTP {resp.status}", resp.status
+        except urllib.error.HTTPError as he:
+            err_body = he.read().decode("utf-8", errors="ignore")
+            logger.warning(f"OpenWeather HTTP {he.code} for {target.name}: {err_body}")
+            if he.code == 429:
+                self._rate_limited_until = time.time() + 120.0  # 2 minute backoff
+                self._rate_limit_error = "Weather API rate limit reached. Retrying later."
+                return None, self._rate_limit_error, 429
+            elif he.code in (401, 403):
+                self._rate_limit_error = "OpenWeather API authentication/configuration error"
+                return None, self._rate_limit_error, he.code
+            return None, f"OpenWeather error HTTP {he.code}: {err_body}", he.code
+        except Exception as e:
+            logger.warning(f"OpenWeather connection error for {target.name}: {e}")
+            return None, f"Weather service temporarily unavailable: {e}", 503
+
+    def fetch_station_forecast(self, lat: float, lon: float, station_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetches 5-day / 3-hour forecast from OpenWeather and processes into 1h, 3h, 6h, 12h, 24h, 48h horizons.
+        """
+        import time
+        now = time.time()
+        cache_key = f"{lat:.4f}_{lon:.4f}"
+        cached = self._cached_forecasts.get(cache_key)
+        if cached and (now - cached.get("cached_at", 0)) < 1800:  # 30 min TTL
+            return cached.get("data")
+
+        if not self.api_key or (now < self._rate_limited_until):
+            return cached.get("data") if cached else None
+
+        self._pace_request()
+        params = {
+            "lat": f"{lat:.4f}",
+            "lon": f"{lon:.4f}",
+            "appid": self.api_key,
+            "units": "metric",
+        }
+        url = f"{self.API_URL_FORECAST}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Emergency-Intelligence/2.5"})
+
+        try:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=8) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    processed = self._process_forecast_payload(data)
+                    self._cached_forecasts[cache_key] = {"data": processed, "cached_at": now}
+                    self._save_forecast_cache_to_disk()
+                    return processed
+        except urllib.error.HTTPError as he:
+            if he.code == 429:
+                self._rate_limited_until = time.time() + 120.0
+                self._rate_limit_error = "Weather API rate limit reached. Retrying later."
+        except Exception as e:
+            logger.debug(f"Forecast fetch failed: {e}")
+
+        return cached.get("data") if cached else None
+
+    def _process_forecast_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculates 1h, 3h, 6h, 12h, 24h, 48h horizons from 3-hourly forecast points."""
+        points = data.get("list", [])
+        if not points:
+            return {}
+
+        def get_rain(item: Dict[str, Any]) -> float:
+            r = item.get("rain", {})
+            return float(r.get("3h", 0.0) if isinstance(r, dict) else 0.0)
+
+        def get_pop(item: Dict[str, Any]) -> float:
+            return round(float(item.get("pop", 0.0) or 0.0) * 100.0, 1)
+
+        # 3h is item 0
+        p0 = points[0] if len(points) > 0 else {}
+        rain_3h = get_rain(p0)
+        pop_3h = get_pop(p0)
+        temp_3h = float(p0.get("main", {}).get("temp", 0.0))
+        cond_3h = p0.get("weather", [{}])[0].get("description", "Clear").title()
+
+        # 1h is estimated proportional to slot 0
+        rain_1h = round(rain_3h / 3.0, 2)
+        pop_1h = pop_3h
+        temp_1h = temp_3h
+        cond_1h = cond_3h
+
+        # 6h: sum of items 0..1
+        p6 = points[:2]
+        rain_6h = round(sum(get_rain(p) for p in p6), 2)
+        pop_6h = max(get_pop(p) for p in p6) if p6 else 0.0
+        temp_6h = round(sum(float(p.get("main", {}).get("temp", 0.0)) for p in p6) / len(p6), 1) if p6 else temp_3h
+        cond_6h = p6[-1].get("weather", [{}])[0].get("description", cond_3h).title() if p6 else cond_3h
+
+        # 12h: sum of items 0..3
+        p12 = points[:4]
+        rain_12h = round(sum(get_rain(p) for p in p12), 2)
+        pop_12h = max(get_pop(p) for p in p12) if p12 else 0.0
+        temp_12h = round(sum(float(p.get("main", {}).get("temp", 0.0)) for p in p12) / len(p12), 1) if p12 else temp_3h
+        cond_12h = p12[-1].get("weather", [{}])[0].get("description", cond_3h).title() if p12 else cond_3h
+
+        # 24h: sum of items 0..7
+        p24 = points[:8]
+        rain_24h = round(sum(get_rain(p) for p in p24), 2)
+        pop_24h = max(get_pop(p) for p in p24) if p24 else 0.0
+        temp_24h = round(sum(float(p.get("main", {}).get("temp", 0.0)) for p in p24) / len(p24), 1) if p24 else temp_3h
+        cond_24h = p24[-1].get("weather", [{}])[0].get("description", cond_3h).title() if p24 else cond_3h
+
+        # 48h: sum of items 0..15
+        p48 = points[:16]
+        rain_48h = round(sum(get_rain(p) for p in p48), 2)
+        pop_48h = max(get_pop(p) for p in p48) if p48 else 0.0
+        temp_48h = round(sum(float(p.get("main", {}).get("temp", 0.0)) for p in p48) / len(p48), 1) if p48 else temp_3h
+        cond_48h = p48[-1].get("weather", [{}])[0].get("description", cond_3h).title() if p48 else cond_3h
+
+        return {
+            "1h": {"rain_mm": rain_1h, "pop_pct": pop_1h, "temp_c": temp_1h, "condition": cond_1h},
+            "3h": {"rain_mm": round(rain_3h, 2), "pop_pct": pop_3h, "temp_c": temp_3h, "condition": cond_3h},
+            "6h": {"rain_mm": rain_6h, "pop_pct": pop_6h, "temp_c": temp_6h, "condition": cond_6h},
+            "12h": {"rain_mm": rain_12h, "pop_pct": pop_12h, "temp_c": temp_12h, "condition": cond_12h},
+            "24h": {"rain_mm": rain_24h, "pop_pct": pop_24h, "temp_c": temp_24h, "condition": cond_24h},
+            "48h": {"rain_mm": rain_48h, "pop_pct": pop_48h, "temp_c": temp_48h, "condition": cond_48h},
+        }
+
+    def _parse_weather_to_reading(self, target: LocationTarget, data: Dict[str, Any], quality: str = "live") -> RainfallReading:
+        """Parses verified OpenWeather payload into strongly validated RainfallReading."""
+        weather_list = data.get("weather", [{}])
+        weather_info = weather_list[0] if weather_list else {}
+        weather_main = weather_info.get("main", "Clear")
+        weather_desc = weather_info.get("description", "Clear Sky").title()
+
+        main_info = data.get("main", {})
+        temp_c = float(main_info.get("temp", 0.0))
+        feels_like_c = float(main_info.get("feels_like", temp_c))
+        humidity_pct = float(main_info.get("humidity", 0.0))
+        pressure_hpa = float(main_info.get("pressure", 1013.25))
+
+        wind_info = data.get("wind", {})
+        wind_speed_kmh = round(float(wind_info.get("speed", 0.0)) * 3.6, 1)
+        wind_deg = float(wind_info.get("deg", 0.0))
+
+        visibility_km = round(float(data.get("visibility", 10000)) / 1000.0, 1)
+        cloud_cover_pct = float(data.get("clouds", {}).get("all", 0.0))
+
+        # Real Precipitation parsing
+        rain_obj = data.get("rain", {})
+        precip_1h = 0.0
+        precip_3h = 0.0
+        if isinstance(rain_obj, dict):
+            precip_1h = float(rain_obj.get("1h", 0.0) or 0.0)
+            precip_3h = float(rain_obj.get("3h", 0.0) or 0.0)
+
+        # OpenWeather 2.5 current weather does not provide 24h observed accumulation
+        # So we accurately mark historical_24h_available = False
+        historical_24h_available = False
+        rainfall_24h = 0.0
+
+        # Check for cached forecast to enrich 24h forecast rainfall
+        forecast_cache_key = f"{target.latitude:.4f}_{target.longitude:.4f}"
+        cached_f = self._cached_forecasts.get(forecast_cache_key, {}).get("data")
+        forecast_24h = 0.0
+        forecast_horizons = None
+        pop_6h = 0.0
+        if cached_f and isinstance(cached_f, dict):
+            forecast_horizons = cached_f
+            forecast_24h = float(cached_f.get("24h", {}).get("rain_mm", 0.0))
+            pop_6h = float(cached_f.get("6h", {}).get("pop_pct", 0.0))
+
+        severity = compute_rainfall_severity(precip_1h, forecast_24h)
+        risk = calculate_flood_risk(
+            rainfall_rate_mm_hr=precip_1h,
+            forecast_24h_mm=forecast_24h,
+            observed_24h_mm=rainfall_24h,
+            elevation_m=getattr(target, "elevation_m", None),
+            pop_pct_next6h=pop_6h,
+            weather_main=weather_main,
+        )
+
+        dt_utc = datetime.fromtimestamp(data.get("dt", int(datetime.now(timezone.utc).timestamp())), tz=timezone.utc)
+
+        return RainfallReading(
+            id=f"rain_{target.id}",
+            name=target.name,
+            state=getattr(target, "state", "India"),
+            district=getattr(target, "district", target.name),
+            lat=target.latitude,
+            lon=target.longitude,
+            rainfallMmPerHour=round(precip_1h, 2),
+            rainfall_24h_mm=round(rainfall_24h, 2),
+            rainfall_3h_mm=round(precip_3h, 2),
+            rainfall_6h_mm=0.0,
+            forecast_24h_mm=round(forecast_24h, 2),
+            historical_24h_available=historical_24h_available,
+            weather_main=weather_main,
+            weather_description=weather_desc,
+            temperature_c=round(temp_c, 1),
+            feels_like_c=round(feels_like_c, 1),
+            humidity_pct=round(humidity_pct, 1),
+            pressure_hpa=round(pressure_hpa, 1),
+            wind_speed_kmh=round(wind_speed_kmh, 1),
+            wind_deg=round(wind_deg, 1),
+            visibility_km=round(visibility_km, 1),
+            cloud_cover_pct=round(cloud_cover_pct, 1),
+            severity=severity,
+            risk_level=risk["level"],
+            risk_score=risk["score"],
+            risk_reasons=risk["reasons"],
+            forecast_horizons=forecast_horizons,
+            timestamp=dt_utc.isoformat(),
+            source=self.name,
+            quality=quality,
+            station_type="synoptic_grid",
+        )
+
     def get_current_rainfall(self, targets: List[LocationTarget]) -> Tuple[List[RainfallReading], Optional[str]]:
+        """
+        Coordinates real data acquisition across all targets.
+        - Respects 10-minute cache TTL
+        - Enforces rate limiting pacing between requests
+        - Serves last-known-good stale data on 429 rate limit or network outages
+        - Completely avoids fabricated numbers
+        """
+        import time
         if not targets:
             return [], None
 
         if not self.api_key:
-            return [], "OPENWEATHER_API_KEY not configured"
+            return [], "OpenWeather API key not configured"
 
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        now = time.time()
+        ttl = 600  # 10 minutes cache TTL
+        stale_threshold = 3600  # 1 hour
 
         readings: List[RainfallReading] = []
-        now_iso = datetime.now(timezone.utc).isoformat()
+        uncached_targets: List[LocationTarget] = []
 
-        def fetch_single_target(target: LocationTarget) -> Optional[RainfallReading]:
-            params = {
-                "lat": f"{target.latitude:.4f}",
-                "lon": f"{target.longitude:.4f}",
-                "appid": self.api_key,
-                "units": "metric",
-            }
-            url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
-            req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
+        # 1. Inspect existing station cache
+        for t in targets:
+            entry = self._cached_station_readings.get(t.id)
+            if entry and (now - entry.get("cached_at", 0)) < ttl:
+                # Fresh cache hit
+                reading = self._parse_weather_to_reading(t, entry["data"], quality="live")
+                readings.append(reading)
+            else:
+                uncached_targets.append(t)
 
-            try:
-                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=5) as response:
-                    if response.status != 200:
-                        return None
-                    data = json.loads(response.read().decode("utf-8"))
+        if not uncached_targets:
+            # Everything served fresh from cache
+            return readings, None
 
-                weather_info = data.get("weather", [{}])[0]
-                weather_main = weather_info.get("main", "Clear")
-                weather_desc = weather_info.get("description", "Clear Sky").title()
+        # 2. Check if currently rate limited
+        if now < self._rate_limited_until:
+            # Under 429 backoff; serve whatever cached data exists as STALE
+            for t in uncached_targets:
+                entry = self._cached_station_readings.get(t.id)
+                if entry and (now - entry.get("cached_at", 0)) < stale_threshold:
+                    reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
+            return readings, self._rate_limit_error or "Weather API rate limit reached. Retrying later."
 
-                main_info = data.get("main", {})
-                temp_c = float(main_info.get("temp", 25.0) or 25.0)
-                humidity_pct = float(main_info.get("humidity", 70.0) or 70.0)
-                clouds_pct = float(data.get("clouds", {}).get("all", 0) or 0)
+        # 3. Paced fetching for uncached targets
+        logger.info(f"Fetching fresh OpenWeather telemetry for {len(uncached_targets)} stations (paced)...")
+        encountered_error: Optional[str] = None
+        newly_fetched = 0
 
-                # Precipitation from rain object (mm/h)
-                rain_obj = data.get("rain", {})
-                rain_1h = float(rain_obj.get("1h", 0.0) or 0.0)
+        for t in uncached_targets:
+            data, err, status = self.fetch_single_weather(t)
+            if data:
+                self._cached_station_readings[t.id] = {
+                    "data": data,
+                    "cached_at": time.time(),
+                }
+                newly_fetched += 1
+                reading = self._parse_weather_to_reading(t, data, quality="live")
+                readings.append(reading)
+            elif status == 429:
+                encountered_error = "Weather API rate limit reached. Retrying later."
+                logger.warning(f"OpenWeather 429 reached on station {t.name}; aborting uncached batch.")
+                break
+            elif status in (401, 403):
+                encountered_error = "OpenWeather API authentication/configuration error"
+                break
+            else:
+                if err:
+                    encountered_error = err
+                # For this target, see if older cached data exists
+                entry = self._cached_station_readings.get(t.id)
+                if entry:
+                    reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
 
-                if rain_1h > 0.0:
-                    precip_1h = round(rain_1h, 2)
-                    rainfall_24h = round(max(precip_1h * 3.5, precip_1h + 2.0), 1)
-                elif weather_main.lower() in ["rain", "drizzle", "thunderstorm"]:
-                    # Active precipitation condition reported by station
-                    precip_1h = 2.4 if weather_main.lower() == "rain" else 0.8 if weather_main.lower() == "drizzle" else 6.5
-                    rainfall_24h = round(precip_1h * 3.5, 1)
-                elif (clouds_pct >= 70 and humidity_pct >= 80) or (weather_main.lower() in ["mist", "fog", "haze"] and humidity_pct >= 85):
-                    # Station is not actively raining right this minute, but accumulated rainfall earlier today under monsoon trough / overcast
-                    precip_1h = 0.0
-                    rainfall_24h = round(3.0 + (humidity_pct - 80) * 0.6 + (clouds_pct - 70) * 0.12, 1)
-                    weather_desc = f"{weather_desc} (Past 24h Rain)"
-                else:
-                    precip_1h = 0.0
-                    rainfall_24h = 0.0
+        if newly_fetched > 0:
+            self._save_cache_to_disk()
 
-                rain_3h = round(min(rainfall_24h, precip_1h * 2.2), 1)
-                rain_6h = round(min(rainfall_24h, precip_1h * 3.8), 1)
+        # If rate limit was hit during the loop, fill remaining targets from older cache as stale
+        if now < self._rate_limited_until or encountered_error:
+            for t in uncached_targets:
+                if not any(r.id == f"rain_{t.id}" for r in readings):
+                    entry = self._cached_station_readings.get(t.id)
+                    if entry and (time.time() - entry.get("cached_at", 0)) < stale_threshold:
+                        reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
+                        readings.append(reading)
 
-                target_state = getattr(target, "state", "India")
-                target_district = getattr(target, "district", target.name)
-                severity = compute_rainfall_severity(precip_1h, rainfall_24h)
-
-                return RainfallReading(
-                    id=f"rain_{target.id}",
-                    name=target.name,
-                    state=target_state,
-                    district=target_district,
-                    lat=target.latitude,
-                    lon=target.longitude,
-                    rainfallMmPerHour=precip_1h,
-                    rainfall_24h_mm=rainfall_24h,
-                    rainfall_3h_mm=rain_3h,
-                    rainfall_6h_mm=rain_6h,
-                    weather_description=weather_desc,
-                    temperature_c=round(temp_c, 1),
-                    humidity_pct=round(humidity_pct, 1),
-                    severity=severity,
-                    timestamp=now_iso,
-                    source=self.name,
-                    quality="live",
-                    station_type="synoptic_grid",
-                )
-            except Exception as e:
-                logger.debug(f"OpenWeather target fetch failed for {target.name}: {e}")
-                return None
-
-        # Fetch targets in parallel with max 10 concurrent workers
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_target = {executor.submit(fetch_single_target, t): t for t in targets}
-            for future in as_completed(future_to_target):
-                result = future.result()
-                if result:
-                    readings.append(result)
-
-        if not readings or len(readings) < len(targets) * 0.4:
-            # If API was throttled or incomplete, fallback to assimilated dataset
-            fallback_provider = OpenMeteoRainfallProvider()
-            return fallback_provider._generate_fallback_readings(targets), "Deployed IMD assimilated fallback telemetry"
-
-        return readings, None
+        return readings, encountered_error
 
 
 class IMDRainfallProvider(RainfallProvider):

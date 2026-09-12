@@ -14,6 +14,8 @@ from .verified_outcome import VerifiedOutcome
 from .model_version import ModelVersion
 from .road_incident import RoadIncident
 from .model_coverage import ModelCoverage
+from .disaster_event import DisasterEvent
+from .monitoring_polygon import MonitoringPolygon, SoilObservation
 
 __all__ = [
     "Village",
@@ -33,4 +35,7 @@ __all__ = [
     "ModelVersion",
     "RoadIncident",
     "ModelCoverage",
+    "DisasterEvent",
+    "MonitoringPolygon",
+    "SoilObservation",
 ]

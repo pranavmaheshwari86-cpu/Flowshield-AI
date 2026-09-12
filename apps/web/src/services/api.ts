@@ -25,6 +25,9 @@ import {
   RainfallReport,
   TimelineDetailedResponse,
   TimelineLocationHierarchy,
+  AgroStatus,
+  AgroMonitoringPolygon,
+  SoilGeoJSONFeatureCollection,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -507,6 +510,73 @@ class ApiClient {
     });
   }
 
+  public async evaluateDisasterAwareRoute(req: {
+    origin_latitude: number;
+    origin_longitude: number;
+    village_id?: string | number;
+    destination_shelter_id?: string | number;
+    state?: string;
+    district?: string;
+  }): Promise<any> {
+    return this.request<any>('/routes/evaluate-disaster-aware', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  public async rerouteEvacuation(req: {
+    current_route_id?: string;
+    current_latitude: number;
+    current_longitude: number;
+    destination_shelter_id?: string;
+    state?: string;
+    district?: string;
+    new_blockage_corridor_id?: string;
+    blockage_reason?: string;
+  }): Promise<any> {
+    return this.request<any>('/routes/reroute', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  public async getEmergencyFacilities(district?: string): Promise<any[]> {
+    const q = district ? `?district=${encodeURIComponent(district)}` : '';
+    return this.request<any[]>(`/routes/emergency-facilities${q}`);
+  }
+
+  // Disaster Event Intelligence Endpoints
+  public async getDisasterEvents(state?: string, district?: string, activeOnly: boolean = true): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (district) params.append('district', district);
+    if (activeOnly) params.append('active_only', 'true');
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/disaster-events${query}`);
+  }
+
+  public async getActiveDisasterEvents(state?: string, district?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (district) params.append('district', district);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/disaster-events/active${query}`);
+  }
+
+  public async triggerDemoDisaster(state: string = 'Uttarakhand', district: string = 'Rudraprayag'): Promise<any> {
+    return this.request<any>('/disaster-events/simulate-demo', {
+      method: 'POST',
+      body: JSON.stringify({ state, district }),
+    });
+  }
+
+  public async resetDemoDisaster(state: string = 'Uttarakhand', district: string = 'Rudraprayag'): Promise<any> {
+    return this.request<any>('/disaster-events/reset-demo', {
+      method: 'POST',
+      body: JSON.stringify({ state, district }),
+    });
+  }
+
   public async getDataSources(): Promise<any> {
     return this.request<any>('/data-sources');
   }
@@ -687,6 +757,10 @@ class ApiClient {
     return this.request<any>('/rainfall/status');
   }
 
+  public async getRainfallStationDetails(stationId: string): Promise<any> {
+    return this.request<any>(`/rainfall/station/${encodeURIComponent(stationId)}`);
+  }
+
   // Real-Time Server-Sent Events (SSE) Subscription
   public subscribeRealtimeStream(
     villageId?: string,
@@ -755,6 +829,68 @@ class ApiClient {
 
   public async evaluateAllSettlements(): Promise<any> {
     return this.request<any>('/predictions/evaluate-all', {
+      method: 'POST',
+    });
+  }
+
+  // AgroMonitoring Soil Moisture Integration
+  public async getAgroStatus(): Promise<AgroStatus> {
+    return this.request<AgroStatus>('/agro-monitoring/status');
+  }
+
+  public async getAgroHierarchy(): Promise<Record<string, string[]>> {
+    return this.request<Record<string, string[]>>('/agro-monitoring/hierarchy');
+  }
+
+  public async initAgroGrid(params: {
+    scope?: 'district' | 'state' | 'all';
+    state_name?: string;
+    district_name?: string;
+    register_with_agro?: boolean;
+    batch_limit?: number;
+  }): Promise<any> {
+    return this.request<any>('/agro-monitoring/initialize', {
+      method: 'POST',
+      body: JSON.stringify({
+        scope: params.scope || 'district',
+        state_name: params.state_name || 'Himachal Pradesh',
+        district_name: params.district_name || 'Mandi',
+        register_with_agro: params.register_with_agro ?? true,
+        batch_limit: params.batch_limit || 5,
+      }),
+    });
+  }
+
+  public async getSoilGeoJSON(params?: {
+    state?: string;
+    district?: string;
+    only_registered?: boolean;
+  }): Promise<SoilGeoJSONFeatureCollection> {
+    const query = new URLSearchParams();
+    if (params?.state) query.append('state', params.state);
+    if (params?.district) query.append('district', params.district);
+    if (params?.only_registered) query.append('only_registered', 'true');
+    const qs = query.toString();
+    return this.request<SoilGeoJSONFeatureCollection>(`/agro-monitoring/soil${qs ? `?${qs}` : ''}`);
+  }
+
+  public async listAgroPolygons(params?: {
+    state?: string;
+    district?: string;
+    status_filter?: string;
+    limit?: number;
+  }): Promise<AgroMonitoringPolygon[]> {
+    const query = new URLSearchParams();
+    if (params?.state) query.append('state', params.state);
+    if (params?.district) query.append('district', params.district);
+    if (params?.status_filter) query.append('status_filter', params.status_filter);
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const qs = query.toString();
+    return this.request<AgroMonitoringPolygon[]>(`/agro-monitoring/polygons${qs ? `?${qs}` : ''}`);
+  }
+
+  public async syncAgroSoilData(): Promise<{ status: string; updated_polygons: number }> {
+    return this.request<{ status: string; updated_polygons: number }>('/agro-monitoring/sync', {
       method: 'POST',
     });
   }

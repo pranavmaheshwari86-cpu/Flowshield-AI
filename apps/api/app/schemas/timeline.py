@@ -30,6 +30,10 @@ class ObservationSnapshot(BaseModel):
     river_surge_rate_m_hr: Optional[float] = None
     soil_moisture_m3_m3: float
     soil_saturation_pct: float
+    # Live atmospheric telemetry (OWM / Open-Meteo)
+    temperature_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
     provenance: TemporalProvenance
 
 

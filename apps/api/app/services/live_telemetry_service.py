@@ -51,7 +51,7 @@ class LiveTelemetryService:
             else "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
         )
 
-    def sync_live_telemetry(self, db: Session) -> Dict[str, Any]:
+    def sync_live_telemetry(self, db: Session, force: bool = False) -> Dict[str, Any]:
         """
         Executes a complete live sync cycle:
         1. Queries providers (OpenWeatherMap / Open-Meteo) for active settlements.
@@ -59,12 +59,21 @@ class LiveTelemetryService:
         3. Executes ML flood prediction using canonical 15 features.
         4. Evaluates operational risk score and alert triggers.
         """
+        now = datetime.now(timezone.utc)
+        if not force and self.last_sync_time and (now - self.last_sync_time).total_seconds() < 180:
+            return {
+                "status": "success",
+                "message": "Live telemetry is fresh (synchronized within last 3 minutes)",
+                "synced_count": self.last_synced_count,
+                "provider": self.provider,
+                "cached": True,
+            }
+
         villages = db.query(Village).order_by(Village.name).all()
         if not villages:
             return {"status": "error", "message": "No settlements found in database"}
 
         sync_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
 
         # Build location targets
         targets = [

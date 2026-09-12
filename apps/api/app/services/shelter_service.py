@@ -8,7 +8,7 @@ Strict Non-Fabrication Policy:
 """
 
 import math
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..models.shelter import Shelter
@@ -193,88 +193,143 @@ class ShelterService:
         shelter: Shelter,
         distance_km: float,
         route: Optional[Route] = None,
-    ) -> Tuple[float, str, List[str]]:
+        active_disaster_events: Optional[List[Any]] = None,
+    ) -> Tuple[float, str, List[str], bool, float]:
         """
-        Computes multi-factor evacuation suitability score (0-100).
-        Considers:
-        1. Distance & Travel Time (Weight: 30%)
-        2. Route corridor risk and blockage (Weight: 30%)
-        3. Shelter readiness: medical, power, water, 24x7 (Weight: 20%)
-        4. Data verification confidence (Weight: 20%)
-        Returns: (suitability_score, recommendation_label, rationale_points)
+        Computes multi-factor evacuation suitability score (0-100) per Section 12 & 13:
+        1. SAFETY (40 pts) - evaluates distance from active disaster zones & floodways.
+        2. AVAILABILITY (20 pts) - capacity headroom & non-saturation.
+        3. ACCESSIBILITY (15 pts) - open vs blocked road corridor access.
+        4. DISTANCE (10 pts) - proximity and mountain travel time.
+        5. MEDICAL & UTILITIES (10 pts) - dedicated medical team, backup power generator, water.
+        6. CONFIDENCE (5 pts) - verified official DDMP record.
+
+        Returns: (suitability_score, recommendation_label, rationale_points, is_safe_haven, hazard_exposure_score)
         """
         rationale: List[str] = []
+        is_safe_haven = True
+        hazard_exposure_score = 10.0  # Baseline low exposure
 
-        # 1. Distance score (0 to 30)
-        # Closer than 5km = 30 pts; 5-15km = scaled; >25km = minimal pts
-        if distance_km <= 5.0:
-            dist_score = 30.0
-            rationale.append(f"Immediate proximity ({distance_km:.1f} km)")
-        elif distance_km <= 15.0:
-            dist_score = 30.0 - ((distance_km - 5.0) / 10.0) * 15.0
-            rationale.append(f"Accessible radius ({distance_km:.1f} km)")
-        else:
-            dist_score = max(5.0, 15.0 - ((distance_km - 15.0) / 15.0) * 10.0)
-            rationale.append(f"Extended distance ({distance_km:.1f} km)")
+        # 0. HARD SAFETY EXCLUSIONS
+        # Exclusion A: Shelter is marked FULL or CLOSED
+        if shelter.status in ["CLOSED", "INACTIVE"] or shelter.operational_status in ["CLOSED", "INACTIVE"]:
+            return 0.0, "EXCLUDED — SHELTER CLOSED", ["Facility is non-operational or closed by district authority"], False, 100.0
 
-        # 2. Route Safety score (0 to 30)
-        is_blocked = False
+        if shelter.available_capacity is not None and shelter.available_capacity <= 0:
+            return 0.0, "EXCLUDED — SHELTER FULL", ["Facility reached 100% capacity capacity threshold"], False, 90.0
+
+        # Exclusion B: Proximity to active disaster event (Landslide/Flood epicenter)
+        if active_disaster_events:
+            for event in active_disaster_events:
+                ev_lat = getattr(event, "latitude", None) or (event.get("latitude") if isinstance(event, dict) else None)
+                ev_lon = getattr(event, "longitude", None) or (event.get("longitude") if isinstance(event, dict) else None)
+                ev_rad = getattr(event, "affected_radius_km", 2.5) or (event.get("affected_radius_km", 2.5) if isinstance(event, dict) else 2.5)
+                ev_sev = getattr(event, "severity", "HIGH") or (event.get("severity", "HIGH") if isinstance(event, dict) else "HIGH")
+                
+                if ev_lat is not None and ev_lon is not None:
+                    dist_to_hazard = haversine_distance_km(shelter.latitude, shelter.longitude, ev_lat, ev_lon)
+                    if dist_to_hazard <= ev_rad:
+                        hazard_exposure_score = 98.0
+                        return (
+                            0.0,
+                            "EXCLUDED — ACTIVE HAZARD ZONE",
+                            [f"Inside {ev_sev} active hazard perimeter ({dist_to_hazard:.1f} km from epicenter)"],
+                            False,
+                            100.0,
+                        )
+                    elif dist_to_hazard <= ev_rad * 1.6:
+                        hazard_exposure_score = max(hazard_exposure_score, 65.0)
+                        rationale.append(f"Caution: Near hazard buffer ({dist_to_hazard:.1f} km)")
+
+        # Exclusion C: Route corridor is severed
+        is_route_blocked = False
         route_risk = 15
         if route:
-            is_blocked = route.is_blocked
+            is_route_blocked = route.is_blocked
             route_risk = route.assessed_risk_score
-            if is_blocked:
-                route_score = 0.0
-                rationale.append(f"Corridor severed: {route.blockage_reason or 'Road blocked'}")
-            else:
-                route_score = max(0.0, 30.0 - (route_risk / 100.0) * 20.0)
-                if route.is_river_crossing:
-                    route_score -= 5.0
-                    rationale.append("Route involves low-level river crossing")
-                else:
-                    rationale.append("Direct road corridor open and clear")
-        else:
-            # Fallback when no precomputed route exists: evaluate line-of-sight penalty
-            route_score = 22.0
-            rationale.append("Road network route navigable")
+            if is_route_blocked:
+                hazard_exposure_score = max(hazard_exposure_score, 85.0)
+                return (
+                    15.0,
+                    "UNSAFE — ROUTE SEVERED",
+                    [f"Connecting corridor is severed: {route.blockage_reason or 'Road blocked'}"],
+                    False,
+                    85.0,
+                )
 
-        # 3. Readiness score (0 to 20)
-        readiness_score = 0.0
+        # 1. SAFETY SCORE (40 points)
+        # Higher score if hazard exposure is low and no river surge risk
+        safety_score = max(0.0, 40.0 - (hazard_exposure_score / 100.0) * 35.0)
+        if route and route.is_river_crossing:
+            safety_score = max(5.0, safety_score - 8.0)
+            rationale.append("Connecting path traverses river causeway")
+        else:
+            rationale.append("Outside high-risk flood & landslide perimeter")
+
+        # 2. AVAILABILITY & CAPACITY (20 points)
+        avail = shelter.available_capacity
+        cap = shelter.effective_capacity
+        if avail is not None and cap is not None and cap > 0:
+            pct_free = (avail / cap)
+            avail_score = 20.0 * min(1.0, pct_free)
+            rationale.append(f"{avail} open slots ({int(pct_free*100)}% available)")
+        elif cap is not None and cap >= 500:
+            avail_score = 16.0
+            rationale.append(f"Major facility capacity ({cap} slots)")
+        else:
+            avail_score = 14.0
+
+        # 3. ACCESSIBILITY & ROUTE CLEARANCE (15 points)
+        if route and not is_route_blocked:
+            access_score = max(5.0, 15.0 - (route_risk / 100.0) * 8.0)
+            rationale.append("All-weather road corridor clear")
+        else:
+            access_score = 12.0
+
+        # 4. DISTANCE & TRAVEL TIME (10 points)
+        if distance_km <= 3.0:
+            dist_score = 10.0
+            rationale.append(f"Immediate proximity ({distance_km:.1f} km)")
+        elif distance_km <= 10.0:
+            dist_score = 10.0 - ((distance_km - 3.0) / 7.0) * 5.0
+            rationale.append(f"Reachable distance ({distance_km:.1f} km)")
+        else:
+            dist_score = max(2.0, 5.0 - ((distance_km - 10.0) / 15.0) * 3.0)
+            rationale.append(f"Transit distance ({distance_km:.1f} km)")
+
+        # 5. MEDICAL & UTILITIES (10 points)
+        util_score = 0.0
         if shelter.has_medical or shelter.medical_facility:
-            readiness_score += 6.0
-            rationale.append("Dedicated medical team on site")
+            util_score += 3.5
+            rationale.append("Medical response team on site")
         if shelter.has_power_backup or shelter.generator_available:
-            readiness_score += 5.0
-            rationale.append("Auxiliary generator power active")
+            util_score += 3.5
+            rationale.append("Generator power backup active")
         if shelter.water_available:
-            readiness_score += 5.0
+            util_score += 2.0
         if shelter.is_24x7:
-            readiness_score += 4.0
+            util_score += 1.0
 
-        # 4. Confidence score (0 to 20)
+        # 6. VERIFICATION CONFIDENCE (5 points)
         conf = shelter.confidence_score or 85
-        conf_score = (conf / 100.0) * 20.0
+        conf_score = (conf / 100.0) * 5.0
         if shelter.verification_status == "VERIFIED":
-            rationale.append(f"Verified official facility ({conf}% confidence)")
-        else:
-            rationale.append(f"Partially verified record ({conf}% confidence)")
+            rationale.append("USDMA / DDMP verified record")
 
-        total_score = dist_score + route_score + readiness_score + conf_score
+        total_score = round(safety_score + avail_score + access_score + dist_score + util_score + conf_score, 1)
 
-        # Determine Recommendation Label
-        if is_blocked:
-            recommendation = "UNSAFE - ROUTE BLOCKED"
-            total_score = min(total_score, 25.0)
-        elif total_score >= 80.0:
+        # Label Assignment
+        if total_score >= 82.0:
             recommendation = "RECOMMENDED PRIMARY SHELTER"
-        elif total_score >= 60.0:
+        elif total_score >= 65.0:
             recommendation = "RECOMMENDED ALTERNATE SHELTER"
-        elif total_score >= 40.0:
-            recommendation = "CAUTION - SECONDARY OPTION"
+        elif total_score >= 45.0:
+            recommendation = "CAUTION — SECONDARY HAVEN"
         else:
-            recommendation = "NOT RECOMMENDED - HIGH RISK"
+            recommendation = "NOT RECOMMENDED — ELEVATED RISK"
+            is_safe_haven = False
 
-        return round(total_score, 1), recommendation, rationale
+        return total_score, recommendation, rationale, is_safe_haven, round(hazard_exposure_score, 1)
 
     @classmethod
     def get_recommended_shelters(
@@ -288,10 +343,18 @@ class ShelterService:
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """
-        Finds and ranks candidate shelters using multi-factor evacuation suitability score.
-        Filters dangerous routes and prioritizes officially verified, resilient facilities.
+        Finds and ranks candidate shelters using strict multi-factor evacuation suitability.
+        Filters dangerous routes, checks active disaster zones, and prioritizes resilient facilities.
         """
-        # Fetch shelters in same state & district if specified
+        from ..models.disaster_event import DisasterEvent
+
+        # Query active disaster events in the jurisdiction
+        active_events_query = db.query(DisasterEvent).filter(DisasterEvent.status.in_(["ACTIVE", "MONITORING"]))
+        if district:
+            active_events_query = active_events_query.filter(func.lower(DisasterEvent.district) == district.strip().lower())
+        active_events = active_events_query.all()
+
+        # Fetch candidate shelters
         query = db.query(Shelter).filter(Shelter.status != "CLOSED")
         if state:
             query = query.filter(func.lower(Shelter.state) == state.strip().lower())
@@ -300,14 +363,12 @@ class ShelterService:
 
         candidates = query.all()
         if not candidates:
-            # Expand to entire state or all available
             candidates = db.query(Shelter).filter(Shelter.status != "CLOSED").all()
 
         scored_results = []
         for s in candidates:
             dist = haversine_distance_km(origin_lat, origin_lon, s.latitude, s.longitude)
             
-            # Find precomputed route if village_id is provided
             matching_route = None
             if village_id:
                 matching_route = db.query(Route).filter(
@@ -315,20 +376,27 @@ class ShelterService:
                     Route.destination_shelter_id == s.id,
                 ).first()
 
-            score, rec_label, rationale = cls.compute_evacuation_suitability(s, dist, matching_route)
+            score, rec_label, rationale, is_safe, hazard_score = cls.compute_evacuation_suitability(
+                shelter=s,
+                distance_km=dist,
+                route=matching_route,
+                active_disaster_events=active_events,
+            )
             
             s_dict = cls._format_shelter_dict(s, dist)
             s_dict["suitability_score"] = score
             s_dict["recommendation_label"] = rec_label
             s_dict["rationale"] = rationale
+            s_dict["is_safe_haven"] = is_safe
+            s_dict["hazard_exposure_score"] = hazard_score
             s_dict["corridor_id"] = matching_route.id if matching_route else None
             s_dict["corridor_name"] = matching_route.name if matching_route else None
             s_dict["corridor_blocked"] = matching_route.is_blocked if matching_route else False
 
             scored_results.append(s_dict)
 
-        # Sort by suitability score descending (highest suitability first)
-        scored_results.sort(key=lambda x: x["suitability_score"], reverse=True)
+        # Sort: Safe havens first, then by suitability score descending
+        scored_results.sort(key=lambda x: (1 if x["is_safe_haven"] else 0, x["suitability_score"]), reverse=True)
         return scored_results[:limit]
 
 

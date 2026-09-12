@@ -63,6 +63,8 @@ class ShelterResponse(BaseModel):
     suitability_score: Optional[float] = None
     recommendation_label: Optional[str] = None
     rationale: Optional[List[str]] = None
+    is_safe_haven: Optional[bool] = True
+    hazard_exposure_score: Optional[float] = 10.0
     corridor_id: Optional[str] = None
     corridor_name: Optional[str] = None
     corridor_blocked: Optional[bool] = None

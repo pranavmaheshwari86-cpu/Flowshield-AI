@@ -347,6 +347,13 @@ def seed_database():
         # 10. Seed Extended Mountain Settlements & Evacuation Corridors (Mandi, Chamoli)
         _seed_extended_settlements_and_routes(db)
 
+        # 11. Seed Regional ML Model Stations across all 10 Himalayan & NE Target Regions
+        try:
+            from scripts.seed_regional_model_villages import seed_regional_model_villages
+            seed_regional_model_villages()
+        except Exception as err:
+            print(f"Regional model stations seed skipped: {err}")
+
         print("\nFlowshield database seed complete! System ready for baseline presentation.")
     finally:
         db.close()

@@ -21,6 +21,8 @@ from ..schemas.route import (
     RouteAssessmentReport,
     RouteEvaluateRequest,
     RouteEvaluationResult,
+    RerouteRequest,
+    RerouteResponse,
     BlockageReportCreate,
     RoadIncidentResponse,
 )
@@ -38,6 +40,61 @@ class BlockageToggleRequest(BaseModel):
 class IncidentStatusUpdate(BaseModel):
     status: str  # REPORTED, UNDER_REVIEW, VERIFIED, ACTIVE, CLEARED
     verified_by: Optional[str] = "Command Center Operator"
+
+
+@router.get("/blocked", response_model=List[RouteResponse])
+def list_blocked_routes(
+    state: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Returns currently severed or blocked road corridors."""
+    all_routes = route_service.get_routes(db, state=state, district=district)
+    return [r for r in all_routes if r.is_blocked]
+
+
+@router.get("/emergency-contacts")
+def get_district_emergency_contacts(
+    district: Optional[str] = Query("Rudraprayag"),
+):
+    """Returns official verified disaster emergency facilities & hotlines."""
+    return route_service.get_emergency_facilities(district)
+
+
+@router.post("/reroute", response_model=RerouteResponse)
+def reroute_evacuation_corridor(req: RerouteRequest, db: Session = Depends(get_db)):
+    """
+    Dynamically recalculates safe evacuation route upon real-time corridor severance.
+    """
+    result = route_service.reroute_evacuation(
+        db=db,
+        current_route_id=req.current_route_id,
+        current_lat=req.current_latitude,
+        current_lon=req.current_longitude,
+        destination_shelter_id=req.destination_shelter_id,
+        state=req.state,
+        district=req.district,
+        new_blockage_corridor_id=req.new_blockage_corridor_id,
+        blockage_reason=req.blockage_reason,
+    )
+    return RerouteResponse(**result)
+
+
+@router.post("/evaluate-disaster-aware", response_model=RouteEvaluationResult)
+def evaluate_disaster_aware_route(req: RouteEvaluateRequest, db: Session = Depends(get_db)):
+    """
+    Evaluates dynamic route safety from given coordinates, excluding blocked corridors
+    and warning if shortest path is hazardous.
+    """
+    return route_service.evaluate_route(
+        db=db,
+        origin_lat=req.origin_latitude,
+        origin_lon=req.origin_longitude,
+        village_id=req.village_id,
+        destination_shelter_id=req.destination_shelter_id,
+        state=req.state,
+        district=req.district,
+    )
 
 
 @router.get("", response_model=List[RouteResponse])

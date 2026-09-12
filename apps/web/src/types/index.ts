@@ -186,6 +186,8 @@ export interface Shelter {
   corridor_id?: string;
   corridor_name?: string;
   corridor_blocked?: boolean;
+  is_safe_haven?: boolean;
+  hazard_exposure_score?: number;
 }
 
 export interface EvacuationRoute {
@@ -205,16 +207,78 @@ export interface EvacuationRoute {
   estimated_travel_time_min?: number;
   estimated_time_min?: number;
   assessed_risk_score?: number;
+  safety_score?: number;
+  is_river_crossing?: boolean;
+  blocked_segments_count?: number;
   hazard_cost_multiplier?: number;
   hazard_exposure?: string;
   route_confidence?: number;
   last_verified?: string;
   recommendation?: string;
+  route_label?: string;
   elevation_gain_m?: number;
   hazard_zones_crossed?: number;
   blockage_reason?: string;
   coordinates?: [number, number][];
   geometry?: any;
+}
+
+export interface DisasterEvent {
+  id: string;
+  event_id: string;
+  disaster_type: 'LANDSLIDE' | 'FLASH_FLOOD' | 'HEAVY_RAINFALL' | 'ROAD_BLOCKAGE' | 'RIVER_SURGE' | string;
+  severity: 'WATCH' | 'ADVISORY' | 'WARNING' | 'CRITICAL' | 'SEVERE' | string;
+  status: 'ACTIVE' | 'MONITORING' | 'CONTAINED' | 'RESOLVED' | string;
+  state: string;
+  district: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  affected_radius_km: number;
+  affected_population: number;
+  confidence_score: number;
+  description: string;
+  triggered_by?: string;
+  blocked_road_corridors?: string[];
+  impacted_settlements?: string[];
+  safe_evacuation_directions?: string[];
+  source_agency?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmergencyFacility {
+  name: string;
+  type: string;
+  phone: string;
+  distance_km: number;
+  status: string;
+}
+
+export interface RouteEvaluationResult {
+  status: string;
+  route_label: string;
+  requires_authority_coordination: boolean;
+  selected_route: EvacuationRoute | null;
+  alternate_routes: EvacuationRoute[];
+  blocked_routes?: EvacuationRoute[];
+  shortest_route_hazardous_warning?: string | null;
+  nearest_emergency_facilities?: EmergencyFacility[];
+  snap_distance_km: number;
+  hazard_penalty_applied?: number;
+  message: string;
+}
+
+export interface RerouteResponse {
+  route_invalidated: boolean;
+  status: string;
+  reroute_alert: string;
+  old_eta_min: number | null;
+  new_eta_min: number | null;
+  reason: string;
+  new_safe_route: EvacuationRoute | null;
+  alternate_routes: EvacuationRoute[];
+  nearest_emergency_facilities: EmergencyFacility[];
 }
 
 export interface GeographyState {
@@ -552,7 +616,20 @@ export type IMDRainfallCategory =
   | 'Very Heavy'
   | 'Extremely Heavy'
   | 'Dry / Trace';
-export type RainfallQuality = 'live' | 'stale' | 'unavailable';
+export type RainfallQuality = 'live' | 'stale' | 'unavailable' | 'rate_limited';
+
+export interface ForecastHorizonData {
+  rain_mm: number;
+  pop_pct: number;
+  temp_c: number;
+  condition: string;
+}
+
+export interface RiskAssessment {
+  level: string;
+  score: number;
+  reasons: string[];
+}
 
 export interface RainfallReading {
   id: string;
@@ -565,14 +642,37 @@ export interface RainfallReading {
   rainfall_24h_mm: number;
   rainfall_3h_mm?: number;
   rainfall_6h_mm?: number;
+  forecast_24h_mm?: number;
+  historical_24h_available?: boolean;
+  weather_main?: string;
   weather_description?: string;
   temperature_c?: number;
+  feels_like_c?: number;
   humidity_pct?: number;
+  pressure_hpa?: number;
+  wind_speed_kmh?: number;
+  wind_deg?: number;
+  visibility_km?: number;
+  cloud_cover_pct?: number;
   severity: RainfallSeverity;
+  risk_level?: string;
+  risk_score?: number;
+  risk_reasons?: string[];
+  risk_assessment?: RiskAssessment;
+  forecast_horizons?: Record<string, ForecastHorizonData>;
+  alerts?: any[];
   timestamp: string;
   source: string;
   quality: RainfallQuality;
   station_type?: string;
+}
+
+export interface TelemetryCategoryStats {
+  category: string;
+  count: number;
+  min_rate: number;
+  max_rate: number;
+  percentage: number;
 }
 
 export interface RainfallReport {
@@ -587,15 +687,19 @@ export interface RainfallReport {
     red: { min: number; max: number | null; label: string };
   };
   total_monitored_points: number;
+  rain_today_points_count?: number;
   active_rainfall_points_count: number;
   highest_rainfall_point?: {
     name: string;
     state?: string;
     district?: string;
     rainfall_24h_mm: number;
+    forecast_24h_mm?: number;
     rainfall_rate_mm_hr: number;
     weather: string;
   } | null;
+  telemetry_breakdown?: Record<string, TelemetryCategoryStats>;
+  rate_limited?: boolean;
   data: RainfallReading[];
   error?: string | null;
 }
@@ -629,6 +733,10 @@ export interface ObservationSnapshot {
   river_surge_rate_m_hr?: number | null;
   soil_moisture_m3_m3: number;
   soil_saturation_pct: number;
+  // Live atmospheric telemetry (OWM / Open-Meteo)
+  temperature_c?: number | null;
+  humidity_pct?: number | null;
+  wind_speed_kmh?: number | null;
   provenance: TemporalProvenance;
 }
 
@@ -877,6 +985,78 @@ export interface StateHierarchyItem {
 
 export interface TimelineLocationHierarchy {
   states: StateHierarchyItem[];
+}
+
+export interface AgroMonitoringPolygon {
+  id: string;
+  agro_polygon_id?: string;
+  name: string;
+  country: string;
+  state?: string;
+  district?: string;
+  area_hectares: number;
+  centroid_lat: number;
+  centroid_lon: number;
+  status: string;
+  error_message?: string;
+  last_soil_update?: string;
+  latest_moisture?: number;
+  moisture_tier?: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH' | 'UNKNOWN';
+  latest_soil_temp?: number;
+  latest_surface_temp?: number;
+}
+
+export interface AgroStatus {
+  api_configured: boolean;
+  total_cells_generated: number;
+  registered_polygons: number;
+  pending_polygons: number;
+  failed_polygons: number;
+  limit_exceeded_polygons: number;
+  last_soil_sync?: string;
+  plan_notice?: string;
+  active_states: string[];
+  active_districts: string[];
+}
+
+export interface SoilGeoJSONFeature {
+  type: 'Feature';
+  id: string;
+  geometry: {
+    type: 'Polygon';
+    coordinates: number[][][];
+  };
+  properties: {
+    id: string;
+    agro_polygon_id?: string;
+    name: string;
+    country: string;
+    state?: string;
+    district?: string;
+    area_ha: number;
+    status: string;
+    centroid: [number, number];
+    soil_moisture?: number;
+    moisture_tier?: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH' | 'UNKNOWN';
+    soil_temp_c?: number;
+    surface_temp_c?: number;
+    last_observation_dt?: string;
+  };
+}
+
+export interface SoilGeoJSONFeatureCollection {
+  type: 'FeatureCollection';
+  features: SoilGeoJSONFeature[];
+  metadata: {
+    total_polygons: number;
+    generated_at: string;
+    source: string;
+    units: {
+      soil_moisture: string;
+      temperature: string;
+      area: string;
+    };
+  };
 }
 
 

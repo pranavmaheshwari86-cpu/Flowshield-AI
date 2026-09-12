@@ -22,6 +22,8 @@ from .rainfall import router as rainfall_router
 from .regional_predictions import router as regional_predictions_router
 from .geography import router as geography_router
 from .data_sources import router as data_sources_router
+from .disaster_events import router as disaster_events_router
+from .agro_monitoring import router as agro_monitoring_router
 
 __all__ = [
     "health_router",
@@ -48,5 +50,7 @@ __all__ = [
     "regional_predictions_router",
     "geography_router",
     "data_sources_router",
+    "disaster_events_router",
+    "agro_monitoring_router",
 ]
 

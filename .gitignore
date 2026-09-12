@@ -15,14 +15,21 @@ __pycache__/
 node_modules/
 apps/web/node_modules/
 
-# Test DB
-test_flowshield.db
+# Test & Temp DBs
+test_flowshield.db*
+*.db-shm
+*.db-wal
+*.db.bak
 
 # Build Artifacts
 dist/
 apps/web/dist/
 .pytest_cache/
 *.pyc
+
+# Tooling & Scratch
+.playwright-mcp/
+scratch/
 
 # OS Artifacts
 .DS_Store

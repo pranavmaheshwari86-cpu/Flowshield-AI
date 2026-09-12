@@ -5,7 +5,7 @@ Serves live normalized precipitation telemetry for Leaflet GIS visualization.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -38,9 +38,25 @@ def get_current_rainfall(
     )
 
 
+@router.get("/station/{station_id}")
+def get_station_details(
+    station_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Returns full atmospheric telemetry, 48-hour forecast horizons (1h, 3h, 6h, 12h, 24h, 48h),
+    and explainable FLOWSHIELD RISK MODEL evaluation for a specific station.
+    """
+    details = rainfall_service.get_station_details(station_id, db=db)
+    if not details:
+        raise HTTPException(status_code=404, detail=f"Station '{station_id}' not found in synoptic network")
+    return details
+
+
 @router.get("/status")
 def get_rainfall_status():
     """
     Returns the operational health, cache status, and provenance of the rainfall provider.
     """
     return rainfall_service.get_status()
+

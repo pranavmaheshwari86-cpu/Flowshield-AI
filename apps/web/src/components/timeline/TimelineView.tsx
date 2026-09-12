@@ -13,7 +13,6 @@ import { SituationAnalysisCard } from './SituationAnalysisCard';
 import { HydrologicalAnalysisCard } from './HydrologicalAnalysisCard';
 import { ExposureEvacuationCard } from './ExposureEvacuationCard';
 import { DataQualityTransparencyCard } from './DataQualityTransparencyCard';
-import { FloodOutlookSummary } from './FloodOutlookSummary';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface TimelineViewProps {
@@ -27,9 +26,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 }) => {
   // Geographic Location Hierarchy State
   const [locations, setLocations] = useState<TimelineLocationHierarchy | null>(null);
-  const [selectedState, setSelectedState] = useState<string>('Bihar');
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('Buxar');
-  const [selectedVillageId, setSelectedVillageId] = useState<string>(initialVillageId || 'bh-07-buxar');
+  const [selectedState, setSelectedState] = useState<string>('Himachal Pradesh');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('Mandi');
+  const [selectedVillageId, setSelectedVillageId] = useState<string>(initialVillageId || 'vil-hp-mnd-01');
 
   // Detailed Timeline Intelligence State
   const [timelineData, setTimelineData] = useState<TimelineDetailedResponse | null>(null);
@@ -52,7 +51,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         setLocations(hierarchy);
 
         if (hierarchy.states.length > 0) {
-          const targetId = selectedVillageId || initialVillageId || 'bh-07-buxar';
+          const targetId = initialVillageId || selectedVillageId || 'vil-hp-mnd-01';
           let foundState = '';
           let foundDistrict = '';
           let foundVillageId = '';
@@ -70,16 +69,24 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             if (foundVillageId) break;
           }
 
-          if (!foundVillageId && hierarchy.states[0].districts[0]?.settlements[0]) {
-            foundState = hierarchy.states[0].name;
-            foundDistrict = hierarchy.states[0].districts[0].name;
-            foundVillageId = hierarchy.states[0].districts[0].settlements[0].id;
+          // If targetId not found, prioritize validated ML regions (e.g. Himachal Pradesh)
+          if (!foundVillageId) {
+            const hpState = hierarchy.states.find((s) => s.name.toLowerCase().includes('himachal'));
+            if (hpState && hpState.districts.length > 0 && hpState.districts[0].settlements.length > 0) {
+              foundState = hpState.name;
+              foundDistrict = hpState.districts[0].name;
+              foundVillageId = hpState.districts[0].settlements[0].id;
+            } else if (hierarchy.states[0].districts[0]?.settlements[0]) {
+              foundState = hierarchy.states[0].name;
+              foundDistrict = hierarchy.states[0].districts[0].name;
+              foundVillageId = hierarchy.states[0].districts[0].settlements[0].id;
+            }
           }
 
           if (foundVillageId) {
             setSelectedState(foundState);
             setSelectedDistrict(foundDistrict);
-            setSelectedVillageId(foundVillageId);
+            setSelectedVillageId((prev) => (prev === foundVillageId ? prev : foundVillageId));
             if (onVillageChange) onVillageChange(foundVillageId);
           }
         }
@@ -92,6 +99,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       isMounted = false;
     };
   }, []);
+
+  // Stable reference to timelineData to prevent useCallback churn
+  const timelineDataRef = useRef(timelineData);
+  timelineDataRef.current = timelineData;
 
   // 2. Fetch Detailed Timeline Data for Selected Settlement
   const fetchTimelineData = useCallback(
@@ -107,7 +118,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       if (forceRefresh) {
         setIsRefreshing(true);
         setStatus('UPDATING');
-      } else if (!timelineData) {
+      } else if (!timelineDataRef.current) {
         setStatus('LOADING');
       }
 
@@ -134,7 +145,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         setIsRefreshing(false);
       }
     },
-    [timelineData]
+    []
   );
 
   // Trigger fetch when selectedVillageId changes
@@ -142,14 +153,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     if (selectedVillageId) {
       fetchTimelineData(selectedVillageId, false);
     }
-  }, [selectedVillageId]);
+  }, [selectedVillageId, fetchTimelineData]);
 
   // 3. Adaptive HTTP Polling based on Risk Tier
   useEffect(() => {
     if (!selectedVillageId) return;
 
     // Determine poll interval: 30s for CRITICAL, 60s for HIGH/WATCH, 300s (5m) for LOW/normal
-    const currentTier = timelineData?.forecast_horizons[0]?.risk_tier || 'LOW';
+    const currentTier = timelineData?.forecast_horizons?.[0]?.risk_tier || 'LOW';
     const pollIntervalMs =
       currentTier === 'CRITICAL' ? 30000 : currentTier === 'HIGH' || currentTier === 'WATCH' ? 60000 : 300000;
 
@@ -158,7 +169,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     }, pollIntervalMs);
 
     return () => clearInterval(timer);
-  }, [selectedVillageId, timelineData?.forecast_horizons, fetchTimelineData]);
+  }, [selectedVillageId, timelineData?.forecast_horizons?.[0]?.risk_tier, fetchTimelineData]);
 
   // Location selector change handler
   const handleSelectLocation = (state: string, district: string, villageId: string) => {
@@ -294,16 +305,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             baselineRiskScore={baselineRiskScore}
             trendRatePointsPerHr={trendRate}
           />
-
-          {/* 2.5 Multi-Horizon Flood Risk Outlook (Calibrated 6-Horizon Badges) */}
-          <FloodOutlookSummary data={timelineData} />
-
-          {/* 3. Dedicated Precipitation Forecast Visualizer (NWP ECMWF mm/h) */}
+          {/* 3. Dedicated Precipitation & Future Flood Risk Visualizer (NWP ECMWF + ML Horizon Probability) */}
           <PrecipitationChart
             precipitationForecast={timelineData.precipitation_forecast}
             currentRainfallRate={timelineData.current_situation.rainfall_rate_mm_hr}
             historicalSeries={timelineData.historical_series}
+            forecastHorizons={timelineData.forecast_horizons}
             settlementName={timelineData.settlement.name}
+            thresholdAnalysis={timelineData.threshold_analysis}
+            peakAnalysis={timelineData.peak_analysis}
+            currentSituation={timelineData.current_situation}
           />
 
           {/* 3.5 Dedicated Flood Risk Probability Visualizer (Calibrated ML Model 0-100) */}
@@ -312,6 +323,21 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             forecastHorizons={timelineData.forecast_horizons}
             capability={timelineData.location_capabilities}
             settlementName={timelineData.settlement.name}
+            onSelectSettlement={(vId: string) => {
+              if (locations) {
+                for (const st of locations.states) {
+                  for (const dist of st.districts) {
+                    const match = dist.settlements.find((s) => s.id === vId);
+                    if (match) {
+                      handleSelectLocation(st.name, dist.name, vId);
+                      return;
+                    }
+                  }
+                }
+              }
+              setSelectedVillageId(vId);
+              if (onVillageChange) onVillageChange(vId);
+            }}
           />
 
           {/* 4. Multi-Horizon Forecast Projection Grid (+1h to +48h) */}

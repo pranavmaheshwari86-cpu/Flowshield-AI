@@ -8,7 +8,7 @@ from .utils.ssl_context import configure_ssl_context
 configure_ssl_context()
 
 from .config import settings
-from .database import engine, Base, SessionLocal
+from .database import engine, Base, SessionLocal, reconcile_sqlite_schema
 from .services.prediction_service import prediction_service
 from .routers import (
     health_router,
@@ -35,14 +35,17 @@ from .routers import (
     regional_predictions_router,
     geography_router,
     data_sources_router,
+    disaster_events_router,
+    agro_monitoring_router,
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Ensure tables exist & load ML model
+    # Startup: Ensure tables exist, reconcile schema & load ML model
     print(f"Starting {settings.PROJECT_NAME} ({settings.ENVIRONMENT})...")
     Base.metadata.create_all(bind=engine)
+    reconcile_sqlite_schema(engine, Base)
     
     # Load ML Model & SHAP Explainer
     loaded = prediction_service.load_artifacts()
@@ -100,6 +103,7 @@ app.include_router(model_admin_router, prefix=prefix)
 app.include_router(models_router, prefix=prefix)
 app.include_router(rainfall_router, prefix=prefix)
 app.include_router(regional_predictions_router, prefix=prefix)
+app.include_router(disaster_events_router, prefix=prefix)
 app.include_router(ai_router, prefix="/api")
 app.include_router(hazards_router, prefix="/api")
 app.include_router(rainfall_router, prefix="/api")
@@ -107,6 +111,9 @@ app.include_router(regional_predictions_router, prefix="/api")
 app.include_router(models_router, prefix="/api")
 app.include_router(geography_router, prefix="/api")
 app.include_router(data_sources_router, prefix="/api")
+app.include_router(disaster_events_router, prefix="/api")
+app.include_router(agro_monitoring_router, prefix=f"{prefix}/agro-monitoring")
+app.include_router(agro_monitoring_router, prefix="/api/agro-monitoring")
 
 
 @app.get("/")

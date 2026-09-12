@@ -21,11 +21,13 @@ class RouteResponse(BaseModel):
     distance_km: float
     estimated_travel_time_min: Optional[int] = None
     assessed_risk_score: int
+    safety_score: Optional[int] = 85
     is_blocked: bool
     blockage_reason: Optional[str] = None
     is_river_crossing: bool
     hazard_cost_multiplier: Optional[float] = 1.0
     hazard_exposure: Optional[str] = "LOW"
+    blocked_segments_count: Optional[int] = 0
     route_confidence: Optional[int] = 92
     last_verified: Optional[str] = "2026-09"
     route_label: str = "RECOMMENDED LOWER-RISK ROUTE"
@@ -40,8 +42,10 @@ class RouteResponse(BaseModel):
 class RouteAssessmentReport(BaseModel):
     selected_route: Optional[RouteResponse] = None
     alternate_routes: List[RouteResponse] = []
+    blocked_routes: List[RouteResponse] = []
     status: str = "RECOMMENDED_LOWER_RISK_ROUTE"
     requires_authority_coordination: bool = False
+    shortest_route_hazardous_warning: Optional[str] = None
     disclaimer: str = (
         "Advisory Lower-Risk Route Assessment. Dynamic hazards, flash floods, and debris flow "
         "may alter road viability rapidly. Strictly follow instructions of local DDMA and SDRF."
@@ -63,6 +67,9 @@ class RouteEvaluationResult(BaseModel):
     requires_authority_coordination: bool
     selected_route: Optional[RouteResponse] = None
     alternate_routes: List[RouteResponse] = []
+    blocked_routes: List[RouteResponse] = []
+    shortest_route_hazardous_warning: Optional[str] = None
+    nearest_emergency_facilities: Optional[List[Dict[str, Any]]] = None
     snap_distance_km: float
     hazard_penalty_applied: float = 1.0
     message: str
@@ -70,6 +77,29 @@ class RouteEvaluationResult(BaseModel):
         "Advisory evacuation routing. Ground conditions can change instantaneously in mountain catchments. "
         "Follow official civil defense directives. Autonomous rescue dispatching is disabled."
     )
+
+
+class RerouteRequest(BaseModel):
+    current_route_id: Optional[str] = None
+    current_latitude: float = Field(..., ge=-90.0, le=90.0)
+    current_longitude: float = Field(..., ge=-180.0, le=180.0)
+    destination_shelter_id: Optional[str] = None
+    state: Optional[str] = "Uttarakhand"
+    district: Optional[str] = "Rudraprayag"
+    new_blockage_corridor_id: Optional[str] = None
+    blockage_reason: Optional[str] = "Active Landslide"
+
+
+class RerouteResponse(BaseModel):
+    route_invalidated: bool
+    status: str
+    reroute_alert: str
+    old_eta_min: Optional[int] = None
+    new_eta_min: Optional[int] = None
+    reason: str
+    new_safe_route: Optional[RouteResponse] = None
+    alternate_routes: List[RouteResponse] = []
+    nearest_emergency_facilities: Optional[List[Dict[str, Any]]] = None
 
 
 class BlockageReportCreate(BaseModel):

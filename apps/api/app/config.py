@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     # River Hydrology Provider Configuration
     RIVER_API_KEY: str = os.getenv("RIVER_API_KEY", "")
     
+    # AgroMonitoring Configuration
+    AGRO_API_KEY: str = os.getenv("AGRO_API_KEY", "")
+    AGRO_API_BASE_URL: str = os.getenv("AGRO_API_BASE_URL", "http://api.agromonitoring.com/agro/1.0")
+
     # Model API Endpoint Configuration
     MODEL_API_URL: str = os.getenv("MODEL_API_URL", "")
     

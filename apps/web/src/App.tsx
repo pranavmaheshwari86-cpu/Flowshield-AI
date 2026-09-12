@@ -66,6 +66,7 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/timeline" element={<DashboardPage initialTab="Timeline" />} />
             <Route path="/responder" element={<ResponderPage />} />
             <Route path="/citizen" element={<CitizenPage />} />
             <Route path="/about" element={<AboutPage />} />

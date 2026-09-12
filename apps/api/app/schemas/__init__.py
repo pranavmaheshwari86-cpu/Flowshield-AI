@@ -6,6 +6,7 @@ from .shelter import ShelterResponse
 from .route import RouteResponse, RouteAssessmentReport
 from .simulation import SimulationStartRequest, SimulationStatusResponse, SimulationStepResponse
 from .auth import LoginRequest, TokenResponse, UserProfileResponse
+from .disaster_event import DisasterEventBase, DisasterEventResponse, DisasterSimulationRequest
 
 from .observation import (
     SourceType,

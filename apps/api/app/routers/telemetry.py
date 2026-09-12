@@ -13,13 +13,13 @@ router = APIRouter(prefix="/telemetry", tags=["Live Real-Time Telemetry"])
 
 
 @router.post("/sync-live")
-def sync_live_telemetry(db: Session = Depends(get_db)):
+def sync_live_telemetry(force: bool = False, db: Session = Depends(get_db)):
     """
     Acquires real-time weather and precipitation telemetry from Open-Meteo & CWC gauges
     for all monitored settlements, feeds into V2 model, and updates risk.
     Falls back gracefully to cached observations if upstream network fails.
     """
-    result = live_telemetry_service.sync_live_telemetry(db)
+    result = live_telemetry_service.sync_live_telemetry(db, force=force)
     return result
 
 

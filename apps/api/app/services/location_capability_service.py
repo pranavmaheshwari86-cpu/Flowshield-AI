@@ -20,7 +20,6 @@ class LocationCapabilityService:
     """Evaluates and reports operational capabilities for a given settlement."""
 
     # Explicit list of states with production-validated ML flood risk models
-    # Note: Himachal Pradesh has the trained Mandi ERA5 model. Bihar and others do NOT.
     SUPPORTED_ML_REGIONS = {
         "himachal pradesh": {
             "model_id": "flood-risk-hp-lr-v2",
@@ -30,6 +29,66 @@ class LocationCapabilityService:
         "uttarakhand": {
             "model_id": "flood-risk-hp-lr-v2",
             "model_region": "uttarakhand",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "arunachal pradesh": {
+            "model_id": "flood-risk-arunachal_pradesh-v1",
+            "model_region": "arunachal_pradesh",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "jammu & kashmir": {
+            "model_id": "flood-risk-jammu_kashmir-v1",
+            "model_region": "jammu_kashmir",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "jammu and kashmir": {
+            "model_id": "flood-risk-jammu_kashmir-v1",
+            "model_region": "jammu_kashmir",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "ladakh": {
+            "model_id": "flood-risk-leh_ladakh-v1",
+            "model_region": "leh_ladakh",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "leh & ladakh": {
+            "model_id": "flood-risk-leh_ladakh-v1",
+            "model_region": "leh_ladakh",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "leh and ladakh": {
+            "model_id": "flood-risk-leh_ladakh-v1",
+            "model_region": "leh_ladakh",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "manipur": {
+            "model_id": "flood-risk-manipur-v1",
+            "model_region": "manipur",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "meghalaya": {
+            "model_id": "flood-risk-meghalaya-v1",
+            "model_region": "meghalaya",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "mizoram": {
+            "model_id": "flood-risk-mizoram-v1",
+            "model_region": "mizoram",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "nagaland": {
+            "model_id": "flood-risk-nagaland-v1",
+            "model_region": "nagaland",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "sikkim": {
+            "model_id": "flood-risk-sikkim-v1",
+            "model_region": "sikkim",
+            "status": ModelSupport.SUPPORTED,
+        },
+        "tripura": {
+            "model_id": "flood-risk-tripura-v1",
+            "model_region": "tripura",
             "status": ModelSupport.SUPPORTED,
         },
     }
