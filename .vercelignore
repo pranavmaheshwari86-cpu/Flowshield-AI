@@ -1,0 +1,9 @@
+# Ignore backend, ML, and data files from Vercel frontend build
+apps/api
+api
+ml
+data
+flowshield.db*
+tests
+scripts
+docs
