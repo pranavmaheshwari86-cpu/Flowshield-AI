@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
     >
       {/* Brand & Identity */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+        <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
           {/* Hexagonal Shield Logo */}
           <div
             style={{
@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/dashboard"
           className={`nav-3d-pill ${location.pathname === '/dashboard' ? 'active' : ''}`}
         >
-          <Home size={14} className="nav-3d-icon" />
+          <Home size={17} className="nav-3d-icon" />
           <span>Command Center</span>
         </Link>
 
@@ -117,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/responder"
           className={`nav-3d-pill ${location.pathname === '/responder' ? 'active' : ''}`}
         >
-          <Shield size={14} className="nav-3d-icon" />
+          <Shield size={17} className="nav-3d-icon" />
           <span>Tactical Responder</span>
         </Link>
 
@@ -125,11 +125,9 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/citizen"
           className={`nav-3d-pill ${location.pathname === '/citizen' ? 'active' : ''}`}
         >
-          <Smartphone size={14} className="nav-3d-icon" />
+          <Smartphone size={17} className="nav-3d-icon" />
           <span>Citizen Mode</span>
         </Link>
-
-
       </nav>
 
       {/* Right Controls: Telemetry Capsule, India Flag, Auth */}

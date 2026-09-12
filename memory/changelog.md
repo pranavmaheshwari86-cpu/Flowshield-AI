@@ -152,9 +152,31 @@
 - Fixed danger mark delta inversion in `HydrologicalAnalysisCard.tsx` so stages below danger level render in teal (`#2DD4BF`) with status `Within Channel Banks` (BUG-011).
 - Fixed TypeScript syntax typo in `apps/web/src/types/index.ts` (`bool | boolean` $\rightarrow$ `boolean`) (BUG-012).
 
+
+---
+
+## [4.1.0] — September 2026
+
+### Milestone: Direct Command Center Routing & Multi-Region Machine Learning Architecture
+
+#### Added
+- **Direct Command Center Entry Point**:
+  - Configured application root route (`/`) and catch-all routes to redirect directly via `<Navigate to="/dashboard" replace />` into the Authority Command Center.
+  - Eliminated standalone landing page from the user flow so commanders and users land directly into the interactive geospatial and telemetry interface upon launch.
+  - Updated brand logo in `Navbar.tsx` to route directly to `/dashboard`.
+- **Multi-Region Model Registry**:
+  - Implemented multi-region model registry (`ml/registry/`) supporting 10 Indian agro-climatic zones across Himalayan & Northeastern states (Uttarakhand, Himachal Pradesh, Jammu & Kashmir, Sikkim, Arunachal Pradesh, etc.).
+  - Added strict regional schema validation, feature contract checks, and calibration evaluation.
+  - Exposed `/api/v1/regional/predict` endpoint for regional inference.
+
+#### Changed
+- Removed deprecated `LandingPage.tsx` from active application bundle.
+- Re-synchronized `.code-review-graph`, `code-review-graph`, and `graphify-out` AST and dependency knowledge graphs (385 files, 1,612 nodes, 22,176 edges, 18 communities).
+
 Cross-references:
 - Current Status: [`current-status.md`](./current-status.md)
 - Walkthrough: [`../walkthrough.md`](../walkthrough.md)
 - Bug Log: [`bugs.md`](./bugs.md)
 - Architectural Decisions: [`decisions.md`](./decisions.md)
 - Roadmap: [`todo.md`](./todo.md)
+

@@ -1,18 +1,18 @@
 {
   "project": "Flowshield",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Multi-Hazard Flash Flood and Landslide Early Warning & Evacuation Decision Support System",
   "sih_problem_statement": "26192",
-  "generated_at": "2026-09-12T02:30:00Z",
+  "generated_at": "2026-09-12T14:27:00Z",
   "metrics": {
-    "total_nodes": 3588,
-    "total_edges": 27904,
-    "execution_flows": 480,
-    "communities_count": 10,
+    "total_nodes": 1612,
+    "total_edges": 22176,
+    "execution_flows": 136,
+    "communities_count": 18,
     "api_routers_count": 17,
-    "api_endpoints_count": 50,
+    "api_endpoints_count": 52,
     "database_models_count": 10,
-    "automated_tests_count": 72,
+    "automated_tests_count": 162,
     "ml_features_count": 15
   },
   "subsystems": [
@@ -21,16 +21,16 @@
       "name": "Web Frontend",
       "path": "apps/web",
       "tech": ["Vite", "React 18", "TypeScript", "Vanilla CSS Design System", "Leaflet", "Recharts"],
-      "community_id": 42,
+      "community_id": 45,
       "responsibilities": [
-        "Command Center interactive dashboard",
+        "Direct Command Center launch on root route (/) redirection to /dashboard",
         "Authoritative Timeline View (TimelineView.tsx) with past observed vs future projected horizons",
         "Multi-horizon projection grid (+1h to +48h) with calibrated probabilities",
         "Hydrological CWC river dynamics and gauge progression meters",
         "Catchment exposure & evacuation shelter elevation advantage matrix",
         "First Responder incident command console (ResponderPage.tsx)",
         "Citizen mobile warning portal (CitizenWarning.tsx)",
-        "GIS Leaflet multi-hazard map overlays"
+        "GIS Leaflet multi-hazard map overlays and live 24H rainfall telemetry"
       ]
     },
     {
@@ -38,9 +38,10 @@
       "name": "API & Domain Services",
       "path": "apps/api",
       "tech": ["FastAPI", "Python 3.12", "SQLAlchemy", "Pydantic v2", "Alembic"],
-      "community_id": 43,
+      "community_id": 44,
       "responsibilities": [
         "17 REST API routers with RBAC authentication",
+        "Regional ML predictions router (/api/v1/regional/predict)",
         "Timeline analytics service with continuous piecewise threshold lead-time solver",
         "Platt and Isotonic calibrated multi-horizon risk predictions (+1h to +48h)",
         "Multi-hazard landslide empirical threshold assessment",
@@ -53,13 +54,14 @@
       "id": "subsystem-ml",
       "name": "Machine Learning Subsystem",
       "path": "ml",
-      "tech": ["XGBoost", "Scikit-Learn", "Pandas", "Joblib", "SHAP"],
-      "community_ids": [34, 37, 38, 39, 41],
+      "tech": ["XGBoost", "Random Forest", "Logistic Regression", "Scikit-Learn", "Joblib", "SHAP"],
+      "community_ids": [47, 48, 50, 51, 52, 53, 54, 55, 57],
       "responsibilities": [
+        "Multi-Region Model Registry supporting 10 Indian agro-climatic zones",
         "Feature engineering pipeline with 15 canonical features",
-        "Deterministic event-based holdout train/test split",
-        "Cost-sensitive XGBoost flood classification training",
-        "Isotonic and Platt probability calibration routines",
+        "Deterministic event-based holdout train/test split across Himalayan states",
+        "Calibrated probability estimation with reliability curves and ECE evaluation",
+        "Authentic feature attributions using marginal log-odds and TreeSHAP",
         "Sub-15ms real-time inference service with hydrologic fallback"
       ]
     },
@@ -68,7 +70,7 @@
       "name": "Data Storage & Ingestion",
       "path": "data/real",
       "tech": ["SQLite", "PostGIS", "CSV", "Open-Meteo ERA5", "CWC Gauge Connectors"],
-      "community_ids": [35],
+      "community_ids": [59, 60],
       "responsibilities": [
         "Dual-engine relational storage (SQLite/PostgreSQL)",
         "15,624 continuous hourly ERA5 meteorological observations",
@@ -105,6 +107,7 @@
     {"path": "/api/v1/telemetry", "method": "POST", "service": "risk_engine"},
     {"path": "/api/v1/risk/forecast/detailed", "method": "GET", "service": "timeline_service"},
     {"path": "/api/v1/risk/forecast/locations", "method": "GET", "service": "timeline_service"},
+    {"path": "/api/v1/regional/predict", "method": "POST", "service": "regional_predictions"},
     {"path": "/api/v1/hazards/landslide/summary", "method": "GET", "service": "landslide_service"},
     {"path": "/api/v1/hazards/landslide/{id}", "method": "GET", "service": "landslide_service"},
     {"path": "/api/v1/routes/calculate", "method": "POST", "service": "route_service"},

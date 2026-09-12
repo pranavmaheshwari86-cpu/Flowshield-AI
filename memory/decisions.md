@@ -247,11 +247,27 @@ Emitting exact fractional lead times (e.g. `5.2h until HIGH risk threshold breac
 - **Positive**: Provides actionable, high-precision evacuation decision windows for field incident commanders.
 - **Negative**: Requires linear interpolation assumptions between forecast horizon points.
 
+---
+
+## ADR-017: Direct Command Center Routing & Removal of Landing Page
+
+### Context
+Emergency commanders, disaster response teams, and evaluators accessing FlowShield require immediate operational situational awareness without navigating through marketing/landing pages. In active disaster events, direct entry into real-time geospatial telemetry and predictive risk surfaces is paramount.
+
+### Decision
+1. Eliminate the intermediate landing page (`LandingPage.tsx`) from the application entry path.
+2. Configure the root path (`/`) and unmatched routes (`*`) in `App.tsx` to redirect directly via `<Navigate to="/dashboard" replace />` into the Authority Command Center.
+3. Update brand links in `Navbar.tsx` to target `/dashboard` directly.
+
+### Consequences
+- **Positive**: Zero-click access to real-time risk maps, live telemetry feeds, and predictive timeline decision intelligence.
+- **Negative**: Marketing overview text is removed from the root route; background scientific methodology remains accessible via `/about`.
+
 Cross-references:
+- Current Status: [`current-status.md`](./current-status.md)
 - Architecture: [`architecture.md`](./architecture.md)
-- Walkthrough: [`../walkthrough.md`](../walkthrough.md)
+- Changelog: [`changelog.md`](./changelog.md)
 - Tech Stack: [`tech-stack.md`](./tech-stack.md)
 - Coding Standards: [`coding-standards.md`](./coding-standards.md)
 - AI Report: [`../docs/AI-ML-IMPLEMENTATION-REPORT.md`](../docs/AI-ML-IMPLEMENTATION-REPORT.md)
 - Model Card: [`../docs/MODEL-CARD.md`](../docs/MODEL-CARD.md)
-

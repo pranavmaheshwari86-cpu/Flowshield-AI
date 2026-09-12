@@ -48,7 +48,7 @@ export const CommandSidebar: React.FC<CommandSidebarProps> = ({
     <aside
       className="cc-sidebar-zone"
       style={{
-        width: '122px',
+        width: '148px',
         margin: '6px 0 10px 14px',
         background: 'transparent',
         border: 'none',
@@ -65,7 +65,7 @@ export const CommandSidebar: React.FC<CommandSidebarProps> = ({
       }}
     >
       {/* Navigation Items */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }} aria-label="Operations Navigation">
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '14px' }} aria-label="Operations Navigation">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = selected === item.id;
@@ -81,7 +81,7 @@ export const CommandSidebar: React.FC<CommandSidebarProps> = ({
               {isActive && <div className="cc-nav-indicator" />}
 
               <Icon
-                size={18}
+                size={21}
                 className="cc-nav-icon"
               />
               <span className="cc-nav-label">
