@@ -1,0 +1,40 @@
+event_id,event_start,raw_districts,mapped_districts,unresolved_text,mapping_status
+UKF_0069,2020-07-15,Dehradun,Dehra Dun,,mapped
+UKF_0070,2020-07-18,Pithoragarh,Pithoragarh,,mapped
+UKF_0071,2020-08-25,Chamoli,Chamoli,,mapped
+UKF_0072,2021-02-07,Chamoli,Chamoli,,mapped
+UKF_0073,2021-05-29,Uttar Kashi Kashi ,Uttarkashi,,mapped
+UKF_0074,2021-07-11,Bageshwar,Bageshwar,,mapped
+UKF_0075,2021-07-11,Chamoli ,Chamoli,,mapped
+UKF_0076,2021-07-19,Uttar Kashi Kashi,Uttarkashi,,mapped
+UKF_0077,2021-08-29,Pithoragarh,Pithoragarh,,mapped
+UKF_0078,2021-10-16,"Almora, Bageshwar, Chamoli, Champawat, Nainital, Garhwal, Pithoragarh, Udam Singh Nagar",Almora; Bageshwar; Chamoli; Champawat; Naini Tal; Pithoragarh; Udham Singh Nagar,Garhwal,mapped
+UKF_0079,2022-07-19,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0080,2022-08-19,"Dehradun, ",Dehra Dun,,mapped
+UKF_0081,2022-08-19,Garhwal,,Garhwal,unmapped
+UKF_0082,2022-08-19,Tehri Garhwal,Tehri Garhwal,,mapped
+UKF_0083,2022-08-28,Dehradun,Dehra Dun,,mapped
+UKF_0084,2022-09-22,"Dehradun, ",Dehra Dun,,mapped
+UKF_0085,2022-09-22,Uttar Kashi Kashi,Uttarkashi,,mapped
+UKF_0086,2023-06-25,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0087,2023-06-25,Uttar Kashi Kashi,Uttarkashi,,mapped
+UKF_0088,2023-07-09,Dehradun,Dehra Dun,,mapped
+UKF_0089,2023-07-09,Udam Singh Nagar,Udham Singh Nagar,,mapped
+UKF_0090,2023-07-10,Uttar Kashi Kashi,Uttarkashi,,mapped
+UKF_0091,2023-07-11,Pithoragarh,Pithoragarh,,mapped
+UKF_0092,2023-07-11,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0093,2023-07-16,Chamoli,Chamoli,,mapped
+UKF_0094,2023-07-16,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0095,2023-07-17,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0096,2023-08-04,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0097,2023-08-06,Tehri Garhwal,Tehri Garhwal,,mapped
+UKF_0098,2023-08-07,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0099,2023-08-09,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0100,2023-08-10,Garhwal,,Garhwal,unmapped
+UKF_0101,2023-08-10,Rudra Prayag,Rudra Prayag,,mapped
+UKF_0102,2023-08-14,Dehradun,Dehra Dun,,mapped
+UKF_0103,2023-08-14,Tehri Garhwal,Tehri Garhwal,,mapped
+UKF_0104,2023-08-15,Chamoli,Chamoli,,mapped
+UKF_0105,2023-08-21,Tehri Garhwal,Tehri Garhwal,,mapped
+UKF_0106,2023-08-23,Garhwal,,Garhwal,unmapped
+UKF_0107,2023-08-26,Chamoli,Chamoli,,mapped

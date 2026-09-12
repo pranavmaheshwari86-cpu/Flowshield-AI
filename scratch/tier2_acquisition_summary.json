@@ -1,0 +1,37 @@
+{
+  "mizoram": {
+    "status": "SUCCESS",
+    "region_slug": "mizoram",
+    "total_rows": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0
+  },
+  "tripura": {
+    "status": "SUCCESS",
+    "region_slug": "tripura",
+    "total_rows": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0
+  },
+  "manipur": {
+    "status": "SUCCESS",
+    "region_slug": "manipur",
+    "total_rows": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0
+  },
+  "nagaland": {
+    "status": "SUCCESS",
+    "region_slug": "nagaland",
+    "total_rows": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0
+  },
+  "leh_ladakh": {
+    "status": "SUCCESS",
+    "region_slug": "leh_ladakh",
+    "total_rows": 11040,
+    "flood_hours": 35,
+    "prevalence_pct": 0.32
+  }
+}

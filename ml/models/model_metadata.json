@@ -1,0 +1,75 @@
+{
+  "model_version": "xgb-v1.0.0-20260910-082823",
+  "model_type": "XGBClassifier",
+  "training_timestamp": "2026-09-10T08:28:23.941665+00:00",
+  "random_seed": 26192,
+  "feature_schema": [
+    "rainfall_1h",
+    "rainfall_3h",
+    "rainfall_6h",
+    "rainfall_24h",
+    "rainfall_intensity",
+    "soil_moisture",
+    "river_level",
+    "river_level_change",
+    "elevation",
+    "slope",
+    "distance_to_river",
+    "historical_flood_frequency"
+  ],
+  "feature_schema_hash": "2d6859545b546ffeea3e5176912e9c7bcb55deebccff13bcfd118b39c53da616",
+  "hyperparameters": {
+    "max_depth": 5,
+    "n_estimators": 180,
+    "learning_rate": 0.08,
+    "subsample": 0.85,
+    "colsample_bytree": 0.85,
+    "scale_pos_weight": 3.878,
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "random_state": 26192,
+    "n_jobs": -1
+  },
+  "dataset_metadata": {
+    "source": "Flowshield Physically-Correlated Synthetic Hydrology Dataset",
+    "is_synthetic": true,
+    "data_hash": "b418c476b6f297d2f5ff561b9d5a941f8851d2b6d3b31856c7ecce7baa70b681",
+    "total_samples": 6000,
+    "train_samples": 4800,
+    "test_samples": 1200,
+    "test_positive_rate": 0.205,
+    "disclosure": "Demonstration synthetic data modeled on Himalayan river valley parameters. Not intended for real-world unverified emergency deployment."
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.93,
+    "precision": 0.8,
+    "recall": 0.878,
+    "f1_score": 0.8372,
+    "roc_auc": 0.9816,
+    "confusion_matrix": [
+      [
+        900,
+        54
+      ],
+      [
+        30,
+        216
+      ]
+    ]
+  },
+  "shap_importance_ranking": [
+    "rainfall_24h",
+    "river_level_change",
+    "rainfall_intensity",
+    "rainfall_6h",
+    "rainfall_1h",
+    "soil_moisture",
+    "river_level",
+    "historical_flood_frequency",
+    "elevation",
+    "distance_to_river",
+    "slope",
+    "rainfall_3h"
+  ],
+  "shap_expected_value": 0.19669239223003387
+}

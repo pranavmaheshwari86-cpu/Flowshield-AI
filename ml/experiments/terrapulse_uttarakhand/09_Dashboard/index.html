@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>TerraPulse | Flash Flood Early Warning</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+</head>
+
+<body>
+
+  <div class="page">
+
+    <!-- =====================================================
+         HERO
+    ====================================================== -->
+
+    <header class="hero">
+
+      <div class="hero-content">
+
+        <div class="eyebrow">
+          TERRAPULSE • SIH 2026
+        </div>
+
+        <h1>
+          Mountain Flood Risk Intelligence
+        </h1>
+
+        <p class="hero-description">
+          Multi-source flash flood early warning for hilly regions
+          using rainfall, soil moisture, river conditions, weather,
+          terrain and machine learning.
+        </p>
+
+        <div class="hero-meta">
+
+          <span class="status-dot"></span>
+
+          <span>
+            Ensemble Early Warning System
+          </span>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <main>
+
+      <!-- ===================================================
+           SECTION 01 + 02
+      ==================================================== -->
+
+      <section class="dashboard-grid">
+
+        <!-- =================================================
+             ENVIRONMENTAL CONDITIONS
+        ================================================== -->
+
+        <div class="card">
+
+          <div class="card-number">
+            01
+          </div>
+
+          <div class="section-label">
+            RISK ANALYSIS
+          </div>
+
+          <h2>
+            Environmental Conditions
+          </h2>
+
+
+          <!-- DISTRICT -->
+
+          <div class="form-group">
+
+            <label for="district">
+              District
+            </label>
+
+            <select id="district">
+
+              <option value="Almora">
+                Almora
+              </option>
+
+              <option value="Bageshwar">
+                Bageshwar
+              </option>
+
+              <option value="Chamoli" selected>
+                Chamoli
+              </option>
+
+              <option value="Champawat">
+                Champawat
+              </option>
+
+              <option value="Dehra Dun">
+                Dehra Dun
+              </option>
+
+              <option value="Haridwar">
+                Haridwar
+              </option>
+
+              <option value="Naini Tal">
+                Naini Tal
+              </option>
+
+              <option value="Pauri Garhwal">
+                Pauri Garhwal
+              </option>
+
+              <option value="Pithoragarh">
+                Pithoragarh
+              </option>
+
+              <option value="Rudra Prayag">
+                Rudra Prayag
+              </option>
+
+              <option value="Tehri Garhwal">
+                Tehri Garhwal
+              </option>
+
+              <option value="Udham Singh Nagar">
+                Udham Singh Nagar
+              </option>
+
+              <option value="Uttarkashi">
+                Uttarkashi
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- SOIL MOISTURE -->
+
+          <div class="form-group">
+
+            <label for="soilMoisture">
+              Soil Moisture
+            </label>
+
+            <input
+              type="number"
+              id="soilMoisture"
+              value="0.32"
+              min="0"
+              max="1"
+              step="0.001"
+            >
+
+          </div>
+
+
+          <!-- RAINFALL HISTORY -->
+
+          <div class="form-group">
+
+            <label for="rainfallHistory">
+              30-Day Daily Rainfall (mm)
+            </label>
+
+            <textarea id="rainfallHistory">5,8,12,0,4,7,15,10,3,0,6,9,11,14,5,2,8,13,20,18,4,6,9,12,15,22,30,40,55,80</textarea>
+
+          </div>
+
+
+          <!-- RAINFALL SUMMARY -->
+
+          <div class="summary-grid">
+
+            <div class="summary-item">
+
+              <span>
+                30-DAY TOTAL
+              </span>
+
+              <strong id="rainTotal">
+                443.0
+              </strong>
+
+              <small>
+                mm
+              </small>
+
+            </div>
+
+
+            <div class="summary-item">
+
+              <span>
+                LAST DAY
+              </span>
+
+              <strong id="rainLast">
+                80.0
+              </strong>
+
+              <small>
+                mm
+              </small>
+
+            </div>
+
+
+            <div class="summary-item">
+
+              <span>
+                RAINY DAYS
+              </span>
+
+              <strong id="rainDays">
+                28
+              </strong>
+
+              <small>
+                days
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- ERROR -->
+
+          <div
+            id="errorBox"
+            class="error-box"
+            style="display:none;"
+          ></div>
+
+
+          <!-- ANALYZE BUTTON -->
+
+          <button
+            id="analyzeBtn"
+            class="analyze-btn"
+          >
+
+            ANALYZE FLOOD RISK
+
+            <span>
+              →
+            </span>
+
+          </button>
+
+
+          <p class="input-note">
+
+            Enter exactly 30 daily rainfall values,
+            oldest to newest, separated by commas.
+
+          </p>
+
+        </div>
+
+
+        <!-- =================================================
+             CURRENT FLOOD ASSESSMENT
+        ================================================== -->
+
+        <div
+          class="card risk-card"
+          id="riskDisplay"
+        >
+
+          <div class="card-number">
+            02
+          </div>
+
+          <div class="section-label">
+            CURRENT ASSESSMENT
+          </div>
+
+          <h2>
+            Flood Risk
+          </h2>
+
+
+          <div class="risk-panel">
+
+            <div class="probability-ring">
+
+              <div
+                class="probability-value"
+                id="probability"
+              >
+                45.35%
+              </div>
+
+              <div class="probability-label">
+                probability
+              </div>
+
+            </div>
+
+
+            <div class="risk-info">
+
+              <span class="risk-label">
+                RISK LEVEL
+              </span>
+
+              <div
+                id="riskLevel"
+                class="risk-level high"
+              >
+                HIGH
+              </div>
+
+              <p id="warning">
+
+                Flash flood risk detected.
+                Early warning recommended.
+
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="risk-meta">
+
+            <div>
+
+              <span>
+                Threshold
+              </span>
+
+              <strong id="thresholdValue">
+                30%
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Model
+              </span>
+
+              <strong id="modelName">
+                Ensemble
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Lead Target
+              </span>
+
+              <strong id="leadTarget">
+                3 Days
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           RISK INTELLIGENCE
+      ==================================================== -->
+
+      <section class="section-block visualization-section">
+
+        <div class="section-label">
+          RISK INTELLIGENCE
+        </div>
+
+        <h2>
+          Environmental Risk Snapshot
+        </h2>
+
+
+        <div class="visual-grid">
+
+          <!-- FLOOD PROBABILITY -->
+
+          <div class="visual-card gauge-card">
+
+            <div class="visual-header">
+
+              <div>
+
+                <span class="mini-label">
+                  MODEL OUTPUT
+                </span>
+
+                <h3>
+                  Flood Probability
+                </h3>
+
+              </div>
+
+              <span class="visual-badge">
+                LIVE
+              </span>
+
+            </div>
+
+
+            <div class="large-gauge">
+
+              <div class="gauge-track">
+
+                <div
+                  id="gaugeFill"
+                  class="gauge-fill"
+                ></div>
+
+                <div
+                  id="gaugeMarker"
+                  class="gauge-marker"
+                ></div>
+
+              </div>
+
+
+              <div class="gauge-scale">
+
+                <span>
+                  0%
+                </span>
+
+                <span>
+                  30% threshold
+                </span>
+
+                <span>
+                  100%
+                </span>
+
+              </div>
+
+
+              <div class="gauge-result">
+
+                <strong id="gaugeProbability">
+                  45.35%
+                </strong>
+
+                <span id="gaugeRisk">
+                  HIGH RISK
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- RAINFALL ACCUMULATION -->
+
+          <div class="visual-card accumulation-card">
+
+            <div class="visual-header">
+
+              <div>
+
+                <span class="mini-label">
+                  RAINFALL ACCUMULATION
+                </span>
+
+                <h3>
+                  Multi-Window Rainfall
+                </h3>
+
+              </div>
+
+              <span class="visual-badge">
+                30 DAYS
+              </span>
+
+            </div>
+
+
+            <div class="accumulation-grid">
+
+              <div class="accumulation-item">
+
+                <span>
+                  1D
+                </span>
+
+                <strong id="rain1d">
+                  80.0
+                </strong>
+
+                <small>
+                  mm
+                </small>
+
+                <div class="mini-bar">
+                  <i id="rain1dBar"></i>
+                </div>
+
+              </div>
+
+
+              <div class="accumulation-item">
+
+                <span>
+                  3D
+                </span>
+
+                <strong id="rain3d">
+                  175.0
+                </strong>
+
+                <small>
+                  mm
+                </small>
+
+                <div class="mini-bar">
+                  <i id="rain3dBar"></i>
+                </div>
+
+              </div>
+
+
+              <div class="accumulation-item">
+
+                <span>
+                  7D
+                </span>
+
+                <strong id="rain7d">
+                  254.0
+                </strong>
+
+                <small>
+                  mm
+                </small>
+
+                <div class="mini-bar">
+                  <i id="rain7dBar"></i>
+                </div>
+
+              </div>
+
+
+              <div class="accumulation-item">
+
+                <span>
+                  14D
+                </span>
+
+                <strong id="rain14d">
+                  332.0
+                </strong>
+
+                <small>
+                  mm
+                </small>
+
+                <div class="mini-bar">
+                  <i id="rain14dBar"></i>
+                </div>
+
+              </div>
+
+
+              <div class="accumulation-item">
+
+                <span>
+                  30D
+                </span>
+
+                <strong id="rain30d">
+                  443.0
+                </strong>
+
+                <small>
+                  mm
+                </small>
+
+                <div class="mini-bar">
+                  <i id="rain30dBar"></i>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           NEW MULTI-SOURCE ENVIRONMENT SECTION
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          MULTI-SOURCE ENVIRONMENT
+        </div>
+
+        <h2>
+          Live Environmental Conditions
+        </h2>
+
+
+        <div class="visual-grid">
+
+
+          <!-- =================================================
+               RIVER INTELLIGENCE
+          ================================================== -->
+
+          <div class="visual-card">
+
+            <div class="visual-header">
+
+              <div>
+
+                <span class="mini-label">
+                  RIVER INTELLIGENCE
+                </span>
+
+                <h3>
+                  River / Water Level
+                </h3>
+
+              </div>
+
+              <span class="visual-badge">
+                PROTOTYPE
+              </span>
+
+            </div>
+
+
+            <div class="factor-grid">
+
+              <div class="factor-item">
+
+                <span>
+                  Water Level
+                </span>
+
+                <strong id="riverWaterLevel">
+                  —
+                </strong>
+
+                <small>
+                  m
+                </small>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Danger Level
+                </span>
+
+                <strong id="riverDangerLevel">
+                  —
+                </strong>
+
+                <small>
+                  m
+                </small>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Level / Danger
+                </span>
+
+                <strong id="riverLevelRatio">
+                  —
+                </strong>
+
+                <small>
+                  %
+                </small>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Rise Rate
+                </span>
+
+                <strong id="riverRiseRate">
+                  —
+                </strong>
+
+                <small>
+                  m/hr
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               WEATHER INTELLIGENCE
+          ================================================== -->
+
+          <div class="visual-card">
+
+            <div class="visual-header">
+
+              <div>
+
+                <span class="mini-label">
+                  WEATHER INTELLIGENCE
+                </span>
+
+                <h3>
+                  Current Weather
+                </h3>
+
+              </div>
+
+              <span class="visual-badge">
+                PROTOTYPE
+              </span>
+
+            </div>
+
+
+            <div class="factor-grid">
+
+              <div class="factor-item">
+
+                <span>
+                  Condition
+                </span>
+
+                <strong id="weatherCondition">
+                  —
+                </strong>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Temperature
+                </span>
+
+                <strong id="weatherTemperature">
+                  —
+                </strong>
+
+                <small>
+                  °C
+                </small>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Humidity
+                </span>
+
+                <strong id="weatherHumidity">
+                  —
+                </strong>
+
+                <small>
+                  %
+                </small>
+
+              </div>
+
+
+              <div class="factor-item">
+
+                <span>
+                  Wind Speed
+                </span>
+
+                <strong id="weatherWind">
+                  —
+                </strong>
+
+                <small>
+                  km/h
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="factor-item"
+              style="margin-top:14px;"
+            >
+
+              <span>
+                Atmospheric Pressure
+              </span>
+
+              <strong id="weatherPressure">
+                —
+              </strong>
+
+              <small>
+                hPa
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TERRAIN / RIVER TREND
+        ================================================== -->
+
+        <div
+          class="terrain-grid"
+          style="margin-top:18px;"
+        >
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              ⛰
+            </div>
+
+            <div>
+
+              <span>
+                SLOPE RISK
+              </span>
+
+              <strong id="slopeRisk">
+                —
+              </strong>
+
+              <small>
+                Terrain risk category
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              🌊
+            </div>
+
+            <div>
+
+              <span>
+                RIVER TREND
+              </span>
+
+              <strong id="riverTrend">
+                —
+              </strong>
+
+              <small>
+                Recent river-level movement
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           RAINFALL INTELLIGENCE
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          RAINFALL INTELLIGENCE
+        </div>
+
+        <h2>
+          30-Day Rainfall Pattern
+        </h2>
+
+
+        <div class="chart-card rainfall-chart-card">
+
+          <div class="chart-topline">
+
+            <div>
+
+              <span class="mini-label">
+                DAILY OBSERVATIONS
+              </span>
+
+              <strong>
+                Recent Rainfall Activity
+              </strong>
+
+            </div>
+
+
+            <div class="chart-stat">
+
+              <span>
+                Total
+              </span>
+
+              <strong id="chartRainTotal">
+                443.0 mm
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="rain-chart-wrapper">
+
+            <div class="rain-y-axis">
+
+              <span id="rainAxisMax">
+                80
+              </span>
+
+              <span>
+                60
+              </span>
+
+              <span>
+                40
+              </span>
+
+              <span>
+                20
+              </span>
+
+              <span>
+                0
+              </span>
+
+            </div>
+
+
+            <div
+              id="rainChart"
+              class="rain-chart"
+            ></div>
+
+          </div>
+
+
+          <div class="chart-axis-label">
+
+            <span>
+              30 days ago
+            </span>
+
+            <span>
+              Recent
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           CUMULATIVE RAINFALL
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          CUMULATIVE RAINFALL
+        </div>
+
+        <h2>
+          Rainfall Build-Up
+        </h2>
+
+
+        <div class="chart-card cumulative-card">
+
+          <div class="chart-topline">
+
+            <div>
+
+              <span class="mini-label">
+                ACCUMULATED PRECIPITATION
+              </span>
+
+              <strong>
+                How rainfall has built over the last 30 days
+              </strong>
+
+            </div>
+
+
+            <div class="chart-stat">
+
+              <span>
+                Current
+              </span>
+
+              <strong id="cumulativeTotal">
+                443.0 mm
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="cumulativeChart"
+            class="cumulative-chart"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           TERRAIN INTELLIGENCE
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          TERRAIN INTELLIGENCE
+        </div>
+
+        <h2>
+          District Context
+        </h2>
+
+
+        <div class="terrain-grid">
+
+
+          <!-- ELEVATION -->
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              ▲
+            </div>
+
+            <div>
+
+              <span>
+                MEAN ELEVATION
+              </span>
+
+              <strong id="elevation">
+                3582.92
+              </strong>
+
+              <small>
+                metres
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- SLOPE -->
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              ∿
+            </div>
+
+            <div>
+
+              <span>
+                MEAN SLOPE
+              </span>
+
+              <strong id="slope">
+                30.56
+              </strong>
+
+              <small>
+                degrees
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- SOIL -->
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              ☁
+            </div>
+
+            <div>
+
+              <span>
+                SOIL MOISTURE
+              </span>
+
+              <strong id="soilDisplay">
+                0.320
+              </strong>
+
+              <small>
+                root-zone index
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- RAIN -->
+
+          <div class="terrain-card">
+
+            <div class="terrain-icon">
+              ≋
+            </div>
+
+            <div>
+
+              <span>
+                30-DAY RAINFALL
+              </span>
+
+              <strong id="rainDisplay">
+                443.0
+              </strong>
+
+              <small>
+                mm total
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           ENVIRONMENTAL INDICATORS
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          ENVIRONMENTAL INDICATORS
+        </div>
+
+        <h2>
+          Risk Environment Profile
+        </h2>
+
+
+        <div class="indicator-grid">
+
+
+          <!-- RAIN -->
+
+          <div class="indicator-card">
+
+            <div class="indicator-heading">
+
+              <span>
+                RAIN INTENSITY
+              </span>
+
+              <strong id="rainIntensityLabel">
+                HIGH
+              </strong>
+
+            </div>
+
+
+            <div class="indicator-track">
+
+              <div
+                id="rainIntensityBar"
+                class="indicator-fill"
+              ></div>
+
+            </div>
+
+            <small>
+              Based on recent rainfall activity
+            </small>
+
+          </div>
+
+
+          <!-- SOIL -->
+
+          <div class="indicator-card">
+
+            <div class="indicator-heading">
+
+              <span>
+                SOIL MOISTURE
+              </span>
+
+              <strong id="soilIndicatorLabel">
+                ELEVATED
+              </strong>
+
+            </div>
+
+
+            <div class="indicator-track">
+
+              <div
+                id="soilIndicatorBar"
+                class="indicator-fill"
+              ></div>
+
+            </div>
+
+            <small>
+              Regional root-zone moisture index
+            </small>
+
+          </div>
+
+
+          <!-- SLOPE -->
+
+          <div class="indicator-card">
+
+            <div class="indicator-heading">
+
+              <span>
+                TERRAIN SLOPE
+              </span>
+
+              <strong id="slopeIndicatorLabel">
+                HIGH
+              </strong>
+
+            </div>
+
+
+            <div class="indicator-track">
+
+              <div
+                id="slopeIndicatorBar"
+                class="indicator-fill"
+              ></div>
+
+            </div>
+
+            <small>
+              Mean district slope
+            </small>
+
+          </div>
+
+
+          <!-- BUILD-UP -->
+
+          <div class="indicator-card">
+
+            <div class="indicator-heading">
+
+              <span>
+                RAINFALL BUILD-UP
+              </span>
+
+              <strong id="buildUpIndicatorLabel">
+                HIGH
+              </strong>
+
+            </div>
+
+
+            <div class="indicator-track">
+
+              <div
+                id="buildUpIndicatorBar"
+                class="indicator-fill"
+              ></div>
+
+            </div>
+
+            <small>
+              Recent accumulation across windows
+            </small>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           MODEL INTERPRETATION + WARNING
+      ==================================================== -->
+
+      <section class="section-block intelligence-grid">
+
+
+        <!-- MODEL INTERPRETATION -->
+
+        <div class="explanation-card">
+
+          <div class="section-label">
+            MODEL INTERPRETATION
+          </div>
+
+          <h2>
+            Why This Risk?
+          </h2>
+
+
+          <p id="riskExplanation">
+
+            Analyze the selected district to generate
+            an environmental risk explanation.
+
+          </p>
+
+
+          <div class="factor-grid">
+
+            <div class="factor-item">
+
+              <span>
+                30-Day Rainfall
+              </span>
+
+              <strong id="explainRain30">
+                —
+              </strong>
+
+            </div>
+
+
+            <div class="factor-item">
+
+              <span>
+                Recent Rainfall
+              </span>
+
+              <strong id="explainRain1">
+                —
+              </strong>
+
+            </div>
+
+
+            <div class="factor-item">
+
+              <span>
+                Soil Moisture
+              </span>
+
+              <strong id="explainSoil">
+                —
+              </strong>
+
+            </div>
+
+
+            <div class="factor-item">
+
+              <span>
+                Mean Slope
+              </span>
+
+              <strong id="explainSlope">
+                —
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- EARLY WARNING -->
+
+        <div
+          class="warning-card"
+          id="warningPanel"
+        >
+
+          <div class="section-label">
+            EARLY WARNING
+          </div>
+
+          <div class="warning-icon">
+            ⚠
+          </div>
+
+          <h2 id="warningTitle">
+            Awaiting Analysis
+          </h2>
+
+          <p id="warningText">
+
+            Run the flood risk analysis
+            to generate an early-warning assessment.
+
+          </p>
+
+
+          <div class="warning-meta">
+
+            <div>
+
+              <span>
+                District
+              </span>
+
+              <strong id="warningDistrict">
+                —
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Risk
+              </span>
+
+              <strong id="warningRisk">
+                —
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Lead Target
+              </span>
+
+              <strong id="warningLeadTarget">
+                3 Days
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           FLOOD-RISK MAP
+      ==================================================== -->
+
+      <section class="section-block">
+
+        <div class="section-label">
+          GEOSPATIAL INTELLIGENCE
+        </div>
+
+        <h2>
+          Uttarakhand District Map
+        </h2>
+
+
+        <div class="map-card">
+
+          <div class="map-header">
+
+            <div class="map-status-left">
+
+              <span class="status-dot"></span>
+
+              <span>
+                District Boundary Layer
+              </span>
+
+            </div>
+
+
+            <div id="mapStatus">
+              Loading map...
+            </div>
+
+          </div>
+
+
+          <div id="uttarakhandMap"></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           SYSTEM METHODOLOGY
+      ==================================================== -->
+
+      <section class="section-block methodology-section">
+
+        <div class="section-label">
+          SYSTEM INTELLIGENCE
+        </div>
+
+        <h2>
+          How TerraPulse Works
+        </h2>
+
+
+        <div class="pipeline">
+
+
+          <div class="pipeline-step">
+
+            <span>
+              01
+            </span>
+
+            <strong>
+              Rainfall
+            </strong>
+
+            <small>
+              1d • 3d • 7d • 30d
+            </small>
+
+          </div>
+
+
+          <div class="pipeline-arrow">
+            →
+          </div>
+
+
+          <div class="pipeline-step">
+
+            <span>
+              02
+            </span>
+
+            <strong>
+              Soil Moisture
+            </strong>
+
+            <small>
+              Root-zone conditions
+            </small>
+
+          </div>
+
+
+          <div class="pipeline-arrow">
+            →
+          </div>
+
+
+          <div class="pipeline-step">
+
+            <span>
+              03
+            </span>
+
+            <strong>
+              Terrain
+            </strong>
+
+            <small>
+              Elevation • Slope
+            </small>
+
+          </div>
+
+
+          <div class="pipeline-arrow">
+            →
+          </div>
+
+
+          <div class="pipeline-step">
+
+            <span>
+              04
+            </span>
+
+            <strong>
+              Ensemble ML
+            </strong>
+
+            <small>
+              Logistic + Random Forest
+            </small>
+
+          </div>
+
+
+          <div class="pipeline-arrow">
+            →
+          </div>
+
+
+          <div class="pipeline-step">
+
+            <span>
+              05
+            </span>
+
+            <strong>
+              Early Warning
+            </strong>
+
+            <small>
+              Up to 3-day lead target
+            </small>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           SYSTEM STATUS
+      ==================================================== -->
+
+      <section class="section-block system-section">
+
+        <div class="section-label">
+          SYSTEM STATUS
+        </div>
+
+        <h2>
+          TerraPulse Readiness
+        </h2>
+
+
+        <div class="system-status-grid">
+
+
+          <!-- MODEL -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                ML Model
+              </strong>
+
+              <small>
+                Ensemble loaded
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- RAINFALL -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                Rainfall Data
+              </strong>
+
+              <small>
+                30-day input ready
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- TERRAIN -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                Terrain Data
+              </strong>
+
+              <small>
+                13 districts available
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- API -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                Prediction API
+              </strong>
+
+              <small>
+                Backend connected
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- RIVER -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                River Data
+              </strong>
+
+              <small>
+                Prototype water-level input
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- WEATHER -->
+
+          <div class="system-status-item">
+
+            <span class="status-check">
+              ✓
+            </span>
+
+            <div>
+
+              <strong>
+                Weather Data
+              </strong>
+
+              <small>
+                Prototype weather input
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           DISCLAIMER
+      ==================================================== -->
+
+      <section class="disclaimer">
+
+        <strong>
+          Prototype Notice:
+        </strong>
+
+        TerraPulse is a research and demonstration prototype.
+        Predictions should not be treated as an operational
+        disaster warning or a substitute for official forecasts
+        and local authorities.
+
+        River and weather values shown in the current prototype
+        are simulated demonstration inputs and are not live
+        CWC/IMD observations.
+
+      </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer>
+
+      <div>
+        TerraPulse • SIH 2026
+      </div>
+
+      <div>
+        Multi-Source Flash Flood Intelligence
+      </div>
+
+    </footer>
+
+  </div>
+
+
+  <!-- =====================================================
+       LEAFLET
+  ====================================================== -->
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+
+
+  <!-- =====================================================
+       TERRAPULSE SCRIPT
+  ====================================================== -->
+
+  <script src="script.js"></script>
+
+</body>
+</html>

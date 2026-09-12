@@ -1,0 +1,37 @@
+{
+  "model_id": "flowshield-flood-risk-v2",
+  "model_name": "Mandi Basin Flash Flood Decision Support Champion",
+  "algorithm": "LogisticRegression(C=0.1, class_weight='balanced', solver='liblinear')",
+  "calibration": "IsotonicRegression(out_of_bounds='clip')",
+  "threshold": 0.08,
+  "features": [
+    "rainfall_1h_mm",
+    "rainfall_3h_mm",
+    "rainfall_6h_mm",
+    "rainfall_24h_mm",
+    "rainfall_72h_mm",
+    "soil_saturation_pct",
+    "deep_soil_saturation_pct",
+    "temperature_c",
+    "relative_humidity_pct",
+    "surface_pressure_hpa",
+    "wind_speed_kmh",
+    "elevation_m",
+    "catchment_slope_deg",
+    "dist_to_river_m",
+    "upstream_drainage_sqkm"
+  ],
+  "feature_count": 15,
+  "model_artifact": "v2_selected_model.joblib",
+  "calibrator_artifact": "v2_calibrator.joblib",
+  "preprocessor_artifact": "v2_preprocessor.joblib",
+  "promoted_at": "2026-09-11T22:26:50.023351+00:00",
+  "git_commit": "903df3c9e7047236e2190fb9550519c115ef8a53",
+  "checksums": {
+    "v2_selected_model.joblib": "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb",
+    "v2_calibrator.joblib": "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780",
+    "v2_preprocessor.joblib": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c",
+    "v2_decision_pipeline.json": "eb9c757c900b0df11c6488a205ac03b38a7936cf2b0784dc327d15656df8d2c8"
+  },
+  "governance": "PS ID 26192 Certified Scientific Pipeline"
+}

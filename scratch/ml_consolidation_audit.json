@@ -1,0 +1,1629 @@
+{
+  "ml_model_count": 107,
+  "ml_count": 76,
+  "ml_model_files": [
+    {
+      "path": "ML Model\\calculate_terrain_features.py",
+      "filename": "calculate_terrain_features.py",
+      "size_bytes": 8293,
+      "size_mb": 0.008,
+      "sha256": "b63f617dd1938c45e35fbf2c5f4186a1eec02d295c73d62f07f32261e63079b4"
+    },
+    {
+      "path": "ML Model\\convert_rainfall_to_long.py",
+      "filename": "convert_rainfall_to_long.py",
+      "size_bytes": 9442,
+      "size_mb": 0.009,
+      "sha256": "b784aacb32afdf833d9c90e9156fb931985d5a37272c50e072ca3c53564ee0a5"
+    },
+    {
+      "path": "ML Model\\create_flood_labels.py",
+      "filename": "create_flood_labels.py",
+      "size_bytes": 14317,
+      "size_mb": 0.014,
+      "sha256": "fe8791446e2308a6fb15b4a7eaf3abd37c06ff22e23acfdd81a3ef5c25787b6d"
+    },
+    {
+      "path": "ML Model\\create_rainfall_features.py",
+      "filename": "create_rainfall_features.py",
+      "size_bytes": 9123,
+      "size_mb": 0.009,
+      "sha256": "39ef2b28faa6c11f3ff3b917d778fd8136f2a2b007c009574034293b132ea6ab"
+    },
+    {
+      "path": "ML Model\\create_soil_moisture_features.py",
+      "filename": "create_soil_moisture_features.py",
+      "size_bytes": 10079,
+      "size_mb": 0.01,
+      "sha256": "b46e2e09c43b5ddb4e5313f091a46a7e67c8a2e09f7cc4243329648072894089"
+    },
+    {
+      "path": "ML Model\\inspect_flood_events.py",
+      "filename": "inspect_flood_events.py",
+      "size_bytes": 6108,
+      "size_mb": 0.006,
+      "sha256": "718bbdec24de7138bf8d5374b9396cb391b9bb5f32e0a61659a9880dd8ee22f0"
+    },
+    {
+      "path": "ML Model\\inspect_flood_label_audit.py",
+      "filename": "inspect_flood_label_audit.py",
+      "size_bytes": 1768,
+      "size_mb": 0.002,
+      "sha256": "c4476780f221f562bec209412f164ddb5fa42b35d2e517a98e9a1a1a7b903bb8"
+    },
+    {
+      "path": "ML Model\\inspect_rainfall_structure.py",
+      "filename": "inspect_rainfall_structure.py",
+      "size_bytes": 7042,
+      "size_mb": 0.007,
+      "sha256": "b81ba020212db9c00702c51013b222976836e7d44faf9b262b4803ec25c1e471"
+    },
+    {
+      "path": "ML Model\\merge_rainfall_2020_2023.py",
+      "filename": "merge_rainfall_2020_2023.py",
+      "size_bytes": 6564,
+      "size_mb": 0.006,
+      "sha256": "91d67816c720318bdd75b0920962d4e1ddecfda8af5f909d2b1801d41b58ef28"
+    },
+    {
+      "path": "ML Model\\README.md",
+      "filename": "README.md",
+      "size_bytes": 20728,
+      "size_mb": 0.02,
+      "sha256": "7a6969763016de7e67116429763b4ab34404d38eed922f532f5f10d8d0146f44"
+    },
+    {
+      "path": "ML Model\\validate_district_boundaries.py",
+      "filename": "validate_district_boundaries.py",
+      "size_bytes": 6099,
+      "size_mb": 0.006,
+      "sha256": "4ec9a2925e62a4be1e583b4b92ab50224b7beede3ba4ce50fad5a5c2abe2bcc4"
+    },
+    {
+      "path": "ML Model\\validate_soil_moisture.py",
+      "filename": "validate_soil_moisture.py",
+      "size_bytes": 8796,
+      "size_mb": 0.008,
+      "sha256": "4f7e7f8b8f3ecd59a79cff907b42f100f77185b82f7e94e79a5a08eb0fc78bf6"
+    },
+    {
+      "path": "ML Model\\validate_terrain.py",
+      "filename": "validate_terrain.py",
+      "size_bytes": 9475,
+      "size_mb": 0.009,
+      "sha256": "7f043f2aeffa312ca58592f4c25b1d0d67c09fe619ec90f8c81e8b3de1699f5a"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\TerraPulse_GPM_Daily_Rainfall_2020.csv",
+      "filename": "TerraPulse_GPM_Daily_Rainfall_2020.csv",
+      "size_bytes": 29599,
+      "size_mb": 0.028,
+      "sha256": "aaf8686cdc7dbfa178c5ea5abf4b9acb6b3618d838ab0351612678f96436af5f"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\TerraPulse_GPM_Daily_Rainfall_2021.csv",
+      "filename": "TerraPulse_GPM_Daily_Rainfall_2021.csv",
+      "size_bytes": 29532,
+      "size_mb": 0.028,
+      "sha256": "e0b9e2844a64080acd457d07e5ff35446acddceedb948d31ca0baf5815853751"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\TerraPulse_GPM_Daily_Rainfall_2022.csv",
+      "filename": "TerraPulse_GPM_Daily_Rainfall_2022.csv",
+      "size_bytes": 29524,
+      "size_mb": 0.028,
+      "sha256": "8a4763dcea1f5d13fc44dbdcfe276ec47a843ac292dc347e07922fdd24ee8f42"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\TerraPulse_GPM_Daily_Rainfall_2023.csv",
+      "filename": "TerraPulse_GPM_Daily_Rainfall_2023.csv",
+      "size_bytes": 29526,
+      "size_mb": 0.028,
+      "sha256": "4eb44b0b0208612d9c3ff7f0344b277bd6f0ade84d7686b65f5fd91ddbe1db1d"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\TerraPulse_GPM_District_Rainfall_2020.csv",
+      "filename": "TerraPulse_GPM_District_Rainfall_2020.csv",
+      "size_bytes": 100961464,
+      "size_mb": 96.284,
+      "sha256": "5a6cd7e4e0c5873bf787cfe189c2be358917145d8ffe4c9b86208a8ba7674f04"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\TerraPulse_GPM_District_Rainfall_2021.csv",
+      "filename": "TerraPulse_GPM_District_Rainfall_2021.csv",
+      "size_bytes": 365470,
+      "size_mb": 0.349,
+      "sha256": "c5aabb8e980b9c60b405ce8f25d170a0a0383eb294c1c6852e21e59ef9c96c07"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\TerraPulse_GPM_District_Rainfall_2022.csv",
+      "filename": "TerraPulse_GPM_District_Rainfall_2022.csv",
+      "size_bytes": 364955,
+      "size_mb": 0.348,
+      "sha256": "72eb6b95e56225fa574482aea7419d7a0544fbe87b2b2590781fede748cc25c3"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\TerraPulse_GPM_District_Rainfall_2023.csv",
+      "filename": "TerraPulse_GPM_District_Rainfall_2023.csv",
+      "size_bytes": 365834,
+      "size_mb": 0.349,
+      "sha256": "50e9b90994f6882b219cbe68e3e82f728fb742f550f0b2b273d37a07e305190a"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\Cleaned\\rainfall_district_2021_clean.csv",
+      "filename": "rainfall_district_2021_clean.csv",
+      "size_bytes": 189727,
+      "size_mb": 0.181,
+      "sha256": "e40c2beedee832131507cc1dc25835e0322465ec18d5da77f097a8da561def93"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\Cleaned\\rainfall_district_2022_clean.csv",
+      "filename": "rainfall_district_2022_clean.csv",
+      "size_bytes": 189151,
+      "size_mb": 0.18,
+      "sha256": "064498fc1bec631c749878933fe17fd1c004d3a71555f2a52aec77956332f7cf"
+    },
+    {
+      "path": "ML Model\\01_Rainfall\\District\\Cleaned\\rainfall_district_2023_clean.csv",
+      "filename": "rainfall_district_2023_clean.csv",
+      "size_bytes": 190024,
+      "size_mb": 0.181,
+      "sha256": "872756ec7d341b53039f175d72531ed5e277aa0d2a5ca37d58607d29ab102d38"
+    },
+    {
+      "path": "ML Model\\02_Soil_Moisture\\SMAP_Uttarakhand_Daily_2020.csv",
+      "filename": "SMAP_Uttarakhand_Daily_2020.csv",
+      "size_bytes": 36922,
+      "size_mb": 0.035,
+      "sha256": "9340927cb1b366af0e5abf8ef678ef75dbc4513e8193a2d5d35d6f360404286f"
+    },
+    {
+      "path": "ML Model\\02_Soil_Moisture\\SMAP_Uttarakhand_Daily_2021.csv",
+      "filename": "SMAP_Uttarakhand_Daily_2021.csv",
+      "size_bytes": 36821,
+      "size_mb": 0.035,
+      "sha256": "4243514ffaced5eb906c4be79a81fd1a0cc8d5bd0559ee667f41c7cb66bfbedf"
+    },
+    {
+      "path": "ML Model\\02_Soil_Moisture\\SMAP_Uttarakhand_Daily_2022.csv",
+      "filename": "SMAP_Uttarakhand_Daily_2022.csv",
+      "size_bytes": 36822,
+      "size_mb": 0.035,
+      "sha256": "078f706ad0fd0f908f6e3f48f2cc5fbfe1b30d05a536c9d4d772960286261d81"
+    },
+    {
+      "path": "ML Model\\02_Soil_Moisture\\SMAP_Uttarakhand_Daily_2023.csv",
+      "filename": "SMAP_Uttarakhand_Daily_2023.csv",
+      "size_bytes": 36813,
+      "size_mb": 0.035,
+      "sha256": "acc36334c6593efdfb3ece3dc7537a1c7d03cba620cc6e38352324e5de05a643"
+    },
+    {
+      "path": "ML Model\\03_Terrain\\TerraPulse_India_Districts.geojson",
+      "filename": "TerraPulse_India_Districts.geojson",
+      "size_bytes": 22498633,
+      "size_mb": 21.456,
+      "sha256": "8ccc324e0fa1318da21bf0f57839415a28e6045ec1f96408036138cc608149a9"
+    },
+    {
+      "path": "ML Model\\03_Terrain\\TerraPulse_SRTM_Elevation_Uttarakhand.tif",
+      "filename": "TerraPulse_SRTM_Elevation_Uttarakhand.tif",
+      "size_bytes": 179873030,
+      "size_mb": 171.54,
+      "sha256": "5ab177f5849047fa78c2ba69a3e9542e47033c38550b8473ea327fdd1fede13b"
+    },
+    {
+      "path": "ML Model\\03_Terrain\\TerraPulse_SRTM_Slope_Uttarakhand.tif",
+      "filename": "TerraPulse_SRTM_Slope_Uttarakhand.tif",
+      "size_bytes": 88099038,
+      "size_mb": 84.018,
+      "sha256": "1ea6320740abb21de14df74ee6db766bca3e9d7925202e70118368eca2a2ff80"
+    },
+    {
+      "path": "ML Model\\03_Terrain\\Uttarakhand_Districts.geojson",
+      "filename": "Uttarakhand_Districts.geojson",
+      "size_bytes": 279191,
+      "size_mb": 0.266,
+      "sha256": "cd78e95c7a78337863ab48523a41f26e7315b77cae113fb9140efdc2882117f0"
+    },
+    {
+      "path": "ML Model\\04_Flood_Events\\India_Flood_Inventory_v3.csv",
+      "filename": "India_Flood_Inventory_v3.csv",
+      "size_bytes": 1801579,
+      "size_mb": 1.718,
+      "sha256": "ef9ab2cd0db7bf917dcc22c7cb094ec599f5013ef1b96ba525d816f26ff1b108"
+    },
+    {
+      "path": "ML Model\\04_Flood_Events\\Uttarakhand_Flood_Events.csv",
+      "filename": "Uttarakhand_Flood_Events.csv",
+      "size_bytes": 32807,
+      "size_mb": 0.031,
+      "sha256": "91fecb3948a9fb9f4204023a011d75788c1b0427fceafcb043a80ef9e632d613"
+    },
+    {
+      "path": "ML Model\\05_Features\\analyze_uttarakhand_v2_synthetic.py",
+      "filename": "analyze_uttarakhand_v2_synthetic.py",
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ML Model\\05_Features\\flood_labels_2020_2023.csv",
+      "filename": "flood_labels_2020_2023.csv",
+      "size_bytes": 479235,
+      "size_mb": 0.457,
+      "sha256": "597e25204e9d1118f0483e5928ed498708628818503fd20460933e7ca428242b"
+    },
+    {
+      "path": "ML Model\\05_Features\\flood_label_audit_2020_2023.csv",
+      "filename": "flood_label_audit_2020_2023.csv",
+      "size_bytes": 2285,
+      "size_mb": 0.002,
+      "sha256": "f9b53a0088b31f2753ed13e7fd9128630237c9fcfffdf391dfc3745c2ef76ecd"
+    },
+    {
+      "path": "ML Model\\05_Features\\rainfall_district_daily_2020_2023.csv",
+      "filename": "rainfall_district_daily_2020_2023.csv",
+      "size_bytes": 759075,
+      "size_mb": 0.724,
+      "sha256": "84849906f0378e311d4277231c9972ce839f5206aaf6bca58af6d225d5eaf132"
+    },
+    {
+      "path": "ML Model\\05_Features\\rainfall_features_2020_2023.csv",
+      "filename": "rainfall_features_2020_2023.csv",
+      "size_bytes": 1449745,
+      "size_mb": 1.383,
+      "sha256": "f54716612b7e92b5b4ef44738a9c7bf5820606df2cbc5024e4d80ce9e4ccd24d"
+    },
+    {
+      "path": "ML Model\\05_Features\\soil_moisture_features_2020_2023.csv",
+      "filename": "soil_moisture_features_2020_2023.csv",
+      "size_bytes": 45150,
+      "size_mb": 0.043,
+      "sha256": "33eaddca9f2236e0e3b2cf4e88006bd983c51c1d148d309cb2331333bbb7f25a"
+    },
+    {
+      "path": "ML Model\\05_Features\\terrain_features_uttarakhand.csv",
+      "filename": "terrain_features_uttarakhand.csv",
+      "size_bytes": 676,
+      "size_mb": 0.001,
+      "sha256": "3d2a191e2d61fe3f1e439d3b4a7ac8ee77e711aec26eec3f21051bc0833cec45"
+    },
+    {
+      "path": "ML Model\\05_Features\\validate_ml_inputs.py",
+      "filename": "validate_ml_inputs.py",
+      "size_bytes": 11854,
+      "size_mb": 0.011,
+      "sha256": "4f244535d7e59387fb53fc6ea116242f1b00f0566236216b8257759635844ffa"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\analyze_ml_dataset.py",
+      "filename": "analyze_ml_dataset.py",
+      "size_bytes": 13105,
+      "size_mb": 0.012,
+      "sha256": "f86c6f7f3b0051d1693549eb7134437156f0c77ff1c008df2a153846f566d7e9"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\analyze_uttarakhand_v2_synthetic.py",
+      "filename": "analyze_uttarakhand_v2_synthetic.py",
+      "size_bytes": 13439,
+      "size_mb": 0.013,
+      "sha256": "22643d0cc35b7f2a0ed67a00496389a42614225657a52a9b109b2df703849304"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\build_improved_features.py",
+      "filename": "build_improved_features.py",
+      "size_bytes": 2703,
+      "size_mb": 0.003,
+      "sha256": "97bf8949f036bf6bd54c035d2115fe7260c9d0751e1c597b0232377dfafe1deb"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\build_ml_dataset.py",
+      "filename": "build_ml_dataset.py",
+      "size_bytes": 15882,
+      "size_mb": 0.015,
+      "sha256": "f0285699801ad847219e5f0fd109a5f9763d70235a4848ae3da35f6082776ee2"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\synthetic_data_metadata.json",
+      "filename": "synthetic_data_metadata.json",
+      "size_bytes": 6458,
+      "size_mb": 0.006,
+      "sha256": "c6a00ca4063c5a49e44ad14294d371c13edf04ccd1188e7535f88890065c6c3e"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\terrapulse_improved_ml_dataset_2020_2023.csv",
+      "filename": "terrapulse_improved_ml_dataset_2020_2023.csv",
+      "size_bytes": 4605943,
+      "size_mb": 4.393,
+      "sha256": "d5d2c0b78366b79481aaa70c3e18476a0a12592bd13bb581bf5fea2e40c69b76"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\terrapulse_ml_dataset_2020_2023.csv",
+      "filename": "terrapulse_ml_dataset_2020_2023.csv",
+      "size_bytes": 2525335,
+      "size_mb": 2.408,
+      "sha256": "17e6a7dc78221f517b08112d6adcc7e844b0e17f6357ea81c3cf59970da05b37"
+    },
+    {
+      "path": "ML Model\\06_ML_Dataset\\terrapulse_uttarakhand_v2_synthetic.csv",
+      "filename": "terrapulse_uttarakhand_v2_synthetic.csv",
+      "size_bytes": 5965207,
+      "size_mb": 5.689,
+      "sha256": "b1ffb4f7a79d3ac697cea3e2261b6f9ed11178c7af7f047f52e98cf3fbb9aeff"
+    },
+    {
+      "path": "ML Model\\07_Models\\analyze_feature_importance.py",
+      "filename": "analyze_feature_importance.py",
+      "size_bytes": 2755,
+      "size_mb": 0.003,
+      "sha256": "16170f01ea8817a4e2dcc4352ea3f0cefbfd1a9f4f8830f8fe7a482f7eaa2900"
+    },
+    {
+      "path": "ML Model\\07_Models\\analyze_final_errors.py",
+      "filename": "analyze_final_errors.py",
+      "size_bytes": 7192,
+      "size_mb": 0.007,
+      "sha256": "887d7ed802ab6b48e5095a673fd899ee31aac46949f9be64ff282a837ac69c1f"
+    },
+    {
+      "path": "ML Model\\07_Models\\compare_models.py",
+      "filename": "compare_models.py",
+      "size_bytes": 2096,
+      "size_mb": 0.002,
+      "sha256": "1c0a7c7662a1b5df977ebbcd66818b032694c1eeeb17d7990d5639e1bec0bd68"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_logistic_model.joblib",
+      "filename": "ensemble_logistic_model.joblib",
+      "size_bytes": 4369,
+      "size_mb": 0.004,
+      "sha256": "e8e89bd5ff3e195fe49064e844be1f70c300a4b74b21f6aa13955c76baea76d2"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_random_forest_model.joblib",
+      "filename": "ensemble_random_forest_model.joblib",
+      "size_bytes": 5029778,
+      "size_mb": 4.797,
+      "sha256": "49b7ec854d8dcf933f856bf0627be296d0df85004ea361b53eea2bd6201df35f"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_threshold.txt",
+      "filename": "ensemble_threshold.txt",
+      "size_bytes": 3,
+      "size_mb": 0.0,
+      "sha256": "221764976efe04132774d96b0253cc31434c5261737469324f222621baf34b20"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_logistic_model.joblib",
+      "filename": "ensemble_v2_logistic_model.joblib",
+      "size_bytes": 7306,
+      "size_mb": 0.007,
+      "sha256": "99a102b52c298beb4a74031455473948388bbdf24e6057c4f7e137bc80417541"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_random_forest_model.joblib",
+      "filename": "ensemble_v2_random_forest_model.joblib",
+      "size_bytes": 8541739,
+      "size_mb": 8.146,
+      "sha256": "527bef0671b443413f3d91a52f1973557b44af9fbe1d2cd80f6425797171e7bc"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_test_predictions.csv",
+      "filename": "ensemble_v2_test_predictions.csv",
+      "size_bytes": 376180,
+      "size_mb": 0.359,
+      "sha256": "3243dcaa04eb5ee9f51e20d44c5a386ba3bae87d56e9c8b9b905b0bc19cd2f1c"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_threshold.txt",
+      "filename": "ensemble_v2_threshold.txt",
+      "size_bytes": 4,
+      "size_mb": 0.0,
+      "sha256": "533a26b6cb8cb2c7fa4bb5667e8318d1d75e69872537118cb92f950f4d8739e8"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_threshold_analysis.csv",
+      "filename": "ensemble_v2_threshold_analysis.csv",
+      "size_bytes": 11356,
+      "size_mb": 0.011,
+      "sha256": "1c9766c441e2281dacd7b39af59f5bd36cc66aabb5508b85fd0d7ed58e1f8353"
+    },
+    {
+      "path": "ML Model\\07_Models\\ensemble_v2_threshold_evaluation.csv",
+      "filename": "ensemble_v2_threshold_evaluation.csv",
+      "size_bytes": 13827,
+      "size_mb": 0.013,
+      "sha256": "d43cbd61e9c97c9eb7a2c87318ceaf517fa126e1a998d1a536af8ed9439a356d"
+    },
+    {
+      "path": "ML Model\\07_Models\\evaluate_final_model.py",
+      "filename": "evaluate_final_model.py",
+      "size_bytes": 2950,
+      "size_mb": 0.003,
+      "sha256": "3d542681606b93f0f6a175e37949e8db4167943d5c3362d2b114ca8b7955a30a"
+    },
+    {
+      "path": "ML Model\\07_Models\\evaluate_uttarakhand_v2_thresholds.py",
+      "filename": "evaluate_uttarakhand_v2_thresholds.py",
+      "size_bytes": 25155,
+      "size_mb": 0.024,
+      "sha256": "462ffc2db951a65ca7d6c196df12b51fb52db6f4936be97b8eaf553bb7a34901"
+    },
+    {
+      "path": "ML Model\\07_Models\\final_model_config.json",
+      "filename": "final_model_config.json",
+      "size_bytes": 1044,
+      "size_mb": 0.001,
+      "sha256": "2618ab51c91b8f755bc486122639232d9e7092df2972514c2a845d4f19882cbe"
+    },
+    {
+      "path": "ML Model\\07_Models\\final_model_config.py",
+      "filename": "final_model_config.py",
+      "size_bytes": 1296,
+      "size_mb": 0.001,
+      "sha256": "7e6d14564626d7f9b11d2ea2b095bf40a1cdb68cb06579e556891d4321ee75e8"
+    },
+    {
+      "path": "ML Model\\07_Models\\final_model_v2_config.json",
+      "filename": "final_model_v2_config.json",
+      "size_bytes": 3658,
+      "size_mb": 0.003,
+      "sha256": "b4dd8d313ee5a25d270547685f29ad41c8f99032c619ba2b6eb1549f9212c5a4"
+    },
+    {
+      "path": "ML Model\\07_Models\\improved_logistic_threshold.txt",
+      "filename": "improved_logistic_threshold.txt",
+      "size_bytes": 4,
+      "size_mb": 0.0,
+      "sha256": "4942870d7312d707982f792e63180e31f72925b998dec46f7ce23db6f16e2d3b"
+    },
+    {
+      "path": "ML Model\\07_Models\\improved_logistic_tuned.joblib",
+      "filename": "improved_logistic_tuned.joblib",
+      "size_bytes": 4369,
+      "size_mb": 0.004,
+      "sha256": "e8e89bd5ff3e195fe49064e844be1f70c300a4b74b21f6aa13955c76baea76d2"
+    },
+    {
+      "path": "ML Model\\07_Models\\improved_random_forest_threshold.txt",
+      "filename": "improved_random_forest_threshold.txt",
+      "size_bytes": 4,
+      "size_mb": 0.0,
+      "sha256": "312b95ee5a344d2f7a16ad817ff70788980da6e30b9bb04b651d53847abd476f"
+    },
+    {
+      "path": "ML Model\\07_Models\\improved_random_forest_tuned.joblib",
+      "filename": "improved_random_forest_tuned.joblib",
+      "size_bytes": 5029778,
+      "size_mb": 4.797,
+      "sha256": "49b7ec854d8dcf933f856bf0627be296d0df85004ea361b53eea2bd6201df35f"
+    },
+    {
+      "path": "ML Model\\07_Models\\predict_flood_risk.py",
+      "filename": "predict_flood_risk.py",
+      "size_bytes": 3236,
+      "size_mb": 0.003,
+      "sha256": "9eac010958d5716686e137b671c7c657cf734f6eb87e1e37ddfc5311879cb513"
+    },
+    {
+      "path": "ML Model\\07_Models\\temporal_robustness_analysis.py",
+      "filename": "temporal_robustness_analysis.py",
+      "size_bytes": 4281,
+      "size_mb": 0.004,
+      "sha256": "73b0628e32914f8b13661738bd66d57220f9c5b10dc045307c7fc939793910bf"
+    },
+    {
+      "path": "ML Model\\07_Models\\test_prediction_cases.py",
+      "filename": "test_prediction_cases.py",
+      "size_bytes": 2144,
+      "size_mb": 0.002,
+      "sha256": "1369c0a52477cab9f47004868428f6a6be5e89d94f6ec7bb826d198bb1349d80"
+    },
+    {
+      "path": "ML Model\\07_Models\\threshold_sensitivity_analysis.py",
+      "filename": "threshold_sensitivity_analysis.py",
+      "size_bytes": 4177,
+      "size_mb": 0.004,
+      "sha256": "714defbb01666315fbed14633ef00c990fcc5f6aa42f2e4a48b23cc381b0d9c0"
+    },
+    {
+      "path": "ML Model\\07_Models\\train_ensemble.py",
+      "filename": "train_ensemble.py",
+      "size_bytes": 5074,
+      "size_mb": 0.005,
+      "sha256": "a2ae756015c92cbdcb1733d3af75be0bf51c706787c4b891f0eda91ee3afc633"
+    },
+    {
+      "path": "ML Model\\07_Models\\train_improved_logistic_regression.py",
+      "filename": "train_improved_logistic_regression.py",
+      "size_bytes": 2752,
+      "size_mb": 0.003,
+      "sha256": "2cb29d71dcd3fdb63d9febaa2e968f988685d6c492504665f48d33b07a04d104"
+    },
+    {
+      "path": "ML Model\\07_Models\\train_improved_random_forest.py",
+      "filename": "train_improved_random_forest.py",
+      "size_bytes": 4031,
+      "size_mb": 0.004,
+      "sha256": "6cd7a0e8f5d2cfe0b69900cb78863f95ba830a64cbadd9e015073db98a3ce197"
+    },
+    {
+      "path": "ML Model\\07_Models\\train_uttarakhand_v2.py",
+      "filename": "train_uttarakhand_v2.py",
+      "size_bytes": 30114,
+      "size_mb": 0.029,
+      "sha256": "dea0be1d4992dc99f68c371eb1d4ce00a4bb2fbb9341a1343859cabbf850cdb3"
+    },
+    {
+      "path": "ML Model\\07_Models\\tune_improved_logistic.py",
+      "filename": "tune_improved_logistic.py",
+      "size_bytes": 3936,
+      "size_mb": 0.004,
+      "sha256": "761c8608cc143f25dba557857f5b523efea5d40a5e5f5b80a448cfcff4717bfe"
+    },
+    {
+      "path": "ML Model\\07_Models\\walk_forward_validation.py",
+      "filename": "walk_forward_validation.py",
+      "size_bytes": 5691,
+      "size_mb": 0.005,
+      "sha256": "77a7166752fec3661bd3b7f50ae6ea63a891f4495022f53eee3e14713ad860f5"
+    },
+    {
+      "path": "ML Model\\08_Backend\\app.py",
+      "filename": "app.py",
+      "size_bytes": 20651,
+      "size_mb": 0.02,
+      "sha256": "b64604e7d2c2bdfcec89e50364462de68b29d7a56baca9b171d699b3a1fd2362"
+    },
+    {
+      "path": "ML Model\\08_Backend\\dashboard_predict.py",
+      "filename": "dashboard_predict.py",
+      "size_bytes": 12061,
+      "size_mb": 0.012,
+      "sha256": "eb6ff098fab9924acd2d509a562ba372a5f945dc40889987db6183a8cb3ae051"
+    },
+    {
+      "path": "ML Model\\08_Backend\\README.md",
+      "filename": "README.md",
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ML Model\\08_Backend\\requirements.txt",
+      "filename": "requirements.txt",
+      "size_bytes": 47,
+      "size_mb": 0.0,
+      "sha256": "ce3bbe191eae26780f172080e6cf694f3ff5a0ca02d9f4f176ec896196bbebd6"
+    },
+    {
+      "path": "ML Model\\08_Reports\\final_district_performance_2023.csv",
+      "filename": "final_district_performance_2023.csv",
+      "size_bytes": 878,
+      "size_mb": 0.001,
+      "sha256": "b8251eb8ca5d748cc609e66bd23fc310214db3838700d059d272810d986f93d4"
+    },
+    {
+      "path": "ML Model\\08_Reports\\final_false_negatives_2023.csv",
+      "filename": "final_false_negatives_2023.csv",
+      "size_bytes": 4815,
+      "size_mb": 0.005,
+      "sha256": "ae6d52ff87e129edc544c69b26ddfbc1e812adeae3d6443368337f96ca0e0f36"
+    },
+    {
+      "path": "ML Model\\08_Reports\\final_false_positives_2023.csv",
+      "filename": "final_false_positives_2023.csv",
+      "size_bytes": 242213,
+      "size_mb": 0.231,
+      "sha256": "d2a01edf95993582e468373996f7ea565b23765d7487d8309e3053ff91e5d7db"
+    },
+    {
+      "path": "ML Model\\08_Reports\\final_model_error_analysis_2023.csv",
+      "filename": "final_model_error_analysis_2023.csv",
+      "size_bytes": 224151,
+      "size_mb": 0.214,
+      "sha256": "54e744e2e5553ab0df5bd61860fac422b4422513242ecf33bb3b933500b8a909"
+    },
+    {
+      "path": "ML Model\\08_Reports\\final_monthly_performance_2023.csv",
+      "filename": "final_monthly_performance_2023.csv",
+      "size_bytes": 785,
+      "size_mb": 0.001,
+      "sha256": "1bee48a21ee90e098baed166fecb6a470ae543fc93e79e40767333921287ffaf"
+    },
+    {
+      "path": "ML Model\\08_Reports\\logistic_regression_feature_importance.csv",
+      "filename": "logistic_regression_feature_importance.csv",
+      "size_bytes": 1519,
+      "size_mb": 0.001,
+      "sha256": "42711541b8705d623fced937eea0e3b531fd565443cc7f56f19235bc95d742a7"
+    },
+    {
+      "path": "ML Model\\08_Reports\\model_comparison.csv",
+      "filename": "model_comparison.csv",
+      "size_bytes": 448,
+      "size_mb": 0.0,
+      "sha256": "9f55b5140e7367a415e254bf8f3ea72b3c78ce4614044aa9eeb13d737449a071"
+    },
+    {
+      "path": "ML Model\\08_Reports\\random_forest_feature_importance.csv",
+      "filename": "random_forest_feature_importance.csv",
+      "size_bytes": 1028,
+      "size_mb": 0.001,
+      "sha256": "1e3541601aa104608cbc9c895c349b0646c1988610255b8d54116b80dcd9e1a2"
+    },
+    {
+      "path": "ML Model\\08_Reports\\temporal_feature_distributions.csv",
+      "filename": "temporal_feature_distributions.csv",
+      "size_bytes": 5232,
+      "size_mb": 0.005,
+      "sha256": "3c66af3d3b4f4909ffd9ae537453512c2d088d15447da0e39592124c7f0c7773"
+    },
+    {
+      "path": "ML Model\\08_Reports\\temporal_flood_vs_nonflood.csv",
+      "filename": "temporal_flood_vs_nonflood.csv",
+      "size_bytes": 9022,
+      "size_mb": 0.009,
+      "sha256": "89f0a9cc5548995ace93028caeef2920702660dd0b6b0b09375b2f5389ac400f"
+    },
+    {
+      "path": "ML Model\\08_Reports\\temporal_monthly_flood_distribution.csv",
+      "filename": "temporal_monthly_flood_distribution.csv",
+      "size_bytes": 718,
+      "size_mb": 0.001,
+      "sha256": "19e165ad8b4caf41a14c0b52c6420a688ae888026e00b96dc904ec39124416c1"
+    },
+    {
+      "path": "ML Model\\08_Reports\\temporal_year_summary.csv",
+      "filename": "temporal_year_summary.csv",
+      "size_bytes": 819,
+      "size_mb": 0.001,
+      "sha256": "f67a8c5b4fea137af01180f77a44379b63ca8f7c3daedd92d303e323adeb5859"
+    },
+    {
+      "path": "ML Model\\08_Reports\\threshold_sensitivity_analysis.csv",
+      "filename": "threshold_sensitivity_analysis.csv",
+      "size_bytes": 2043,
+      "size_mb": 0.002,
+      "sha256": "4ac556433aa6856f65453ca10ea06a862dea8d89b329a7deb2ee37c1d8cbe971"
+    },
+    {
+      "path": "ML Model\\08_Reports\\uttarakhand_v2_model_metrics.json",
+      "filename": "uttarakhand_v2_model_metrics.json",
+      "size_bytes": 1984,
+      "size_mb": 0.002,
+      "sha256": "309dcf827c64df99ca4383c9ff0495de51daac917d168cb185e5b7352cf88068"
+    },
+    {
+      "path": "ML Model\\08_Reports\\uttarakhand_v2_model_summary.csv",
+      "filename": "uttarakhand_v2_model_summary.csv",
+      "size_bytes": 353,
+      "size_mb": 0.0,
+      "sha256": "2e3d805589e082c389f5be7f9ed7f5cafd0041f9b4133a9547c14bd799a9b11f"
+    },
+    {
+      "path": "ML Model\\08_Reports\\uttarakhand_v2_threshold_analysis.md",
+      "filename": "uttarakhand_v2_threshold_analysis.md",
+      "size_bytes": 1277,
+      "size_mb": 0.001,
+      "sha256": "a84758baf457d5024c3d19f1acbf67073aab8d3d9f2c37df535c3799769af404"
+    },
+    {
+      "path": "ML Model\\08_Reports\\uttarakhand_v2_threshold_summary.json",
+      "filename": "uttarakhand_v2_threshold_summary.json",
+      "size_bytes": 2745,
+      "size_mb": 0.003,
+      "sha256": "8cfb649f9787088b623dde5a789d21af6a08911e08ec2709c203760240f369d1"
+    },
+    {
+      "path": "ML Model\\08_Reports\\walk_forward_validation.csv",
+      "filename": "walk_forward_validation.csv",
+      "size_bytes": 4379,
+      "size_mb": 0.004,
+      "sha256": "510abea1e5b0bcf5fe98752c0933bd7adec9104699a1eea20e8e9a8c464af8d4"
+    },
+    {
+      "path": "ML Model\\09_Dashboard\\index.html",
+      "filename": "index.html",
+      "size_bytes": 36508,
+      "size_mb": 0.035,
+      "sha256": "72f9f3e1b48289a512fa8c3c1438e7445841742cf90c42f809d07a2cf8032e13"
+    },
+    {
+      "path": "ML Model\\09_Dashboard\\script.js",
+      "filename": "script.js",
+      "size_bytes": 41684,
+      "size_mb": 0.04,
+      "sha256": "3b928d65c20d78080a40638a7234caf7a714ba18f6d01c96e35cd81a1d727c05"
+    },
+    {
+      "path": "ML Model\\09_Dashboard\\style.css",
+      "filename": "style.css",
+      "size_bytes": 30208,
+      "size_mb": 0.029,
+      "sha256": "1b64ad7c12926df42af68415f66f42149e71cbde563c601e98f31040c24bf959"
+    },
+    {
+      "path": "ML Model\\09_Dashboard\\Uttarakhand_Districts.geojson",
+      "filename": "Uttarakhand_Districts.geojson",
+      "size_bytes": 279191,
+      "size_mb": 0.266,
+      "sha256": "cd78e95c7a78337863ab48523a41f26e7315b77cae113fb9140efdc2882117f0"
+    }
+  ],
+  "ml_files": [
+    {
+      "path": "ml\\configs\\train_config.json",
+      "filename": "train_config.json",
+      "size_bytes": 1084,
+      "size_mb": 0.001,
+      "sha256": "1df2db18bc7af8ff13799497da75ae22ea16c1956a5c23248f0dbce6978f061b"
+    },
+    {
+      "path": "ml\\data\\splits\\final_test_locked.csv",
+      "filename": "final_test_locked.csv",
+      "size_bytes": 913243,
+      "size_mb": 0.871,
+      "sha256": "25d58fd2c668357dbd964ca7fb82e12086c2b23c97ddcf386f237e4322bfc8f3"
+    },
+    {
+      "path": "ml\\data\\splits\\train_split.csv",
+      "filename": "train_split.csv",
+      "size_bytes": 1771579,
+      "size_mb": 1.69,
+      "sha256": "c65496a388305db3c230195a10d385187b5cb05c73db4a38aa02132bb7164c16"
+    },
+    {
+      "path": "ml\\data\\splits\\val_cal_split.csv",
+      "filename": "val_cal_split.csv",
+      "size_bytes": 211998,
+      "size_mb": 0.202,
+      "sha256": "18e5b88aaffd459ede2a9fbaa8dbbb405b7a2e5fa538de520b215eaaac7937b3"
+    },
+    {
+      "path": "ml\\data\\splits\\val_tune_split.csv",
+      "filename": "val_tune_split.csv",
+      "size_bytes": 493600,
+      "size_mb": 0.471,
+      "sha256": "0809af6f9e6ed5fcef815193f257d047c0f64a7ea59ae401e6b8a43dd90ef97f"
+    },
+    {
+      "path": "ml\\evaluation\\evaluate_flood_model.py",
+      "filename": "evaluate_flood_model.py",
+      "size_bytes": 6697,
+      "size_mb": 0.006,
+      "sha256": "7bcc6cc3c2730652319bbdef713282e0439812cc2bf42a447568973846227aa4"
+    },
+    {
+      "path": "ml\\features\\feature_definitions.py",
+      "filename": "feature_definitions.py",
+      "size_bytes": 7407,
+      "size_mb": 0.007,
+      "sha256": "67fdebac5188fbda8c692bdc52e04b6add8419d8a61c4e4dd6ab2728841ebfda"
+    },
+    {
+      "path": "ml\\inference\\explain.py",
+      "filename": "explain.py",
+      "size_bytes": 7229,
+      "size_mb": 0.007,
+      "sha256": "a5c3a2ebcc3339a5f56515aa76ea9a4c27891fc7dbae3f69aa6471b418691cf4"
+    },
+    {
+      "path": "ml\\inference\\predict.py",
+      "filename": "predict.py",
+      "size_bytes": 16093,
+      "size_mb": 0.015,
+      "sha256": "4c758c3cc9ef51a6b026f7d1d53a3ee86946fbff7df5ff10d693deb04e616c10"
+    },
+    {
+      "path": "ml\\legacy_v1\\evaluate.py",
+      "filename": "evaluate.py",
+      "size_bytes": 2503,
+      "size_mb": 0.002,
+      "sha256": "0b4f7cc110c23b46871358a1dc627f6d3f3d002a9171e32cc6b1b00a57cc4428"
+    },
+    {
+      "path": "ml\\legacy_v1\\feature_schema.py",
+      "filename": "feature_schema.py",
+      "size_bytes": 2200,
+      "size_mb": 0.002,
+      "sha256": "a16d8e1cbc63ed28c1ea1081f58f0eeec23fb2fbbef7285a6e2378117b0d49fa"
+    },
+    {
+      "path": "ml\\legacy_v1\\generate_data.py",
+      "filename": "generate_data.py",
+      "size_bytes": 6362,
+      "size_mb": 0.006,
+      "sha256": "7306f4222f399edb196bf14d192e7372f052af4b43df69df7c7320a72fc31ce8"
+    },
+    {
+      "path": "ml\\legacy_v1\\README.md",
+      "filename": "README.md",
+      "size_bytes": 834,
+      "size_mb": 0.001,
+      "sha256": "663c254211be237a90e657a5c4008eb531e571d5b82a17223c3914d05f04e326"
+    },
+    {
+      "path": "ml\\legacy_v1\\synthetic_flood_data.csv",
+      "filename": "synthetic_flood_data.csv",
+      "size_bytes": 428171,
+      "size_mb": 0.408,
+      "sha256": "b418c476b6f297d2f5ff561b9d5a941f8851d2b6d3b31856c7ecce7baa70b681"
+    },
+    {
+      "path": "ml\\legacy_v1\\train.py",
+      "filename": "train.py",
+      "size_bytes": 6830,
+      "size_mb": 0.007,
+      "sha256": "6dd49b93c57d790a9a210b0301f774c65ab70b29e73340d43327a9d1d9f434b1"
+    },
+    {
+      "path": "ml\\legacy_v1\\__init__.py",
+      "filename": "__init__.py",
+      "size_bytes": 65,
+      "size_mb": 0.0,
+      "sha256": "3ac7bda46a984826c549a6556ae5e25825fd1f9e68bb9a6aa733602575384ce3"
+    },
+    {
+      "path": "ml\\models\\feature_schema.json",
+      "filename": "feature_schema.json",
+      "size_bytes": 2444,
+      "size_mb": 0.002,
+      "sha256": "48cb19222076145194dd016a36f45d75f93fbd483e96bea0b70c710a275221d7"
+    },
+    {
+      "path": "ml\\models\\lr_real_flood_model.joblib",
+      "filename": "lr_real_flood_model.joblib",
+      "size_bytes": 991,
+      "size_mb": 0.001,
+      "sha256": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb"
+    },
+    {
+      "path": "ml\\models\\model_metadata.json",
+      "filename": "model_metadata.json",
+      "size_bytes": 1995,
+      "size_mb": 0.002,
+      "sha256": "5d724978b9ce755129971c9b500f3da54e54fd44962865ef59036f8972e794bc"
+    },
+    {
+      "path": "ml\\models\\preprocessor.joblib",
+      "filename": "preprocessor.joblib",
+      "size_bytes": 1993,
+      "size_mb": 0.002,
+      "sha256": "5056770e5d72e8133177cdb27535bba9ee3cb68be59f0a39191084387314df0e"
+    },
+    {
+      "path": "ml\\models\\v2_calibrator.joblib",
+      "filename": "v2_calibrator.joblib",
+      "size_bytes": 4303,
+      "size_mb": 0.004,
+      "sha256": "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780"
+    },
+    {
+      "path": "ml\\models\\v2_decision_pipeline.json",
+      "filename": "v2_decision_pipeline.json",
+      "size_bytes": 1473,
+      "size_mb": 0.001,
+      "sha256": "cddbc38cc0de334d3f51095ccce8e35feeb7a62cefb9974536447bde24cc6ea9"
+    },
+    {
+      "path": "ml\\models\\v2_preprocessor.joblib",
+      "filename": "v2_preprocessor.joblib",
+      "size_bytes": 1993,
+      "size_mb": 0.002,
+      "sha256": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c"
+    },
+    {
+      "path": "ml\\models\\v2_selected_model.joblib",
+      "filename": "v2_selected_model.joblib",
+      "size_bytes": 2769,
+      "size_mb": 0.003,
+      "sha256": "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb"
+    },
+    {
+      "path": "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "filename": "ARCHIVE_MANIFEST.json",
+      "size_bytes": 1273,
+      "size_mb": 0.001,
+      "sha256": "0b77cc6b8738386bf6136b83d020fd1e04712ad66d4880db1515977b37b8223e"
+    },
+    {
+      "path": "ml\\models\\archive\\rf_real_flood_model.joblib",
+      "filename": "rf_real_flood_model.joblib",
+      "size_bytes": 794313,
+      "size_mb": 0.758,
+      "sha256": "07149c53ebc56c0015c256a9812d455b2f68ec1a5aad25de36ed13e9471d589e"
+    },
+    {
+      "path": "ml\\models\\archive\\xgb_flood_model.joblib",
+      "filename": "xgb_flood_model.joblib",
+      "size_bytes": 369394,
+      "size_mb": 0.352,
+      "sha256": "5cdaa540395887bd70adbf0d0d14610e089ccd589ecb30746459baa1e17762ba"
+    },
+    {
+      "path": "ml\\models\\archive\\xgb_real_flood_model.joblib",
+      "filename": "xgb_real_flood_model.joblib",
+      "size_bytes": 154184,
+      "size_mb": 0.147,
+      "sha256": "7afc57e6997b87c848d409fafd452eabe898e50c3247de590d9e53e3d334e25f"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\feature_schema.json",
+      "filename": "feature_schema.json",
+      "size_bytes": 2444,
+      "size_mb": 0.002,
+      "sha256": "48cb19222076145194dd016a36f45d75f93fbd483e96bea0b70c710a275221d7"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\lr_real_flood_model.joblib",
+      "filename": "lr_real_flood_model.joblib",
+      "size_bytes": 991,
+      "size_mb": 0.001,
+      "sha256": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\model_metadata.json",
+      "filename": "model_metadata.json",
+      "size_bytes": 1995,
+      "size_mb": 0.002,
+      "sha256": "5d724978b9ce755129971c9b500f3da54e54fd44962865ef59036f8972e794bc"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\preprocessor.joblib",
+      "filename": "preprocessor.joblib",
+      "size_bytes": 1993,
+      "size_mb": 0.002,
+      "sha256": "5056770e5d72e8133177cdb27535bba9ee3cb68be59f0a39191084387314df0e"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\rf_real_flood_model.joblib",
+      "filename": "rf_real_flood_model.joblib",
+      "size_bytes": 794313,
+      "size_mb": 0.758,
+      "sha256": "07149c53ebc56c0015c256a9812d455b2f68ec1a5aad25de36ed13e9471d589e"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\v2_calibrator.joblib",
+      "filename": "v2_calibrator.joblib",
+      "size_bytes": 2212,
+      "size_mb": 0.002,
+      "sha256": "0f75ceb87e5576132f25dfb9950e08f5b7b9b44d1ea557643bef40ad56d3a891"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "filename": "v2_decision_pipeline.json",
+      "size_bytes": 3037,
+      "size_mb": 0.003,
+      "sha256": "4e5f9bdcbc5d5dca69f777743d8684385044f327f859cd397c3fa76a5327d148"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\v2_preprocessor.joblib",
+      "filename": "v2_preprocessor.joblib",
+      "size_bytes": 1993,
+      "size_mb": 0.002,
+      "sha256": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\v2_selected_model.joblib",
+      "filename": "v2_selected_model.joblib",
+      "size_bytes": 991,
+      "size_mb": 0.001,
+      "sha256": "5133b1ba5d62a7d076a220feeff9c0e99bfd499101797e7f4bcdf160f34f6cbb"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\xgb_flood_model.joblib",
+      "filename": "xgb_flood_model.joblib",
+      "size_bytes": 369394,
+      "size_mb": 0.352,
+      "sha256": "5cdaa540395887bd70adbf0d0d14610e089ccd589ecb30746459baa1e17762ba"
+    },
+    {
+      "path": "ml\\models\\baseline_backup\\xgb_real_flood_model.joblib",
+      "filename": "xgb_real_flood_model.joblib",
+      "size_bytes": 154184,
+      "size_mb": 0.147,
+      "sha256": "7afc57e6997b87c848d409fafd452eabe898e50c3247de590d9e53e3d334e25f"
+    },
+    {
+      "path": "ml\\models\\production\\flood_risk_calibrator.joblib",
+      "filename": "flood_risk_calibrator.joblib",
+      "size_bytes": 4303,
+      "size_mb": 0.004,
+      "sha256": "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780"
+    },
+    {
+      "path": "ml\\models\\production\\flood_risk_champion.joblib",
+      "filename": "flood_risk_champion.joblib",
+      "size_bytes": 2769,
+      "size_mb": 0.003,
+      "sha256": "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb"
+    },
+    {
+      "path": "ml\\models\\production\\flood_risk_preprocessor.joblib",
+      "filename": "flood_risk_preprocessor.joblib",
+      "size_bytes": 1993,
+      "size_mb": 0.002,
+      "sha256": "8e5c8c9570ac3ddc5e5f952da11b9309dc6563ee880b670891efa22c4d19f27c"
+    },
+    {
+      "path": "ml\\models\\production\\MODEL_MANIFEST.json",
+      "filename": "MODEL_MANIFEST.json",
+      "size_bytes": 1473,
+      "size_mb": 0.001,
+      "sha256": "4658a490e889570fca12280968d8516866b7c63a180d07c99b267e783028da35"
+    },
+    {
+      "path": "ml\\models\\tournament\\calibrator_isotonic.joblib",
+      "filename": "calibrator_isotonic.joblib",
+      "size_bytes": 4303,
+      "size_mb": 0.004,
+      "sha256": "c368eacb50f972a53eac2db088d4fc37b51e223d9f404b212546863e03d4f780"
+    },
+    {
+      "path": "ml\\models\\tournament\\calibrator_sigmoid.joblib",
+      "filename": "calibrator_sigmoid.joblib",
+      "size_bytes": 3871,
+      "size_mb": 0.004,
+      "sha256": "96c11d131b6bcf9ea55c1cdf2543b2bac45351dc614d555766b2b4c824e9bc1a"
+    },
+    {
+      "path": "ml\\models\\tournament\\candidate_logisticregression.joblib",
+      "filename": "candidate_logisticregression.joblib",
+      "size_bytes": 2769,
+      "size_mb": 0.003,
+      "sha256": "d45af8d35697ad8d749ede5be7b03c33fd6548bbe29748eb7c48c2c9f0d774bb"
+    },
+    {
+      "path": "ml\\models\\tournament\\candidate_randomforest_constrained.joblib",
+      "filename": "candidate_randomforest_constrained.joblib",
+      "size_bytes": 1299314,
+      "size_mb": 1.239,
+      "sha256": "2ec5a5e97af70658752f9d7bc5c9be357f9d755c394c7f242329a839315f7b99"
+    },
+    {
+      "path": "ml\\models\\tournament\\candidate_xgboost_regularized.joblib",
+      "filename": "candidate_xgboost_regularized.joblib",
+      "size_bytes": 234438,
+      "size_mb": 0.224,
+      "sha256": "cd460263a78094e2310938d6d6dfd7bb687275b0855fa967f02a797215774399"
+    },
+    {
+      "path": "ml\\preprocessing\\pipeline.py",
+      "filename": "pipeline.py",
+      "size_bytes": 3236,
+      "size_mb": 0.003,
+      "sha256": "e33217a4684aaee7340915b2fd1a7ed3b265a79533e74b284980813f29944b1e"
+    },
+    {
+      "path": "ml\\reports\\artifact_verification_report.json",
+      "filename": "artifact_verification_report.json",
+      "size_bytes": 1945,
+      "size_mb": 0.002,
+      "sha256": "e8435fc31e2a11bd8894c7d0b93f9954673261e3396d8153224ce7371b5003c0"
+    },
+    {
+      "path": "ml\\reports\\baseline_freeze_report.json",
+      "filename": "baseline_freeze_report.json",
+      "size_bytes": 4720,
+      "size_mb": 0.005,
+      "sha256": "2d99b5ed6ee42711bbc5516b67f26a3b01d11c1c92e59948f1a2ae8239254e5d"
+    },
+    {
+      "path": "ml\\reports\\baseline_reproduction_report.json",
+      "filename": "baseline_reproduction_report.json",
+      "size_bytes": 1114,
+      "size_mb": 0.001,
+      "sha256": "4d4a1bea34826a94a3f5597d2ec286df6c6d28bab430c5ead51cf8756e027b50"
+    },
+    {
+      "path": "ml\\reports\\calibration_evaluation_report.json",
+      "filename": "calibration_evaluation_report.json",
+      "size_bytes": 1328,
+      "size_mb": 0.001,
+      "sha256": "cc06641f9b135b2ef7942d7af7aebf90b4a14b28dbdcf4b9a772898baa097309"
+    },
+    {
+      "path": "ml\\reports\\calibration_study_validation.json",
+      "filename": "calibration_study_validation.json",
+      "size_bytes": 1247,
+      "size_mb": 0.001,
+      "sha256": "6f30c5aafefd9480e1cc2f882900ebd54a76ed80f092131a7a63acbfe128cba5"
+    },
+    {
+      "path": "ml\\reports\\data_split_manifest.json",
+      "filename": "data_split_manifest.json",
+      "size_bytes": 1682,
+      "size_mb": 0.002,
+      "sha256": "ba529e86fae32ffa80dc49da94897ebea5cda9e6e471c04ea53539cce0ea3440"
+    },
+    {
+      "path": "ml\\reports\\detailed_evaluation_report.json",
+      "filename": "detailed_evaluation_report.json",
+      "size_bytes": 2822,
+      "size_mb": 0.003,
+      "sha256": "479d5572e74ef1fd4e4097023b3918b75d99d469ee90f47d122fc4d158e71879"
+    },
+    {
+      "path": "ml\\reports\\drift_baseline_reference.json",
+      "filename": "drift_baseline_reference.json",
+      "size_bytes": 11482,
+      "size_mb": 0.011,
+      "sha256": "0c4eec9bd2201d748960bdf6b64b5c52380b9aa687c70d166351c3b001e670a7"
+    },
+    {
+      "path": "ml\\reports\\final_production_test_report.json",
+      "filename": "final_production_test_report.json",
+      "size_bytes": 3307,
+      "size_mb": 0.003,
+      "sha256": "bbf0a3ff0040e05fbb31429ce465638411e37a45ecb1bf2dc23aa6d9e00d63f5"
+    },
+    {
+      "path": "ml\\reports\\final_production_test_report.md",
+      "filename": "final_production_test_report.md",
+      "size_bytes": 3410,
+      "size_mb": 0.003,
+      "sha256": "29b3a7fa1fb12bde29e150c42c582060f1fdc138006d8574e5555811ce1f58f7"
+    },
+    {
+      "path": "ml\\reports\\generate_signoff.py",
+      "filename": "generate_signoff.py",
+      "size_bytes": 4436,
+      "size_mb": 0.004,
+      "sha256": "f4bd1db59c15c4684fa4c7a1e615e83a3d3692b91d8af2292130fbd3a8b16c69"
+    },
+    {
+      "path": "ml\\reports\\label_integrity_report.json",
+      "filename": "label_integrity_report.json",
+      "size_bytes": 1620,
+      "size_mb": 0.002,
+      "sha256": "b460ba62068a5f626bd157f5740af6172f17760c2cc5bfb2ae07354d177edfe5"
+    },
+    {
+      "path": "ml\\reports\\metrics_comparison.json",
+      "filename": "metrics_comparison.json",
+      "size_bytes": 4103,
+      "size_mb": 0.004,
+      "sha256": "e61090bd94a4c28b89db1adc1c100bc7187f80e8769c6b1e7a6d6b7796bef66b"
+    },
+    {
+      "path": "ml\\reports\\regression_test_report.json",
+      "filename": "regression_test_report.json",
+      "size_bytes": 2431,
+      "size_mb": 0.002,
+      "sha256": "c7281f473a8b1bdeee134e81206e2edb91cf8acce4b2c5f6e756bf6e9a9e2103"
+    },
+    {
+      "path": "ml\\reports\\rollback_drill_report.json",
+      "filename": "rollback_drill_report.json",
+      "size_bytes": 714,
+      "size_mb": 0.001,
+      "sha256": "817db6529da621e90f1896f2ec8528371d18fa29bb64cab0364bd13392168cd2"
+    },
+    {
+      "path": "ml\\reports\\scientific_validity_signoff.md",
+      "filename": "scientific_validity_signoff.md",
+      "size_bytes": 2442,
+      "size_mb": 0.002,
+      "sha256": "4f56bd3e55e2a8cbe0f1cd7d92f638ae4deddf8bb5bf3c1e2a2a3ab52432c1b1"
+    },
+    {
+      "path": "ml\\reports\\threshold_optimization_report.json",
+      "filename": "threshold_optimization_report.json",
+      "size_bytes": 1125,
+      "size_mb": 0.001,
+      "sha256": "7e8e580a3949677e3c62284c5cea6898b89c562569de4be413fabe937d3b6129"
+    },
+    {
+      "path": "ml\\reports\\threshold_sweeps_validation.json",
+      "filename": "threshold_sweeps_validation.json",
+      "size_bytes": 350905,
+      "size_mb": 0.335,
+      "sha256": "1a9f122af380deb24a4205182a978a299926d3fce79d5661cb69055f23c5f3eb"
+    },
+    {
+      "path": "ml\\reports\\tournament_evaluation_report.json",
+      "filename": "tournament_evaluation_report.json",
+      "size_bytes": 2288,
+      "size_mb": 0.002,
+      "sha256": "95eaa18e4d75ebeee39163fa6478a5b71da71a6d36cc612b9a4223e20e3f42f5"
+    },
+    {
+      "path": "ml\\reports\\training-data-audit.md",
+      "filename": "training-data-audit.md",
+      "size_bytes": 9008,
+      "size_mb": 0.009,
+      "sha256": "04c5cfd7698a66212ffdb3aebce4affe98bf23a22f82ad7854d852edee081ad8"
+    },
+    {
+      "path": "ml\\reports\\validation_model_comparison.json",
+      "filename": "validation_model_comparison.json",
+      "size_bytes": 8336,
+      "size_mb": 0.008,
+      "sha256": "a55f6dd0595bec202189abc16face126bbc6fe98722bd78621099f56a6be96d8"
+    },
+    {
+      "path": "ml\\retraining\\retrain_pipeline.py",
+      "filename": "retrain_pipeline.py",
+      "size_bytes": 7799,
+      "size_mb": 0.007,
+      "sha256": "ef7c1677f5eee71b3e1cbda25a44fe6336a22fdd3d64daf91091f082ec7d85ec"
+    },
+    {
+      "path": "ml\\training\\run_calibration.py",
+      "filename": "run_calibration.py",
+      "size_bytes": 5174,
+      "size_mb": 0.005,
+      "sha256": "85ff6c7899883f8d8ab1a09a2b28cfabef2f75d67af66633fc263586d8412ada"
+    },
+    {
+      "path": "ml\\training\\run_threshold_optimization.py",
+      "filename": "run_threshold_optimization.py",
+      "size_bytes": 5035,
+      "size_mb": 0.005,
+      "sha256": "958efdea8d5b61285c92029f1e23292a1d53308050fe3886d57f4e71cc9da079"
+    },
+    {
+      "path": "ml\\training\\run_tournament.py",
+      "filename": "run_tournament.py",
+      "size_bytes": 7871,
+      "size_mb": 0.008,
+      "sha256": "8fda2dfb5a93c397357e91d044d4a3bbed2d18ca89fb4f3687538dd58dbe63dd"
+    },
+    {
+      "path": "ml\\training\\study_model_selection.py",
+      "filename": "study_model_selection.py",
+      "size_bytes": 37586,
+      "size_mb": 0.036,
+      "sha256": "023f841962855cdf066ea1595fb82d9846dc30bb3774ee1a93f371d53e161690"
+    },
+    {
+      "path": "ml\\training\\train_flood_model.py",
+      "filename": "train_flood_model.py",
+      "size_bytes": 9750,
+      "size_mb": 0.009,
+      "sha256": "190c90507512fdfa7a6f29a7d0aaeebaf351e6f9151e9de75e76688d9237276b"
+    }
+  ],
+  "incoming_refs": {
+    "ml\\models\\v2_decision_pipeline.json": [
+      "apps\\api\\app\\config.py",
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "ml\\retraining\\retrain_pipeline.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\v2_selected_model.joblib": [
+      "scripts\\verify_all_ai_steps.py",
+      "tests\\test_ml_pipeline.py",
+      "apps\\api\\app\\config.py",
+      "apps\\api\\app\\services\\timeline_service.py",
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\reports\\rollback_drill_report.json",
+      "apps\\api\\tests\\test_model_integrity.py",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "scripts\\execute_rollback_drill.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "apps\\web\\src\\components\\timeline\\DataQualityTransparencyCard.tsx",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\v2_decision_pipeline.json": [
+      "apps\\api\\app\\config.py",
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "ml\\retraining\\retrain_pipeline.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\v2_selected_model.joblib": [
+      "scripts\\verify_all_ai_steps.py",
+      "tests\\test_ml_pipeline.py",
+      "apps\\api\\app\\config.py",
+      "apps\\api\\app\\services\\timeline_service.py",
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\reports\\rollback_drill_report.json",
+      "apps\\api\\tests\\test_model_integrity.py",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "scripts\\execute_rollback_drill.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "apps\\web\\src\\components\\timeline\\DataQualityTransparencyCard.tsx",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\inference\\predict.py": [
+      "scripts\\seed_db.py",
+      "apps\\api\\app\\main.py",
+      "tests\\test_ml_pipeline.py",
+      "scripts\\seed_national_flood_data.py",
+      "apps\\api\\app\\services\\timeline_service.py",
+      "apps\\api\\app\\services\\live_telemetry_service.py",
+      "apps\\api\\app\\routers\\health.py",
+      "apps\\api\\app\\routers\\ai.py",
+      "apps\\api\\app\\routers\\telemetry.py",
+      "apps\\api\\app\\services\\future_risk_service.py",
+      "apps\\api\\app\\routers\\predictions.py",
+      "apps\\api\\app\\services\\prediction_service.py",
+      "apps\\api\\app\\services\\__init__.py",
+      "apps\\api\\app\\services\\scenarios\\scenario_runner.py",
+      "apps\\api\\app\\routers\\system.py",
+      "apps\\api\\app\\services\\simulation_engine.py",
+      "apps\\api\\tests\\test_v2_inference_contract.py",
+      "scripts\\verify_all_ai_steps.py"
+    ],
+    "ml\\reports\\metrics_comparison.json": [
+      "ml\\training\\study_model_selection.py",
+      "ml\\training\\train_flood_model.py",
+      "apps\\api\\app\\routers\\ai.py",
+      "scripts\\verify_all_ai_steps.py"
+    ],
+    "ml\\retraining\\retrain_pipeline.py": [
+      "apps\\api\\app\\routers\\model_admin.py"
+    ],
+    "ml\\reports\\drift_baseline_reference.json": [
+      "scripts\\generate_drift_baseline.py",
+      "apps\\api\\app\\services\\drift_monitor.py"
+    ],
+    "ml\\models\\preprocessor.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "ml\\retraining\\retrain_pipeline.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\v2_calibrator.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\v2_preprocessor.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\preprocessor.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "ml\\retraining\\retrain_pipeline.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\v2_calibrator.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\v2_preprocessor.joblib": [
+      "ml\\models\\production\\MODEL_MANIFEST.json",
+      "ml\\models\\baseline_backup\\v2_decision_pipeline.json",
+      "scripts\\promote_model.py",
+      "ml\\models\\v2_decision_pipeline.json",
+      "apps\\api\\app\\services\\model_integrity.py",
+      "scripts\\rollback_to_baseline.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\reports\\final_production_test_report.json": [
+      "scripts\\evaluate_final_test_set.py"
+    ],
+    "ml\\reports\\rollback_drill_report.json": [
+      "scripts\\execute_rollback_drill.py"
+    ],
+    "ml\\reports\\regression_test_report.json": [
+      "scripts\\generate_regression_report.py"
+    ],
+    "ml\\models\\production\\flood_risk_calibrator.joblib": [
+      "scripts\\promote_model.py"
+    ],
+    "ml\\models\\production\\flood_risk_champion.joblib": [
+      "scripts\\promote_model.py"
+    ],
+    "ml\\models\\production\\flood_risk_preprocessor.joblib": [
+      "scripts\\promote_model.py"
+    ],
+    "ml\\models\\production\\MODEL_MANIFEST.json": [
+      "scripts\\promote_model.py"
+    ],
+    "ml\\models\\tournament\\calibrator_isotonic.joblib": [
+      "scripts\\promote_model.py",
+      "ml\\reports\\calibration_evaluation_report.json",
+      "ml\\training\\run_threshold_optimization.py"
+    ],
+    "ml\\models\\tournament\\candidate_logisticregression.joblib": [
+      "ml\\training\\run_calibration.py",
+      "scripts\\promote_model.py",
+      "ml\\reports\\tournament_evaluation_report.json"
+    ],
+    "ml\\models\\lr_real_flood_model.joblib": [
+      "ml\\training\\train_flood_model.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\archive\\rf_real_flood_model.joblib": [
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py"
+    ],
+    "ml\\models\\archive\\xgb_real_flood_model.joblib": [
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\lr_real_flood_model.joblib": [
+      "ml\\training\\train_flood_model.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\baseline_backup\\rf_real_flood_model.joblib": [
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py"
+    ],
+    "ml\\models\\baseline_backup\\xgb_real_flood_model.joblib": [
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json",
+      "scripts\\verify_all_ai_steps.py",
+      "ml\\inference\\predict.py"
+    ],
+    "ml\\models\\feature_schema.json": [
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\models\\baseline_backup\\feature_schema.json": [
+      "ml\\evaluation\\evaluate_flood_model.py",
+      "ml\\training\\train_flood_model.py",
+      "ml\\training\\study_model_selection.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\reports\\detailed_evaluation_report.json": [
+      "ml\\evaluation\\evaluate_flood_model.py"
+    ],
+    "ml\\legacy_v1\\feature_schema.py": [
+      "ml\\legacy_v1\\generate_data.py",
+      "ml\\legacy_v1\\evaluate.py",
+      "ml\\legacy_v1\\train.py",
+      "ml\\legacy_v1\\feature_schema.py"
+    ],
+    "ml\\models\\model_metadata.json": [
+      "ml\\legacy_v1\\evaluate.py",
+      "ml\\legacy_v1\\train.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\models\\archive\\xgb_flood_model.joblib": [
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\legacy_v1\\evaluate.py",
+      "ml\\legacy_v1\\train.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\models\\baseline_backup\\model_metadata.json": [
+      "ml\\legacy_v1\\evaluate.py",
+      "ml\\legacy_v1\\train.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\models\\baseline_backup\\xgb_flood_model.joblib": [
+      "ml\\models\\archive\\ARCHIVE_MANIFEST.json",
+      "ml\\legacy_v1\\evaluate.py",
+      "ml\\legacy_v1\\train.py",
+      "ml\\reports\\baseline_freeze_report.json"
+    ],
+    "ml\\legacy_v1\\generate_data.py": [
+      "ml\\legacy_v1\\train.py"
+    ],
+    "ml\\legacy_v1\\train.py": [
+      "ml\\retraining\\retrain_pipeline.py",
+      "ml\\legacy_v1\\train.py"
+    ],
+    "ml\\models\\tournament\\calibrator_sigmoid.joblib": [
+      "ml\\reports\\calibration_evaluation_report.json"
+    ],
+    "ml\\reports\\calibration_evaluation_report.json": [
+      "ml\\training\\run_calibration.py",
+      "ml\\reports\\generate_signoff.py"
+    ],
+    "ml\\reports\\data_split_manifest.json": [
+      "ml\\reports\\generate_signoff.py"
+    ],
+    "ml\\reports\\threshold_optimization_report.json": [
+      "ml\\training\\run_threshold_optimization.py",
+      "ml\\reports\\generate_signoff.py"
+    ],
+    "ml\\reports\\tournament_evaluation_report.json": [
+      "ml\\training\\run_tournament.py",
+      "ml\\reports\\generate_signoff.py"
+    ],
+    "ml\\models\\tournament\\candidate_randomforest_constrained.joblib": [
+      "ml\\reports\\tournament_evaluation_report.json"
+    ],
+    "ml\\models\\tournament\\candidate_xgboost_regularized.joblib": [
+      "ml\\reports\\tournament_evaluation_report.json"
+    ],
+    "ml\\reports\\calibration_study_validation.json": [
+      "ml\\training\\study_model_selection.py"
+    ],
+    "ml\\reports\\threshold_sweeps_validation.json": [
+      "ml\\training\\study_model_selection.py"
+    ],
+    "ml\\reports\\validation_model_comparison.json": [
+      "ml\\training\\study_model_selection.py"
+    ],
+    "ml\\configs\\train_config.json": [
+      "ml\\training\\train_flood_model.py"
+    ]
+  }
+}

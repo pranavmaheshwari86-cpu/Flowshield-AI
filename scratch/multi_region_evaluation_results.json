@@ -1,0 +1,193 @@
+{
+  "himachal_pradesh": {
+    "status": "EVALUATED",
+    "region_slug": "himachal_pradesh",
+    "total_samples": 15624,
+    "train_samples": 5208,
+    "val_samples": 5208,
+    "holdout_samples": 5208,
+    "holdout_flood_hours": 1204,
+    "optimal_threshold": 0.05,
+    "rung_2_rain_24h_heuristic": {
+      "roc_auc": 0.8447,
+      "pr_auc": 0.6498,
+      "recall": 0.1761,
+      "precision": 0.7881,
+      "f1": 0.2878,
+      "brier": 0.1499,
+      "ece": 0.1746,
+      "samples": 5208,
+      "flood_hours": 1204
+    },
+    "rung_3_rainfall_only_ml": {
+      "roc_auc": 0.6851,
+      "pr_auc": 0.5509,
+      "recall": 0.5847,
+      "precision": 0.5785,
+      "f1": 0.5816,
+      "brier": 0.2296,
+      "ece": 0.1531,
+      "samples": 5208,
+      "flood_hours": 1204
+    },
+    "rung_7_full_15_calibrated_ml": {
+      "roc_auc": 0.6529,
+      "pr_auc": 0.3832,
+      "recall": 1.0,
+      "precision": 0.2312,
+      "f1": 0.3755,
+      "brier": 0.1675,
+      "ece": 0.0921,
+      "samples": 5208,
+      "flood_hours": 1204
+    }
+  },
+  "jammu_kashmir": {
+    "status": "EVALUATED",
+    "region_slug": "jammu_kashmir",
+    "total_samples": 13248,
+    "train_samples": 4320,
+    "val_samples": 4464,
+    "holdout_samples": 4464,
+    "holdout_flood_hours": 186,
+    "optimal_threshold": 0.05,
+    "rung_2_rain_24h_heuristic": {
+      "roc_auc": 0.345,
+      "pr_auc": 0.0333,
+      "recall": 0.0,
+      "precision": 0.0,
+      "f1": 0.0,
+      "brier": 0.0549,
+      "ece": 0.4874,
+      "samples": 4464,
+      "flood_hours": 186
+    },
+    "rung_3_rainfall_only_ml": {
+      "roc_auc": 0.6158,
+      "pr_auc": 0.0587,
+      "recall": 0.0,
+      "precision": 0.0,
+      "f1": 0.0,
+      "brier": 0.0917,
+      "ece": 0.4703,
+      "samples": 4464,
+      "flood_hours": 186
+    },
+    "rung_7_full_15_calibrated_ml": {
+      "roc_auc": 0.6064,
+      "pr_auc": 0.0613,
+      "recall": 1.0,
+      "precision": 0.0425,
+      "f1": 0.0815,
+      "brier": 0.0412,
+      "ece": 0.1765,
+      "samples": 4464,
+      "flood_hours": 186
+    }
+  },
+  "leh_ladakh": {
+    "status": "TEMPORAL_CONCENTRATION_LIMIT",
+    "region_slug": "leh_ladakh",
+    "total_samples": 11040,
+    "flood_hours": 35,
+    "train_floods": 35,
+    "val_floods": 0,
+    "holdout_floods": 0,
+    "reason": "Flood events are temporally clustered in a single partition (Train=35, Val=0, Holdout=0). Multi-season acquisition required for within-region holdout."
+  },
+  "sikkim": {
+    "status": "EVALUATED",
+    "region_slug": "sikkim",
+    "total_samples": 11040,
+    "train_samples": 5520,
+    "val_samples": 2760,
+    "holdout_samples": 2760,
+    "holdout_flood_hours": 35,
+    "optimal_threshold": 0.5,
+    "rung_2_rain_24h_heuristic": {
+      "roc_auc": 0.929,
+      "pr_auc": 0.0829,
+      "recall": 1.0,
+      "precision": 0.0354,
+      "f1": 0.0684,
+      "brier": 0.2784,
+      "ece": 0.5,
+      "samples": 2760,
+      "flood_hours": 35
+    },
+    "rung_3_rainfall_only_ml": {
+      "roc_auc": 0.9514,
+      "pr_auc": 0.225,
+      "recall": 1.0,
+      "precision": 0.0572,
+      "f1": 0.1082,
+      "brier": 0.1887,
+      "ece": 0.4737,
+      "samples": 2760,
+      "flood_hours": 35
+    },
+    "rung_7_full_15_calibrated_ml": {
+      "roc_auc": 0.9244,
+      "pr_auc": 0.1829,
+      "recall": 0.8571,
+      "precision": 0.0688,
+      "f1": 0.1274,
+      "brier": 0.1146,
+      "ece": 0.453,
+      "samples": 2760,
+      "flood_hours": 35
+    }
+  },
+  "arunachal_pradesh": {
+    "status": "TEMPORAL_CONCENTRATION_LIMIT",
+    "region_slug": "arunachal_pradesh",
+    "total_samples": 13248,
+    "flood_hours": 726,
+    "train_floods": 312,
+    "val_floods": 414,
+    "holdout_floods": 0,
+    "reason": "Flood events are temporally clustered in a single partition (Train=312, Val=414, Holdout=0). Multi-season acquisition required for within-region holdout."
+  },
+  "nagaland": {
+    "status": "INSUFFICIENT_EVENTS",
+    "region_slug": "nagaland",
+    "total_samples": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0,
+    "reason": "Only 0 positive hours available in verified record (minimum 10 required for holdout splitting)."
+  },
+  "manipur": {
+    "status": "INSUFFICIENT_EVENTS",
+    "region_slug": "manipur",
+    "total_samples": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0,
+    "reason": "Only 0 positive hours available in verified record (minimum 10 required for holdout splitting)."
+  },
+  "mizoram": {
+    "status": "INSUFFICIENT_EVENTS",
+    "region_slug": "mizoram",
+    "total_samples": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0,
+    "reason": "Only 0 positive hours available in verified record (minimum 10 required for holdout splitting)."
+  },
+  "meghalaya": {
+    "status": "TEMPORAL_CONCENTRATION_LIMIT",
+    "region_slug": "meghalaya",
+    "total_samples": 13248,
+    "flood_hours": 1380,
+    "train_floods": 942,
+    "val_floods": 438,
+    "holdout_floods": 0,
+    "reason": "Flood events are temporally clustered in a single partition (Train=942, Val=438, Holdout=0). Multi-season acquisition required for within-region holdout."
+  },
+  "tripura": {
+    "status": "INSUFFICIENT_EVENTS",
+    "region_slug": "tripura",
+    "total_samples": 11040,
+    "flood_hours": 0,
+    "prevalence_pct": 0.0,
+    "reason": "Only 0 positive hours available in verified record (minimum 10 required for holdout splitting)."
+  }
+}

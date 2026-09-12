@@ -1,0 +1,103 @@
+{
+  "model_version": "flowshield-flood-risk-v2",
+  "trained_at_utc": "2026-09-10T18:10:20.210737+00:00",
+  "random_seed": 26192,
+  "features": [
+    "rainfall_1h_mm",
+    "rainfall_3h_mm",
+    "rainfall_6h_mm",
+    "rainfall_24h_mm",
+    "rainfall_72h_mm",
+    "soil_saturation_pct",
+    "deep_soil_saturation_pct",
+    "temperature_c",
+    "relative_humidity_pct",
+    "surface_pressure_hpa",
+    "wind_speed_kmh",
+    "elevation_m",
+    "catchment_slope_deg",
+    "dist_to_river_m",
+    "upstream_drainage_sqkm"
+  ],
+  "target": "flood_occurred",
+  "selected_model": "logistic_regression",
+  "calibration_method": "isotonic",
+  "threshold": 0.08,
+  "feature_importances": [
+    {
+      "feature": "rainfall_72h_mm",
+      "coefficient": 2.3513,
+      "abs_importance": 2.3513
+    },
+    {
+      "feature": "relative_humidity_pct",
+      "coefficient": 2.0821,
+      "abs_importance": 2.0821
+    },
+    {
+      "feature": "temperature_c",
+      "coefficient": 1.9119,
+      "abs_importance": 1.9119
+    },
+    {
+      "feature": "soil_saturation_pct",
+      "coefficient": 1.1808,
+      "abs_importance": 1.1808
+    },
+    {
+      "feature": "surface_pressure_hpa",
+      "coefficient": -1.0918,
+      "abs_importance": 1.0918
+    },
+    {
+      "feature": "deep_soil_saturation_pct",
+      "coefficient": -1.0311,
+      "abs_importance": 1.0311
+    },
+    {
+      "feature": "catchment_slope_deg",
+      "coefficient": -0.8902,
+      "abs_importance": 0.8902
+    },
+    {
+      "feature": "upstream_drainage_sqkm",
+      "coefficient": 0.6502,
+      "abs_importance": 0.6502
+    },
+    {
+      "feature": "elevation_m",
+      "coefficient": 0.5965,
+      "abs_importance": 0.5965
+    },
+    {
+      "feature": "wind_speed_kmh",
+      "coefficient": 0.264,
+      "abs_importance": 0.264
+    },
+    {
+      "feature": "rainfall_24h_mm",
+      "coefficient": 0.1946,
+      "abs_importance": 0.1946
+    },
+    {
+      "feature": "rainfall_1h_mm",
+      "coefficient": 0.0894,
+      "abs_importance": 0.0894
+    },
+    {
+      "feature": "dist_to_river_m",
+      "coefficient": -0.0612,
+      "abs_importance": 0.0612
+    },
+    {
+      "feature": "rainfall_6h_mm",
+      "coefficient": -0.0438,
+      "abs_importance": 0.0438
+    },
+    {
+      "feature": "rainfall_3h_mm",
+      "coefficient": -0.031,
+      "abs_importance": 0.031
+    }
+  ]
+}

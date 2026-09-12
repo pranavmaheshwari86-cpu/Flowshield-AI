@@ -1,0 +1,42 @@
+{
+  "jammu_kashmir": {
+    "status": "SUCCESS",
+    "region_slug": "jammu_kashmir",
+    "raw_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\raw\\regions\\jammu_kashmir\\jammu_kashmir_era5_hourly_raw.csv",
+    "processed_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\processed\\jammu_kashmir\\jammu_kashmir_processed_dataset.csv",
+    "total_rows": 13248,
+    "flood_hours": 570,
+    "prevalence_pct": 4.3,
+    "stations_count": 6
+  },
+  "sikkim": {
+    "status": "SUCCESS",
+    "region_slug": "sikkim",
+    "raw_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\raw\\regions\\sikkim\\sikkim_era5_hourly_raw.csv",
+    "processed_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\processed\\sikkim\\sikkim_processed_dataset.csv",
+    "total_rows": 11040,
+    "flood_hours": 105,
+    "prevalence_pct": 0.95,
+    "stations_count": 5
+  },
+  "arunachal_pradesh": {
+    "status": "SUCCESS",
+    "region_slug": "arunachal_pradesh",
+    "raw_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\raw\\regions\\arunachal_pradesh\\arunachal_pradesh_era5_hourly_raw.csv",
+    "processed_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\processed\\arunachal_pradesh\\arunachal_pradesh_processed_dataset.csv",
+    "total_rows": 13248,
+    "flood_hours": 726,
+    "prevalence_pct": 5.48,
+    "stations_count": 6
+  },
+  "meghalaya": {
+    "status": "SUCCESS",
+    "region_slug": "meghalaya",
+    "raw_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\raw\\regions\\meghalaya\\meghalaya_era5_hourly_raw.csv",
+    "processed_csv": "C:\\Users\\Pranav\\Desktop\\Flowshield\\ml\\data\\processed\\meghalaya\\meghalaya_processed_dataset.csv",
+    "total_rows": 13248,
+    "flood_hours": 1380,
+    "prevalence_pct": 10.42,
+    "stations_count": 6
+  }
+}
