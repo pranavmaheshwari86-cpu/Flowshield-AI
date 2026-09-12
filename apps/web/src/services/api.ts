@@ -347,40 +347,104 @@ class ApiClient {
     });
   }
 
+  // Geography Endpoints
+  public async getGeographyStates(): Promise<any[]> {
+    return this.request<any[]>('/geography/states');
+  }
+
+  public async getGeographyDistricts(state: string): Promise<any[]> {
+    return this.request<any[]>(`/geography/states/${encodeURIComponent(state)}/districts`);
+  }
+
+  public async getGeographySettlements(district: string, state: string = 'Uttarakhand'): Promise<any[]> {
+    return this.request<any[]>(`/geography/districts/${encodeURIComponent(district)}/settlements?state=${encodeURIComponent(state)}`);
+  }
+
   // Shelters & Routes
-  public async getShelters(): Promise<Shelter[]> {
-    const raw = await this.request<any[]>('/shelters');
+  public async getShelters(filters?: {
+    state?: string;
+    district?: string;
+    search?: string;
+    verified_only?: boolean;
+    operational_only?: boolean;
+    has_medical?: boolean;
+    has_power?: boolean;
+    ref_lat?: number;
+    ref_lon?: number;
+    sort_by?: string;
+  }): Promise<Shelter[]> {
+    const params = new URLSearchParams();
+    if (filters?.state) params.append('state', filters.state);
+    if (filters?.district) params.append('district', filters.district);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.verified_only) params.append('verified_only', 'true');
+    if (filters?.operational_only) params.append('operational_only', 'true');
+    if (filters?.has_medical !== undefined) params.append('has_medical', String(filters.has_medical));
+    if (filters?.has_power !== undefined) params.append('has_power', String(filters.has_power));
+    if (filters?.ref_lat !== undefined) params.append('ref_lat', String(filters.ref_lat));
+    if (filters?.ref_lon !== undefined) params.append('ref_lon', String(filters.ref_lon));
+    if (filters?.sort_by) params.append('sort_by', filters.sort_by);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const raw = await this.request<any[]>(`/shelters${query}`);
     return raw.map((s) => ({
       ...s,
-      capacity: s.total_capacity || s.capacity || 200,
-      current_occupancy: s.current_occupancy || 0,
+      capacity: s.capacity ?? s.total_capacity ?? null,
+      total_capacity: s.total_capacity ?? s.capacity ?? null,
+      current_occupancy: s.current_occupancy ?? null,
       elevation_m: s.elevation_m || 890,
       has_medical: s.has_medical ?? true,
       has_power_backup: s.has_power_backup ?? true,
     }));
+  }
+
+  public async getRecommendedShelters(params: {
+    lat: number;
+    lon: number;
+    state?: string;
+    district?: string;
+    village_id?: string;
+    limit?: number;
+  }): Promise<Shelter[]> {
+    const q = new URLSearchParams({
+      lat: String(params.lat),
+      lon: String(params.lon),
+      limit: String(params.limit || 5),
+    });
+    if (params.state) q.append('state', params.state);
+    if (params.district) q.append('district', params.district);
+    if (params.village_id) q.append('village_id', params.village_id);
+
+    return this.request<Shelter[]>(`/shelters/recommended?${q.toString()}`);
   }
 
   public async getNearestShelters(villageId: any): Promise<Shelter[]> {
     const raw = await this.request<any[]>(`/shelters/nearest?village_id=${villageId}`);
     return raw.map((s) => ({
       ...s,
-      capacity: s.total_capacity || s.capacity || 200,
-      current_occupancy: s.current_occupancy || 0,
+      capacity: s.capacity ?? s.total_capacity ?? null,
+      total_capacity: s.total_capacity ?? s.capacity ?? null,
+      current_occupancy: s.current_occupancy ?? null,
       elevation_m: s.elevation_m || 890,
       has_medical: s.has_medical ?? true,
       has_power_backup: s.has_power_backup ?? true,
     }));
   }
 
-  public async getRoutes(): Promise<EvacuationRoute[]> {
-    const raw = await this.request<any[]>('/routes');
+  public async getRoutes(filters?: { state?: string; district?: string }): Promise<EvacuationRoute[]> {
+    const params = new URLSearchParams();
+    if (filters?.state) params.append('state', filters.state);
+    if (filters?.district) params.append('district', filters.district);
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    const raw = await this.request<any[]>(`/routes${query}`);
     return raw.map((r) => {
       const isBlocked = r.is_blocked || false;
       return {
         ...r,
         status: isBlocked ? 'BLOCKED' : (r.assessed_risk_score > 50 ? 'CAUTION' : 'CLEAR'),
         distance_km: r.distance_km || 2.5,
-        estimated_time_min: Math.round((r.distance_km || 2.5) * 8),
+        estimated_time_min: r.estimated_travel_time_min || Math.round((r.distance_km || 2.5) * 2.2),
         elevation_gain_m: 45,
         hazard_zones_crossed: isBlocked ? 1 : 0,
         coordinates: r.geometry?.coordinates ? r.geometry.coordinates.map((c: any) => [c[1], c[0]]) : [],
@@ -404,16 +468,47 @@ class ApiClient {
     });
   }
 
+  public async reportRoadIncident(incident: {
+    corridor_name: string;
+    route_id?: string;
+    latitude?: number;
+    longitude?: number;
+    blockage_type: string;
+    severity: string;
+    description?: string;
+    reported_by?: string;
+  }): Promise<any> {
+    return this.request<any>('/routes/incidents', {
+      method: 'POST',
+      body: JSON.stringify(incident),
+    });
+  }
+
+  public async getRoadIncidents(filters?: { state?: string; district?: string; status?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters?.state) params.append('state', filters.state);
+    if (filters?.district) params.append('district', filters.district);
+    if (filters?.status) params.append('status', filters.status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/routes/incidents${query}`);
+  }
+
   public async evaluateRoute(req: {
     origin_latitude: number;
     origin_longitude: number;
     village_id?: string | number;
     destination_shelter_id?: string | number;
+    state?: string;
+    district?: string;
   }): Promise<any> {
     return this.request<any>('/routes/evaluate', {
       method: 'POST',
       body: JSON.stringify(req),
     });
+  }
+
+  public async getDataSources(): Promise<any> {
+    return this.request<any>('/data-sources');
   }
 
   // Map GeoJSON

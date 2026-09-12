@@ -16,6 +16,12 @@ from app.database import engine, Base, SessionLocal
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
+    try:
+        engine.dispose()
+        if os.path.exists("./test_flowshield.db"):
+            os.remove("./test_flowshield.db")
+    except Exception:
+        pass
     Base.metadata.create_all(bind=engine)
     # Ensure seed data exists
     from scripts.seed_db import seed_database

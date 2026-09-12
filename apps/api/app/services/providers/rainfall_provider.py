@@ -15,6 +15,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from .base import LocationTarget
+from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.rainfall")
 
@@ -169,7 +170,7 @@ class OpenMeteoRainfallProvider(RainfallProvider):
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
 
             try:
-                with urllib.request.urlopen(req, timeout=12) as response:
+                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=12) as response:
                     if response.status != 200:
                         err_msg = f"HTTP {response.status} from Open-Meteo"
                         logger.warning(err_msg)
@@ -361,7 +362,7 @@ class OpenWeatherRainfallProvider(RainfallProvider):
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
 
             try:
-                with urllib.request.urlopen(req, timeout=5) as response:
+                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=5) as response:
                     if response.status != 200:
                         return None
                     data = json.loads(response.read().decode("utf-8"))

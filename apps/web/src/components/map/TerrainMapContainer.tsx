@@ -222,7 +222,7 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
       ">
         <span style="width: 4px; height: 4px; border-radius: 50%; background: ${color};"></span>
         <span style="font-weight: 600; color: #E2E8F0;">${reading.name.split(' ')[0]}</span>
-        <span style="color: ${color}; font-weight: 800;">${rain24h}mm</span>
+        <span style="color: ${color}; font-weight: 800;">${(reading.rainfall_24h_mm || 0) > 0 ? `${rain24h}mm` : `${(reading.temperature_c || 25).toFixed(0)}°C`}</span>
         ${isCurrentlyRaining ? `<span style="font-size: 7.5px; opacity: 0.85; color: #38BDF8;">(${rate1h}/h)</span>` : ''}
         ${matchedVillage ? `<span style="font-size: 7.5px; font-weight: 700; color: ${matchedVillage.current_risk_score >= 75 ? '#F87171' : matchedVillage.current_risk_score >= 50 ? '#FBBF24' : '#34D399'}; padding-left: 2px;">• ${matchedVillage.current_risk_score}</span>` : ''}
       </div>
@@ -297,6 +297,9 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         setTotalMonitored(report.total_monitored_points || report.data?.length || 0);
         if (report.highest_rainfall_point) {
           setHighestRainPoint(report.highest_rainfall_point);
+        }
+        if (rainTodayCount === 0) {
+          setRainfallFilterMode('all_stations');
         }
       }
     } catch (err) {
@@ -502,14 +505,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     return list;
   }, [showRainfallLayer, referenceSettlements, selectedRegion, searchQuery]);
 
-  // Filtered villages: strictly respect rainfall layer, active rain filter, region, and search
+  // Filtered villages: strictly respect region and search
   const filteredVillages = useMemo(() => {
-    // When isFullPage and showRainfallLayer are active, rainfall stations represent the map data.
-    // We do NOT render separate village hazard pins so only data matching the active filter appears.
-    if (isFullPage && showRainfallLayer) {
-      return [];
-    }
-
     let list = villages;
 
     // Filter by Region
@@ -530,7 +527,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     }
 
     return list;
-  }, [villages, isFullPage, showRainfallLayer, selectedRegion, searchQuery]);
+  }, [villages, selectedRegion, searchQuery]);
 
   // Controls Handlers
   const handleZoomIn = () => {
@@ -1010,7 +1007,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         />
 
         {/* Voronoi Risk Polygons Overlay */}
-        {zonesGeoJSON && (!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (rainfallFilterMode !== 'active_rain') && (
+        {zonesGeoJSON && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (rainfallFilterMode !== 'active_rain') && (
           <GeoJSON
             data={zonesGeoJSON as any}
             style={zoneStyle}
@@ -1025,7 +1022,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         )}
 
         {/* Beas River Vector Reach with Glow */}
-        {riversGeoJSON && (!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (
+        {riversGeoJSON && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (
           <GeoJSON
             data={riversGeoJSON as any}
             style={{
@@ -1037,7 +1034,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         )}
 
         {/* Safe Evacuation Corridors */}
-        {(!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && routes.map((route) => {
+        {(selectedRegion === 'ALL' || selectedRegion === 'NORTH') && routes.map((route) => {
           if (!route.coordinates || route.coordinates.length < 2) return null;
           const isBlocked = route.status === 'BLOCKED' || route.is_blocked;
           const color = isBlocked ? '#EF4444' : '#10B981';
@@ -1062,7 +1059,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           );
         })}
 
-        {/* Primary Mandi Beacon & Key Mountain Settlements (Only when rainfall layer disabled & matching filter) */}
+        {/* Primary Mandi Beacon & Key Mountain Settlements */}
         {!showRainfallLayer && visibleReferenceSettlements.map((s) => (
           <Marker
             key={s.name}
@@ -1077,9 +1074,9 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           />
         ))}
 
-        {/* Dynamic Village & Regional Settlement Markers (Strictly filtered according to active filters) */}
+        {/* Dynamic Village & Regional Settlement Markers */}
         {filteredVillages.map((v) => {
-          if (!showRainfallLayer && visibleReferenceSettlements.some(r => r.name.toLowerCase() === v.name.toLowerCase())) return null;
+          if (showRainfallLayer && filteredRainfallData.some(r => Math.abs(r.lat - v.latitude) < 0.04 && Math.abs(r.lon - v.longitude) < 0.04)) return null;
           return (
             <Marker
               key={`v-${v.id}`}
@@ -1093,7 +1090,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         })}
 
         {/* Designated Disaster Relief Shelters */}
-        {(!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
+        {(selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
           <Marker
             key={`sh-${sh.id}`}
             position={[sh.latitude, sh.longitude]}
@@ -1140,6 +1137,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                   <strong style={{ color: '#0369A1' }}>{r.name}</strong> {r.state ? `(${r.state})` : ''}<br />
                   🌧️ <strong>24H Rain:</strong> {(r.rainfall_24h_mm || 0).toFixed(1)} mm<br />
                   ⚡ <strong>Rate:</strong> {(r.rainfallMmPerHour || 0).toFixed(1)} mm/h {r.weather_description ? `• ${r.weather_description}` : ''}<br />
+                  🌡️ <strong>Temp:</strong> {(r.temperature_c || 25).toFixed(1)}°C • <strong>Humidity:</strong> {(r.humidity_pct || 70).toFixed(0)}%<br />
                   {matchedVillage && (
                     <div style={{ margin: '3px 0', padding: '2px 5px', borderRadius: '3px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#991B1B', fontWeight: 600, fontSize: '10px' }}>
                       🚨 Flood Risk: <strong>{matchedVillage.current_risk_tier}</strong> (Score: {matchedVillage.current_risk_score}/100)

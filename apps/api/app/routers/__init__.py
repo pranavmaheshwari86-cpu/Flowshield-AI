@@ -20,6 +20,8 @@ from .model_admin import router as model_admin_router
 from .models import router as models_router
 from .rainfall import router as rainfall_router
 from .regional_predictions import router as regional_predictions_router
+from .geography import router as geography_router
+from .data_sources import router as data_sources_router
 
 __all__ = [
     "health_router",
@@ -44,5 +46,7 @@ __all__ = [
     "models_router",
     "rainfall_router",
     "regional_predictions_router",
+    "geography_router",
+    "data_sources_router",
 ]
 

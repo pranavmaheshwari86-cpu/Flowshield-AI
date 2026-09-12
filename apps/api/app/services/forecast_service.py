@@ -19,6 +19,7 @@ from ..schemas.hazard import ForecastHorizon, MultiHorizonForecastResponse
 from ..schemas.data_types import DataType, FreshnessStatus
 from ..schemas.provenance import DataProvenance
 from ..schemas.precipitation import PrecipitationPoint, PrecipitationForecastResponse
+from ..utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.forecast_service")
 
@@ -125,7 +126,7 @@ class ForecastService:
             }
             url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield/2.4 (SIH)"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 precip = data.get("hourly", {}).get("precipitation", [])
                 if precip and len(precip) >= 48:

@@ -21,6 +21,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Literal
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from ..utils.ssl_context import get_ssl_context
 
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
@@ -418,7 +419,7 @@ class TimelineService:
                     }
                     req_url = f"{base_url}/weather?{urllib.parse.urlencode(params)}"
                     req = urllib.request.Request(req_url, headers={"User-Agent": "FlowShield/4.0"})
-                    with urllib.request.urlopen(req, timeout=3) as resp:
+                    with urllib.request.urlopen(req, context=get_ssl_context(), timeout=3) as resp:
                         if resp.status == 200:
                             owm_data = json.loads(resp.read().decode("utf-8"))
                             main_data = owm_data.get("main", {})
@@ -454,7 +455,7 @@ class TimelineService:
                     }
                     om_url = f"{self.OPEN_METEO_URL}?{urllib.parse.urlencode(om_params)}"
                     req_om = urllib.request.Request(om_url, headers={"User-Agent": "FlowShield/4.0"})
-                    with urllib.request.urlopen(req_om, timeout=3) as om_resp:
+                    with urllib.request.urlopen(req_om, context=get_ssl_context(), timeout=3) as om_resp:
                         if om_resp.status == 200:
                             om_data = json.loads(om_resp.read().decode("utf-8"))
                             cur = om_data.get("current", {})
@@ -768,7 +769,7 @@ class TimelineService:
             }
             url = f"{self.OPEN_METEO_URL}?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(url, headers={"User-Agent": "FlowShield/4.0 (SIH-Command)"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 precip = data.get("hourly", {}).get("precipitation", [])
                 time_strs = data.get("hourly", {}).get("time", [])

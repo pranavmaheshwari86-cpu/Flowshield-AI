@@ -8,12 +8,14 @@ import json
 import logging
 import urllib.request
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timezone
 
 from .base import DataProvider, FreshnessPolicy, LocationTarget
 from ...schemas.observation import NormalizedObservation, SourceType, DataState, DataQualityStatus
 from ...config import settings
+from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.open_weather")
 
@@ -61,7 +63,7 @@ class OpenWeatherProvider(DataProvider):
         try:
             test_url = f"{self.API_URL_WEATHER}?lat=31.70&lon=76.93&appid={self.api_key}&units=metric"
             req = urllib.request.Request(test_url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as resp:
                 return resp.status == 200
         except Exception as e:
             logger.debug(f"OpenWeather health check failed: {e}")
@@ -74,8 +76,9 @@ class OpenWeatherProvider(DataProvider):
         if not self.api_key:
             return {"error": "Missing OPENWEATHER_API_KEY", "results": []}
 
-        results = []
-        for target in targets:
+        ssl_ctx = get_ssl_context()
+
+        def fetch_target(target: LocationTarget) -> Dict[str, Any]:
             try:
                 # 1. Fetch current weather
                 params = {
@@ -88,7 +91,7 @@ class OpenWeatherProvider(DataProvider):
                 url = f"{self.API_URL_WEATHER}?{query}"
                 req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
 
-                with urllib.request.urlopen(req, timeout=6) as resp:
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=6) as resp:
                     current_data = json.loads(resp.read().decode("utf-8"))
 
                 # 2. Fetch short-term forecast for multi-hour accumulation
@@ -96,28 +99,38 @@ class OpenWeatherProvider(DataProvider):
                 try:
                     f_url = f"{self.API_URL_FORECAST}?{query}"
                     f_req = urllib.request.Request(f_url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
-                    with urllib.request.urlopen(f_req, timeout=6) as f_resp:
+                    with urllib.request.urlopen(f_req, context=ssl_ctx, timeout=6) as f_resp:
                         forecast_data = json.loads(f_resp.read().decode("utf-8"))
                 except Exception as fe:
                     logger.debug(f"OpenWeather forecast query skipped/failed for {target.name}: {fe}")
 
-                results.append({
+                return {
                     "target_id": target.id,
                     "target_name": target.name,
                     "current": current_data,
                     "forecast": forecast_data,
-                })
+                }
             except urllib.error.HTTPError as he:
                 err_body = he.read().decode("utf-8", errors="ignore")
                 logger.warning(f"OpenWeather HTTP {he.code} for {target.name}: {err_body}")
-                return {"error": f"OpenWeather HTTP {he.code}: {err_body}", "results": results}
+                return {
+                    "target_id": target.id,
+                    "target_name": target.name,
+                    "error": f"OpenWeather HTTP {he.code}: {err_body}",
+                }
             except Exception as e:
                 logger.warning(f"OpenWeather fetch exception for {target.name}: {e}")
-                results.append({
+                return {
                     "target_id": target.id,
                     "target_name": target.name,
                     "error": str(e),
-                })
+                }
+
+        results = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_target = {executor.submit(fetch_target, t): t for t in targets}
+            for future in as_completed(future_to_target):
+                results.append(future.result())
 
         return {"results": results}
 

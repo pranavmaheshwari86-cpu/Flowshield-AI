@@ -139,41 +139,143 @@ export interface ActionPlan {
 export interface Shelter {
   id: any;
   name: string;
+  type: string;
+  state?: string;
+  district?: string;
+  subdistrict_block?: string;
+  village_town?: string;
+  address?: string;
   latitude: number;
   longitude: number;
-  capacity: number;
-  total_capacity?: number;
-  current_occupancy: number;
-  elevation_m: number;
+  capacity?: number | null;
+  total_capacity?: number | null;
+  current_occupancy?: number | null;
+  available_capacity?: number | null;
+  occupancy_percentage?: number | null;
+  capacity_display?: string;
+  occupancy_display?: string;
+  available_display?: string;
+  elevation_m?: number;
+  status?: string;
+  operational_status?: string;
   has_medical: boolean;
+  medical_facility?: boolean;
   has_power_backup: boolean;
+  generator_available?: boolean;
+  water_available?: boolean;
+  food_available?: boolean;
+  toilets_available?: boolean;
+  electricity_available?: boolean;
+  communication_available?: boolean;
+  wheelchair_accessible?: boolean;
+  is_24x7?: boolean;
   contact_person?: string;
   contact_phone?: string;
+  managing_authority?: string;
   distance_km?: number;
-  available_capacity?: number;
-  status?: string;
+  estimated_travel_time_min?: number;
+  source_name?: string;
+  source_url?: string;
+  source_type?: string;
+  source_last_verified?: string;
+  verification_status?: string;
+  confidence_score?: number;
+  suitability_score?: number;
+  recommendation_label?: string;
+  rationale?: string[];
+  corridor_id?: string;
+  corridor_name?: string;
+  corridor_blocked?: boolean;
 }
 
 export interface EvacuationRoute {
   id: any;
   name: string;
+  state?: string;
+  district?: string;
   from_village_id?: any;
   to_shelter_id?: any;
   origin_village_id?: any;
   destination_shelter_id?: any;
   origin_village_name?: string;
   destination_shelter_name?: string;
-  status: 'CLEAR' | 'CAUTION' | 'BLOCKED';
+  status: 'CLEAR' | 'CAUTION' | 'BLOCKED' | 'HIGH RISK' | 'CRITICAL';
   is_blocked?: boolean;
   distance_km: number;
+  estimated_travel_time_min?: number;
+  estimated_time_min?: number;
   assessed_risk_score?: number;
   hazard_cost_multiplier?: number;
-  estimated_time_min: number;
-  elevation_gain_m: number;
-  hazard_zones_crossed: number;
+  hazard_exposure?: string;
+  route_confidence?: number;
+  last_verified?: string;
+  recommendation?: string;
+  elevation_gain_m?: number;
+  hazard_zones_crossed?: number;
   blockage_reason?: string;
   coordinates?: [number, number][];
   geometry?: any;
+}
+
+export interface GeographyState {
+  state: string;
+  districts_count: number;
+  shelters_count: number;
+  is_active: boolean;
+  coverage_status: string;
+}
+
+export interface GeographyDistrict {
+  district: string;
+  state: string;
+  center_lat: number;
+  center_lon: number;
+  default_zoom: number;
+  river_basin: string;
+  description: string;
+  bounds: {
+    min_lat: number;
+    max_lat: number;
+    min_lon: number;
+    max_lon: number;
+  };
+  settlement_count: number;
+  shelter_count: number;
+  route_count: number;
+  has_prediction?: boolean;
+  has_shelter_data?: boolean;
+}
+
+export interface RoadIncident {
+  id: string;
+  route_id?: string;
+  corridor_name: string;
+  state: string;
+  district: string;
+  latitude?: number;
+  longitude?: number;
+  blockage_type: string;
+  severity: string;
+  description?: string;
+  reported_by: string;
+  status: string;
+  verification_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  jurisdiction: string;
+  type: string;
+  authority: string;
+  url: string;
+  coverage: string;
+  description: string;
+  verification_method: string;
+  confidence_rating: string;
+  last_audit_date: string;
 }
 
 // Village Detailed View with History

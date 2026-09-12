@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 from .base import DataProvider, FreshnessPolicy, LocationTarget
 from ...schemas.observation import NormalizedObservation, SourceType, DataState, DataQualityStatus
+from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.open_meteo")
 
@@ -54,7 +55,7 @@ class OpenMeteoProvider(DataProvider):
         try:
             test_url = f"{self.API_URL}?latitude=31.70&longitude=76.93&current=temperature_2m"
             req = urllib.request.Request(test_url, headers={"User-Agent": "Flowshield/2.4 (SIH)"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as resp:
                 return resp.status == 200
         except Exception:
             return False
@@ -81,7 +82,7 @@ class OpenMeteoProvider(DataProvider):
         req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
 
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=10) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except Exception as e:
             logger.warning(f"Open-Meteo fetch failed ({e}); returning error payload")

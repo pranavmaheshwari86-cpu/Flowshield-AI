@@ -364,7 +364,11 @@ class SimulationEngine:
         # 3. Reset shelters to baseline available
         shelters = db.query(Shelter).all()
         for s in shelters:
-            s.current_occupancy = int(s.total_capacity * 0.10)
+            cap = s.capacity or s.total_capacity
+            if cap is not None:
+                s.current_occupancy = int(cap * 0.10)
+            else:
+                s.current_occupancy = None
             s.status = "AVAILABLE"
 
         # 4. Reset routes to unblocked

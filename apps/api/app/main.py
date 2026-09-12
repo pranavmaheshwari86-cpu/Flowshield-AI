@@ -4,6 +4,9 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .utils.ssl_context import configure_ssl_context
+configure_ssl_context()
+
 from .config import settings
 from .database import engine, Base, SessionLocal
 from .services.prediction_service import prediction_service
@@ -30,6 +33,8 @@ from .routers import (
     models_router,
     rainfall_router,
     regional_predictions_router,
+    geography_router,
+    data_sources_router,
 )
 
 
@@ -55,11 +60,9 @@ app = FastAPI(
     description="Operational Flash Flood Decision Support System for Hilly Regions (SIH PS 26192)",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
 )
 
-# CORS Configuration
+# Set up CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -81,6 +84,8 @@ app.include_router(risk_router, prefix=prefix)
 app.include_router(alerts_router, prefix=prefix)
 app.include_router(shelters_router, prefix=prefix)
 app.include_router(routes_router, prefix=prefix)
+app.include_router(geography_router, prefix=prefix)
+app.include_router(data_sources_router, prefix=prefix)
 app.include_router(map_data_router, prefix=prefix)
 app.include_router(simulation_router, prefix=prefix)
 app.include_router(system_router, prefix=prefix)
@@ -100,6 +105,8 @@ app.include_router(hazards_router, prefix="/api")
 app.include_router(rainfall_router, prefix="/api")
 app.include_router(regional_predictions_router, prefix="/api")
 app.include_router(models_router, prefix="/api")
+app.include_router(geography_router, prefix="/api")
+app.include_router(data_sources_router, prefix="/api")
 
 
 @app.get("/")

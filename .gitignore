@@ -1,1 +1,14 @@
-# All files unignored
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Dependencies
+node_modules/
+apps/web/node_modules/
+
+# Test DB
+test_flowshield.db
+
+# OS Artifacts
+.DS_Store
