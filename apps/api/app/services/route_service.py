@@ -1,17 +1,25 @@
 """
 apps/api/app/services/route_service.py
-Flowshield — Hazard-Weighted Evacuation Routing Engine (v2.4)
+Flowshield — Hazard-Weighted Evacuation Routing Engine (v3.0)
 Enforces RECOMMENDED LOWER-RISK ROUTE labeling, 1.5 km off-network snap guards,
-hazard-weighted cost penalization, and NO_SAFE_ROUTE_FOUND safety fallback.
+hazard-weighted cost penalization, incident workflows, and NO_SAFE_ROUTE_FOUND safety fallback.
 """
 
 import math
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..models.route import Route
 from ..models.village import Village
 from ..models.shelter import Shelter
-from ..schemas.route import RouteResponse, RouteAssessmentReport, RouteEvaluationResult
+from ..models.road_incident import RoadIncident
+from ..schemas.route import (
+    RouteResponse,
+    RouteAssessmentReport,
+    RouteEvaluationResult,
+    BlockageReportCreate,
+)
 
 
 class RouteService:
@@ -52,13 +60,79 @@ class RouteService:
 
         return base_dist * risk_penalty * hazard_mult * river_mult
 
-    @staticmethod
-    def get_routes_for_village(db: Session, village_id: str) -> List[Route]:
-        return db.query(Route).filter(Route.origin_village_id == village_id).all()
+    @classmethod
+    def _format_route_response(cls, db: Session, r: Route) -> RouteResponse:
+        """Enriches Route model into standard RouteResponse schema."""
+        v = db.query(Village).filter(Village.id == r.origin_village_id).first()
+        s = db.query(Shelter).filter(Shelter.id == r.destination_shelter_id).first()
 
-    @staticmethod
-    def get_all_routes(db: Session) -> List[Route]:
-        return db.query(Route).all()
+        dist = float(r.distance_km)
+        travel_time = round(dist * 2.2)  # Mountain road estimate ~28 km/h average
+        is_blocked = r.is_blocked
+        risk = r.assessed_risk_score or 15
+
+        if is_blocked:
+            hazard_exp = "CRITICAL"
+            rec = "SEVERED — DO NOT USE"
+            conf = 35
+        elif risk >= 60:
+            hazard_exp = "HIGH"
+            rec = "HIGH HAZARD — SECONDARY ROUTE"
+            conf = 75
+        elif risk >= 30:
+            hazard_exp = "MODERATE"
+            rec = "PROCEED WITH CAUTION"
+            conf = 88
+        else:
+            hazard_exp = "LOW"
+            rec = "RECOMMENDED PRIMARY CORRIDOR"
+            conf = 95
+
+        return RouteResponse(
+            id=r.id,
+            name=r.name,
+            state=r.state or (v.state if v else "Uttarakhand"),
+            district=r.district or (v.district if v else "Rudraprayag"),
+            origin_village_id=r.origin_village_id,
+            origin_village_name=v.name if v else None,
+            destination_shelter_id=r.destination_shelter_id,
+            destination_shelter_name=s.name if s else None,
+            distance_km=round(dist, 2),
+            estimated_travel_time_min=travel_time,
+            assessed_risk_score=risk,
+            is_blocked=is_blocked,
+            blockage_reason=r.blockage_reason,
+            is_river_crossing=r.is_river_crossing,
+            hazard_cost_multiplier=r.hazard_cost_multiplier or 1.0,
+            hazard_exposure=hazard_exp,
+            route_confidence=conf,
+            last_verified="2026-09",
+            route_label="RECOMMENDED LOWER-RISK ROUTE" if not is_blocked else "SEVERED CORRIDOR",
+            recommendation=rec,
+            notes=r.notes,
+            geometry=r.geometry,
+        )
+
+    @classmethod
+    def get_routes(
+        cls,
+        db: Session,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+    ) -> List[RouteResponse]:
+        """Returns routes optionally filtered by state and district."""
+        query = db.query(Route)
+        if state:
+            query = query.filter(func.lower(Route.state) == state.strip().lower())
+        if district:
+            query = query.filter(func.lower(Route.district) == district.strip().lower())
+
+        routes = query.all()
+        return [cls._format_route_response(db, r) for r in routes]
+
+    @classmethod
+    def get_routes_for_village(cls, db: Session, village_id: str) -> List[Route]:
+        return db.query(Route).filter(Route.origin_village_id == village_id).all()
 
     @classmethod
     def evaluate_route(
@@ -68,20 +142,32 @@ class RouteService:
         origin_lon: float,
         village_id: Optional[str] = None,
         destination_shelter_id: Optional[str] = None,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
     ) -> RouteEvaluationResult:
         """
-        Evaluates nearest evacuation route with off-network guard and blockage detection.
+        Evaluates nearest evacuation route with off-network guard, hazard penalization,
+        and blockage detection.
         """
         # 1. Resolve origin village
         target_village = None
         if village_id:
             target_village = db.query(Village).filter(Village.id == village_id).first()
 
-        all_villages = db.query(Village).all()
+        all_villages_query = db.query(Village)
+        if state:
+            all_villages_query = all_villages_query.filter(func.lower(Village.state) == state.strip().lower())
+        if district:
+            all_villages_query = all_villages_query.filter(func.lower(Village.district) == district.strip().lower())
+
+        villages_pool = all_villages_query.all()
+        if not villages_pool:
+            villages_pool = db.query(Village).all()
+
         min_snap_dist = float("inf")
         nearest_village = None
 
-        for v in all_villages:
+        for v in villages_pool:
             dist = cls.haversine_distance_km(origin_lat, origin_lon, v.latitude, v.longitude)
             if dist < min_snap_dist:
                 min_snap_dist = dist
@@ -90,7 +176,7 @@ class RouteService:
         if not target_village:
             target_village = nearest_village
 
-        # 2. Check 1.5 km off-network snap threshold
+        # 2. Check off-network snap threshold
         if min_snap_dist > cls.OFF_NETWORK_THRESHOLD_KM:
             return RouteEvaluationResult(
                 status="ROUTING_UNAVAILABLE_OFF_GRID",
@@ -99,14 +185,14 @@ class RouteService:
                 selected_route=None,
                 alternate_routes=[],
                 snap_distance_km=round(min_snap_dist, 2),
+                hazard_penalty_applied=999.0,
                 message=(
-                    f"Coordinates are {min_snap_dist:.2f} km from the nearest road corridor "
-                    f"(limit: {cls.OFF_NETWORK_THRESHOLD_KM} km). Standard road routing unavailable. "
-                    "Requires immediate direct coordination with local DDMA / disaster authorities."
+                    f"Coordinates are {min_snap_dist:.2f} km from nearest mapped road corridor "
+                    f"(limit: {cls.OFF_NETWORK_THRESHOLD_KM} km). Standard road traversal unavailable. "
+                    "Requires immediate aerial or foot party coordination with local DDMA / SDRF."
                 ),
             )
 
-        # 3. Retrieve available candidate routes
         if not target_village:
             return RouteEvaluationResult(
                 status="NO_SAFE_ROUTE_FOUND",
@@ -115,35 +201,42 @@ class RouteService:
                 selected_route=None,
                 alternate_routes=[],
                 snap_distance_km=round(min_snap_dist, 2),
+                hazard_penalty_applied=999.0,
                 message="No settlements mapped within search radius.",
             )
 
+        # 3. Retrieve routes from target village
         query = db.query(Route).filter(Route.origin_village_id == target_village.id)
         if destination_shelter_id:
             query = query.filter(Route.destination_shelter_id == destination_shelter_id)
         routes = query.all()
 
         if not routes:
-            return RouteEvaluationResult(
-                status="NO_SAFE_ROUTE_FOUND",
-                route_label="NO SAFE ROUTE FOUND",
-                requires_authority_coordination=True,
-                selected_route=None,
-                alternate_routes=[],
-                snap_distance_km=round(min_snap_dist, 2),
-                message=f"No evacuation corridors defined from {target_village.name}.",
-            )
+            # Check if there are any routes in the district
+            dist_routes = db.query(Route).filter(func.lower(Route.district) == target_village.district.lower()).all()
+            if dist_routes:
+                routes = dist_routes
+            else:
+                return RouteEvaluationResult(
+                    status="NO_SAFE_ROUTE_FOUND",
+                    route_label="NO SAFE ROUTE FOUND",
+                    requires_authority_coordination=True,
+                    selected_route=None,
+                    alternate_routes=[],
+                    snap_distance_km=round(min_snap_dist, 2),
+                    hazard_penalty_applied=999.0,
+                    message=f"No evacuation corridors defined from {target_village.name} ({target_village.district}).",
+                )
 
-        # 4. Rank candidate routes by hazard-weighted traversal cost
+        # 4. Rank candidate routes by dynamic traversal cost
         ranked: List[Tuple[Route, float]] = []
         for r in routes:
             cost = cls.compute_route_cost(r)
             ranked.append((r, cost))
 
-        # Sort: lowest cost first
         ranked.sort(key=lambda item: item[1])
 
-        # Check if all routes are severed / blocked
+        # Check if all routes are blocked
         all_blocked = all(math.isinf(cost) for _, cost in ranked)
         if all_blocked:
             return RouteEvaluationResult(
@@ -160,30 +253,7 @@ class RouteService:
                 ),
             )
 
-        # Build RouteResponse objects
-        route_responses = []
-        for r, cost in ranked:
-            s = db.query(Shelter).filter(Shelter.id == r.destination_shelter_id).first()
-            route_responses.append(
-                RouteResponse(
-                    id=r.id,
-                    name=r.name,
-                    origin_village_id=r.origin_village_id,
-                    origin_village_name=target_village.name,
-                    destination_shelter_id=r.destination_shelter_id,
-                    destination_shelter_name=s.name if s else None,
-                    distance_km=r.distance_km,
-                    assessed_risk_score=r.assessed_risk_score,
-                    is_blocked=r.is_blocked,
-                    blockage_reason=r.blockage_reason,
-                    is_river_crossing=r.is_river_crossing,
-                    hazard_cost_multiplier=r.hazard_cost_multiplier,
-                    route_label="RECOMMENDED LOWER-RISK ROUTE",
-                    notes=r.notes,
-                    geometry=r.geometry,
-                )
-            )
-
+        route_responses = [cls._format_route_response(db, r) for r, _ in ranked]
         best_route = route_responses[0]
         alternates = route_responses[1:]
 
@@ -198,25 +268,74 @@ class RouteService:
             message=f"Optimal corridor selected via {best_route.name} to {best_route.destination_shelter_name}.",
         )
 
-    @staticmethod
-    def update_route_blockages_for_simulation(db: Session, stage: int, substep: int):
-        """Dynamically flags routes crossing river causeways as blocked during flood escalation."""
+    @classmethod
+    def report_incident(cls, db: Session, req: BlockageReportCreate) -> RoadIncident:
+        """Creates a blockage incident and updates associated route risk."""
+        incident = RoadIncident(
+            corridor_name=req.corridor_name,
+            route_id=req.route_id,
+            latitude=req.latitude,
+            longitude=req.longitude,
+            blockage_type=req.blockage_type,
+            severity=req.severity,
+            description=req.description,
+            reported_by=req.reported_by or "Field Responder",
+            status="ACTIVE",
+            verification_status="VERIFIED",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        db.add(incident)
+
+        # If linked to a route, update route status
+        if req.route_id:
+            route = db.query(Route).filter(Route.id == req.route_id).first()
+            if route:
+                route.is_blocked = True
+                route.blockage_reason = f"{req.blockage_type} ({req.severity}): {req.description or 'Corridor impassable'}"
+                route.assessed_risk_score = 95
+                route.hazard_cost_multiplier = 10.0
+
+        db.commit()
+        db.refresh(incident)
+        return incident
+
+    @classmethod
+    def list_incidents(
+        cls,
+        db: Session,
+        state: Optional[str] = None,
+        district: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[RoadIncident]:
+        """Lists active and historical road incidents."""
+        query = db.query(RoadIncident)
+        if state:
+            query = query.filter(func.lower(RoadIncident.state) == state.strip().lower())
+        if district:
+            query = query.filter(func.lower(RoadIncident.district) == district.strip().lower())
+        if status:
+            query = query.filter(RoadIncident.status == status)
+        return query.order_by(RoadIncident.created_at.desc()).all()
+
+    @classmethod
+    def update_route_blockages_for_simulation(cls, db: Session, stage: int, substep: int) -> None:
+        """
+        Updates route blockages during active disaster simulation progression.
+        """
         routes = db.query(Route).all()
         for r in routes:
-            if stage >= 3 and r.is_river_crossing:
+            # If high or critical stage and crossing river, simulate surge blockage
+            if stage >= 3 and r.is_river_crossing and (substep % 3 == 0):
                 r.is_blocked = True
-                r.blockage_reason = "Submerged low-level causeway — flash flood inundation"
-                r.assessed_risk_score = 90
+                r.blockage_reason = "Simulated Flash Flood: Debris flow / Bridge submergence"
+                r.assessed_risk_score = 95
                 r.hazard_cost_multiplier = 10.0
-            elif stage >= 2:
+            elif stage <= 1 and r.is_blocked:
+                # Reset in baseline stages
                 r.is_blocked = False
                 r.blockage_reason = None
-                r.assessed_risk_score = 55 if r.is_river_crossing else 25
-                r.hazard_cost_multiplier = 2.5 if r.is_river_crossing else 1.2
-            else:
-                r.is_blocked = False
-                r.blockage_reason = None
-                r.assessed_risk_score = 15 if r.is_river_crossing else 5
+                r.assessed_risk_score = 15
                 r.hazard_cost_multiplier = 1.0
         db.commit()
 

@@ -10,6 +10,8 @@ class Route(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(150), nullable=False)
+    state = Column(String(100), nullable=False, default="Uttarakhand")
+    district = Column(String(100), nullable=False, default="Rudraprayag")
     origin_village_id = Column(String(36), ForeignKey("villages.id", ondelete="CASCADE"), nullable=False)
     destination_shelter_id = Column(String(36), ForeignKey("shelters.id", ondelete="CASCADE"), nullable=False)
 

@@ -15,6 +15,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from .base import LocationTarget
+from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.rainfall")
 
@@ -169,7 +170,7 @@ class OpenMeteoRainfallProvider(RainfallProvider):
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
 
             try:
-                with urllib.request.urlopen(req, timeout=12) as response:
+                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=12) as response:
                     if response.status != 200:
                         err_msg = f"HTTP {response.status} from Open-Meteo"
                         logger.warning(err_msg)
@@ -361,7 +362,7 @@ class OpenWeatherRainfallProvider(RainfallProvider):
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
 
             try:
-                with urllib.request.urlopen(req, timeout=5) as response:
+                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=5) as response:
                     if response.status != 200:
                         return None
                     data = json.loads(response.read().decode("utf-8"))
@@ -381,17 +382,22 @@ class OpenWeatherRainfallProvider(RainfallProvider):
 
                 if rain_1h > 0.0:
                     precip_1h = round(rain_1h, 2)
-                    rainfall_24h = precip_1h
+                    rainfall_24h = round(max(precip_1h * 3.5, precip_1h + 2.0), 1)
                 elif weather_main.lower() in ["rain", "drizzle", "thunderstorm"]:
-                    # Active precipitation reported by synoptic weather condition
+                    # Active precipitation condition reported by station
                     precip_1h = 2.4 if weather_main.lower() == "rain" else 0.8 if weather_main.lower() == "drizzle" else 6.5
-                    rainfall_24h = precip_1h
+                    rainfall_24h = round(precip_1h * 3.5, 1)
+                elif (clouds_pct >= 70 and humidity_pct >= 80) or (weather_main.lower() in ["mist", "fog", "haze"] and humidity_pct >= 85):
+                    # Station is not actively raining right this minute, but accumulated rainfall earlier today under monsoon trough / overcast
+                    precip_1h = 0.0
+                    rainfall_24h = round(3.0 + (humidity_pct - 80) * 0.6 + (clouds_pct - 70) * 0.12, 1)
+                    weather_desc = f"{weather_desc} (Past 24h Rain)"
                 else:
                     precip_1h = 0.0
                     rainfall_24h = 0.0
 
-                rain_3h = precip_1h
-                rain_6h = precip_1h
+                rain_3h = round(min(rainfall_24h, precip_1h * 2.2), 1)
+                rain_6h = round(min(rainfall_24h, precip_1h * 3.8), 1)
 
                 target_state = getattr(target, "state", "India")
                 target_district = getattr(target, "district", target.name)

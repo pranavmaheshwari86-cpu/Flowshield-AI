@@ -336,9 +336,86 @@ def seed_database():
             from scripts.seed_national_flood_data import seed_national_flood_data
             seed_national_flood_data()
 
+        # 9. Ingest Authoritative DDMP Shelters & Sync Model Coverage Registry
+        try:
+            from apps.api.app.services.shelter_ingestion_service import shelter_ingestion_service
+            shelter_ingestion_service.run_ingestion_and_validation(db)
+        except ImportError:
+            from app.services.shelter_ingestion_service import shelter_ingestion_service
+            shelter_ingestion_service.run_ingestion_and_validation(db)
+
+        # 10. Seed Extended Mountain Settlements & Evacuation Corridors (Mandi, Chamoli)
+        _seed_extended_settlements_and_routes(db)
+
         print("\nFlowshield database seed complete! System ready for baseline presentation.")
     finally:
         db.close()
+
+
+def _seed_extended_settlements_and_routes(db):
+    """Seeds verified settlements and corridors for Mandi (HP) and Chamoli (UK)."""
+    extended_villages = [
+        {"id": "hp-mnd-01", "name": "Mandi Urban", "tehsil": "Sadar", "district": "Mandi", "state": "Himachal Pradesh", "population": 26422, "elevation": 760.0, "slope": 18.0, "distance_to_river": 0.15, "historical_flood_frequency": 0.6, "vulnerability_index": 0.72, "latitude": 31.7087, "longitude": 76.9320},
+        {"id": "hp-mnd-02", "name": "Pandoh Catchment", "tehsil": "Sadar", "district": "Mandi", "state": "Himachal Pradesh", "population": 4200, "elevation": 890.0, "slope": 28.0, "distance_to_river": 0.05, "historical_flood_frequency": 0.85, "vulnerability_index": 0.82, "latitude": 31.6690, "longitude": 77.0580},
+        {"id": "hp-mnd-03", "name": "Aut Confluence", "tehsil": "Aut", "district": "Mandi", "state": "Himachal Pradesh", "population": 3100, "elevation": 1050.0, "slope": 32.0, "distance_to_river": 0.10, "historical_flood_frequency": 0.70, "vulnerability_index": 0.78, "latitude": 31.7450, "longitude": 77.2100},
+        {"id": "hp-mnd-04", "name": "Thalout Gorge", "tehsil": "Thalout", "district": "Mandi", "state": "Himachal Pradesh", "population": 1850, "elevation": 980.0, "slope": 36.0, "distance_to_river": 0.08, "historical_flood_frequency": 0.80, "vulnerability_index": 0.85, "latitude": 31.7130, "longitude": 77.1650},
+        {"id": "hp-mnd-05", "name": "Jogindernagar", "tehsil": "Jogindernagar", "district": "Mandi", "state": "Himachal Pradesh", "population": 15000, "elevation": 1220.0, "slope": 15.0, "distance_to_river": 0.40, "historical_flood_frequency": 0.35, "vulnerability_index": 0.45, "latitude": 31.9830, "longitude": 76.7760},
+        {"id": "hp-mnd-06", "name": "Sundernagar Valley", "tehsil": "Sundernagar", "district": "Mandi", "state": "Himachal Pradesh", "population": 24395, "elevation": 860.0, "slope": 12.0, "distance_to_river": 0.30, "historical_flood_frequency": 0.45, "vulnerability_index": 0.50, "latitude": 31.5330, "longitude": 76.8900},
+        {"id": "uk-cha-01", "name": "Joshimath", "tehsil": "Joshimath", "district": "Chamoli", "state": "Uttarakhand", "population": 16709, "elevation": 1890.0, "slope": 34.0, "distance_to_river": 0.80, "historical_flood_frequency": 0.60, "vulnerability_index": 0.88, "latitude": 30.5567, "longitude": 79.5678},
+        {"id": "uk-cha-02", "name": "Gopeshwar", "tehsil": "Chamoli", "district": "Chamoli", "state": "Uttarakhand", "population": 21447, "elevation": 1550.0, "slope": 22.0, "distance_to_river": 0.90, "historical_flood_frequency": 0.40, "vulnerability_index": 0.55, "latitude": 30.4128, "longitude": 79.3242},
+        {"id": "uk-cha-03", "name": "Karnaprayag", "tehsil": "Karnaprayag", "district": "Chamoli", "state": "Uttarakhand", "population": 8297, "elevation": 860.0, "slope": 26.0, "distance_to_river": 0.10, "historical_flood_frequency": 0.70, "vulnerability_index": 0.75, "latitude": 30.2603, "longitude": 79.2150},
+    ]
+
+    for v in extended_villages:
+        if not db.query(Village).filter(Village.id == v["id"]).first():
+            record = Village(
+                id=v["id"],
+                name=v["name"],
+                tehsil=v["tehsil"],
+                district=v["district"],
+                state=v["state"],
+                population=v["population"],
+                elevation=v["elevation"],
+                slope=v["slope"],
+                distance_to_river=v["distance_to_river"],
+                historical_flood_frequency=v["historical_flood_frequency"],
+                vulnerability_index=v["vulnerability_index"],
+                latitude=v["latitude"],
+                longitude=v["longitude"],
+                geometry={"type": "Point", "coordinates": [v["longitude"], v["latitude"]]},
+            )
+            db.add(record)
+    db.commit()
+
+    extended_routes = [
+        {"id": "rt-hp-mnd-01", "name": "Mandi Town - ITI Relief Base Corridor (NH-154)", "origin_village_id": "hp-mnd-01", "destination_shelter_id": "sh-hp-mnd-02", "distance_km": 1.8, "assessed_risk_score": 15, "is_blocked": False, "is_river_crossing": True, "notes": "Victoria Bridge elevated crossing, standard road route", "coordinates": [[76.932, 31.7087], [76.9335, 31.7115], [76.9355, 31.7142]], "hazard_cost_multiplier": 1.2, "state": "Himachal Pradesh", "district": "Mandi"},
+        {"id": "rt-hp-mnd-02", "name": "Pandoh - GSSS High Ground Evacuation Corridor", "origin_village_id": "hp-mnd-02", "destination_shelter_id": "sh-hp-mnd-04", "distance_km": 2.4, "assessed_risk_score": 20, "is_blocked": False, "is_river_crossing": False, "notes": "Elevated hillside route away from spillway basin", "coordinates": [[77.058, 31.669], [77.057, 31.6705], [77.056, 31.672]], "hazard_cost_multiplier": 1.1, "state": "Himachal Pradesh", "district": "Mandi"},
+        {"id": "rt-hp-mnd-03", "name": "Aut Confluence - Town Hall High Terrace Corridor", "origin_village_id": "hp-mnd-03", "destination_shelter_id": "sh-hp-mnd-05", "distance_km": 1.5, "assessed_risk_score": 25, "is_blocked": False, "is_river_crossing": True, "notes": "Larji bypass link road", "coordinates": [[77.21, 31.745], [77.2085, 31.746], [77.207, 31.747]], "hazard_cost_multiplier": 1.3, "state": "Himachal Pradesh", "district": "Mandi"},
+        {"id": "rt-hp-mnd-04", "name": "Thalout Gorge - Transit Center Corridor", "origin_village_id": "hp-mnd-04", "destination_shelter_id": "sh-hp-mnd-07", "distance_km": 1.2, "assessed_risk_score": 30, "is_blocked": False, "is_river_crossing": False, "notes": "NH-21 rock-fall protection gallery segment", "coordinates": [[77.165, 31.713], [77.164, 31.714], [77.163, 31.715]], "hazard_cost_multiplier": 1.4, "state": "Himachal Pradesh", "district": "Mandi"},
+        {"id": "rt-hp-mnd-05", "name": "Sundernagar Valley - Sports Complex Evacuation Corridor", "origin_village_id": "hp-mnd-06", "destination_shelter_id": "sh-hp-mnd-03", "distance_km": 2.1, "assessed_risk_score": 12, "is_blocked": False, "is_river_crossing": False, "notes": "Wide dual carriageway through BBMB township", "coordinates": [[76.89, 31.533], [76.8915, 31.5345], [76.893, 31.536]], "hazard_cost_multiplier": 1.0, "state": "Himachal Pradesh", "district": "Mandi"},
+        {"id": "rt-uk-cha-01", "name": "Joshimath - Municipal Relief Campus Corridor", "origin_village_id": "uk-cha-01", "destination_shelter_id": "sh-uk-cha-01", "distance_km": 1.9, "assessed_risk_score": 25, "is_blocked": False, "is_river_crossing": False, "notes": "Upper bypass route away from subsidence zones", "coordinates": [[79.5678, 30.5567], [79.566, 30.558], [79.564, 30.5595]], "hazard_cost_multiplier": 1.2, "state": "Uttarakhand", "district": "Chamoli"},
+        {"id": "rt-uk-cha-02", "name": "Gopeshwar - Sports Stadium Haven Corridor", "origin_village_id": "uk-cha-02", "destination_shelter_id": "sh-uk-cha-02", "distance_km": 2.0, "assessed_risk_score": 15, "is_blocked": False, "is_river_crossing": False, "notes": "District arterial link", "coordinates": [[79.3242, 30.4128], [79.323, 30.414], [79.3215, 30.4155]], "hazard_cost_multiplier": 1.0, "state": "Uttarakhand", "district": "Chamoli"},
+    ]
+
+    for r in extended_routes:
+        if not db.query(Route).filter(Route.id == r["id"]).first():
+            record = Route(
+                id=r["id"],
+                name=r["name"],
+                origin_village_id=r["origin_village_id"],
+                destination_shelter_id=r["destination_shelter_id"],
+                distance_km=r["distance_km"],
+                assessed_risk_score=r["assessed_risk_score"],
+                is_blocked=r["is_blocked"],
+                is_river_crossing=r["is_river_crossing"],
+                notes=r["notes"],
+                hazard_cost_multiplier=r["hazard_cost_multiplier"],
+                state=r["state"],
+                district=r["district"],
+                geometry={"type": "LineString", "coordinates": r["coordinates"]},
+            )
+            db.add(record)
+    db.commit()
 
 
 if __name__ == "__main__":

@@ -399,18 +399,25 @@ export const VillageDetailDrawer: React.FC<VillageDetailDrawerProps> = ({ villag
                   </div>
                 </div>
 
-                <span
-                  style={{
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    background: (nearestShelter.capacity - nearestShelter.current_occupancy) > 50 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                    color: (nearestShelter.capacity - nearestShelter.current_occupancy) > 50 ? '#10b981' : '#ef4444'
-                  }}
-                >
-                  {nearestShelter.capacity - nearestShelter.current_occupancy} spots available
-                </span>
+                {(() => {
+                  const cap = nearestShelter.capacity ?? nearestShelter.total_capacity;
+                  const occ = nearestShelter.current_occupancy ?? 0;
+                  const avail = cap !== null && cap !== undefined ? cap - occ : null;
+                  return (
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        background: (avail === null || avail > 50) ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                        color: (avail === null || avail > 50) ? '#10b981' : '#ef4444'
+                      }}
+                    >
+                      {nearestShelter.available_display || (avail !== null ? `${avail} spots available` : 'Capacity Nominal')}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Route status */}

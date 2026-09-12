@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { SystemStatus, User } from './types';
 import { api } from './services/api';
 import { Navbar } from './components/common/Navbar';
+import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ResponderPage } from './pages/ResponderPage';
 import { CitizenPage } from './pages/CitizenPage';
@@ -63,13 +64,12 @@ export const App: React.FC = () => {
         {/* Dynamic Route View */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/responder" element={<ResponderPage />} />
             <Route path="/citizen" element={<CitizenPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/login" element={<LoginPage onLoginSuccess={setUser} />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>

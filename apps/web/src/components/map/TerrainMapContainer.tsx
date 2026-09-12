@@ -49,75 +49,6 @@ const REGION_MAPPING: Record<string, string[]> = {
   NORTHEAST: ['Assam', 'Meghalaya', 'Arunachal Pradesh', 'Manipur', 'Mizoram', 'Nagaland', 'Tripura', 'Sikkim'],
 };
 
-export type RainfallSeverityFilter = 'ALL' | 'green' | 'yellow' | 'orange' | 'red' | 'purple';
-
-export interface SeverityOption {
-  key: RainfallSeverityFilter;
-  label: string;
-  fullLabel: string;
-  range: string;
-  color: string;
-  glow: string;
-  activeBg: string;
-}
-
-export const SEVERITY_OPTIONS: SeverityOption[] = [
-  {
-    key: 'ALL',
-    label: 'All',
-    fullLabel: 'All Intensities',
-    range: 'All monitored rain stations',
-    color: '#38BDF8',
-    glow: 'rgba(56, 189, 248, 0.4)',
-    activeBg: 'rgba(56, 189, 248, 0.22)',
-  },
-  {
-    key: 'green',
-    label: 'Very Light',
-    fullLabel: 'Very Light to Light',
-    range: '0.1 – 15.5 mm',
-    color: '#10B981',
-    glow: 'rgba(16, 185, 129, 0.45)',
-    activeBg: 'rgba(16, 185, 129, 0.22)',
-  },
-  {
-    key: 'yellow',
-    label: 'Moderate',
-    fullLabel: 'Moderate Rain',
-    range: '15.6 – 64.4 mm',
-    color: '#F59E0B',
-    glow: 'rgba(245, 158, 11, 0.45)',
-    activeBg: 'rgba(245, 158, 11, 0.22)',
-  },
-  {
-    key: 'orange',
-    label: 'Heavy',
-    fullLabel: 'Heavy Rain',
-    range: '64.5 – 115.5 mm',
-    color: '#F97316',
-    glow: 'rgba(249, 115, 22, 0.5)',
-    activeBg: 'rgba(249, 115, 22, 0.22)',
-  },
-  {
-    key: 'red',
-    label: 'Very Heavy',
-    fullLabel: 'Very Heavy Rain',
-    range: '115.6 – 204.4 mm',
-    color: '#EF4444',
-    glow: 'rgba(239, 68, 68, 0.5)',
-    activeBg: 'rgba(239, 68, 68, 0.22)',
-  },
-  {
-    key: 'purple',
-    label: 'Extremely Heavy',
-    fullLabel: 'Extremely Heavy Rain',
-    range: '> 204.4 mm',
-    color: '#A855F7',
-    glow: 'rgba(168, 85, 247, 0.55)',
-    activeBg: 'rgba(168, 85, 247, 0.22)',
-  },
-];
-
 interface TerrainMapContainerProps {
   villages?: Village[];
   shelters?: Shelter[];
@@ -291,7 +222,7 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
       ">
         <span style="width: 4px; height: 4px; border-radius: 50%; background: ${color};"></span>
         <span style="font-weight: 600; color: #E2E8F0;">${reading.name.split(' ')[0]}</span>
-        <span style="color: ${color}; font-weight: 800;">${rain24h}mm</span>
+        <span style="color: ${color}; font-weight: 800;">${(reading.rainfall_24h_mm || 0) > 0 ? `${rain24h}mm` : `${(reading.temperature_c || 25).toFixed(0)}°C`}</span>
         ${isCurrentlyRaining ? `<span style="font-size: 7.5px; opacity: 0.85; color: #38BDF8;">(${rate1h}/h)</span>` : ''}
         ${matchedVillage ? `<span style="font-size: 7.5px; font-weight: 700; color: ${matchedVillage.current_risk_score >= 75 ? '#F87171' : matchedVillage.current_risk_score >= 50 ? '#FBBF24' : '#34D399'}; padding-left: 2px;">• ${matchedVillage.current_risk_score}</span>` : ''}
       </div>
@@ -349,30 +280,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [rainfallFilterMode, setRainfallFilterMode] = useState<'all_today' | 'active_rain' | 'all_stations'>('all_today');
   const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
-  const [selectedSeverity, setSelectedSeverity] = useState<RainfallSeverityFilter>('ALL');
   const [isPanelExpanded, setIsPanelExpanded] = useState<boolean>(true);
-
-  // Dynamic counts by rainfall severity under current filter & region
-  const severityCounts = useMemo(() => {
-    let base = rainfallData;
-    if (rainfallFilterMode === 'active_rain') {
-      base = base.filter(r => (r.rainfallMmPerHour || 0) > 0.0);
-    } else if (rainfallFilterMode === 'all_today') {
-      base = base.filter(r => (r.rainfall_24h_mm || 0) >= 0.1 || (r.rainfallMmPerHour || 0) > 0.0);
-    }
-    if (selectedRegion !== 'ALL' && REGION_MAPPING[selectedRegion]) {
-      const allowedStates = REGION_MAPPING[selectedRegion].map(s => s.toLowerCase());
-      base = base.filter(r => r.state && allowedStates.includes(r.state.toLowerCase()));
-    }
-    return {
-      ALL: base.length,
-      green: base.filter(r => r.severity === 'green' || ((r.rainfall_24h_mm || 0) >= 0.1 && (r.rainfall_24h_mm || 0) <= 15.5)).length,
-      yellow: base.filter(r => r.severity === 'yellow' || ((r.rainfall_24h_mm || 0) > 15.5 && (r.rainfall_24h_mm || 0) <= 64.4)).length,
-      orange: base.filter(r => r.severity === 'orange' || ((r.rainfall_24h_mm || 0) > 64.4 && (r.rainfall_24h_mm || 0) <= 115.5)).length,
-      red: base.filter(r => r.severity === 'red' || ((r.rainfall_24h_mm || 0) > 115.5 && (r.rainfall_24h_mm || 0) <= 204.4)).length,
-      purple: base.filter(r => r.severity === 'purple' || (r.rainfall_24h_mm || 0) > 204.4).length,
-    };
-  }, [rainfallData, rainfallFilterMode, selectedRegion]);
 
   // Fetch real-time precipitation telemetry
   const fetchRainfallTelemetry = async (force: boolean = false) => {
@@ -389,6 +297,9 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         setTotalMonitored(report.total_monitored_points || report.data?.length || 0);
         if (report.highest_rainfall_point) {
           setHighestRainPoint(report.highest_rainfall_point);
+        }
+        if (rainTodayCount === 0) {
+          setRainfallFilterMode('all_stations');
         }
       }
     } catch (err) {
@@ -408,7 +319,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Filtered Rainfall Readings based on Search Query, Region, Severity, and Filter Mode
+  // Filtered Rainfall Readings based on Search Query, Region, and Filter Mode
   const filteredRainfallData = useMemo(() => {
     let list = rainfallData;
     if (rainfallFilterMode === 'active_rain') {
@@ -422,28 +333,6 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
       list = list.filter(r => r.state && allowedStates.includes(r.state.toLowerCase()));
     }
 
-    if (selectedSeverity !== 'ALL') {
-      list = list.filter(r => {
-        const rain24 = r.rainfall_24h_mm || 0;
-        if (selectedSeverity === 'green') {
-          return r.severity === 'green' || (rain24 >= 0.1 && rain24 <= 15.5);
-        }
-        if (selectedSeverity === 'yellow') {
-          return r.severity === 'yellow' || (rain24 > 15.5 && rain24 <= 64.4);
-        }
-        if (selectedSeverity === 'orange') {
-          return r.severity === 'orange' || (rain24 > 64.4 && rain24 <= 115.5);
-        }
-        if (selectedSeverity === 'red') {
-          return r.severity === 'red' || (rain24 > 115.5 && rain24 <= 204.4);
-        }
-        if (selectedSeverity === 'purple') {
-          return r.severity === 'purple' || rain24 > 204.4;
-        }
-        return true;
-      });
-    }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(r => 
@@ -454,7 +343,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
       );
     }
     return list;
-  }, [rainfallData, rainfallFilterMode, selectedRegion, selectedSeverity, searchQuery]);
+  }, [rainfallData, rainfallFilterMode, selectedRegion, searchQuery]);
 
   // Quick Autocomplete search suggestions
   const searchSuggestions = useMemo(() => {
@@ -616,14 +505,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     return list;
   }, [showRainfallLayer, referenceSettlements, selectedRegion, searchQuery]);
 
-  // Filtered villages: strictly respect rainfall layer, active rain filter, region, and search
+  // Filtered villages: strictly respect region and search
   const filteredVillages = useMemo(() => {
-    // When isFullPage and showRainfallLayer are active, rainfall stations represent the map data.
-    // We do NOT render separate village hazard pins so only data matching the active filter appears.
-    if (isFullPage && showRainfallLayer) {
-      return [];
-    }
-
     let list = villages;
 
     // Filter by Region
@@ -644,7 +527,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     }
 
     return list;
-  }, [villages, isFullPage, showRainfallLayer, selectedRegion, searchQuery]);
+  }, [villages, selectedRegion, searchQuery]);
 
   // Controls Handlers
   const handleZoomIn = () => {
@@ -691,8 +574,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             top: '14px',
             left: '14px',
           zIndex: 450,
-          maxWidth: '560px',
-          width: 'min(560px, calc(100% - 28px))',
+          maxWidth: '460px',
+          width: 'min(460px, calc(100% - 28px))',
           background: 'rgba(3, 14, 30, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
@@ -968,114 +851,27 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             </div>
 
             {/* Quick Regional Filters */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <span style={{ fontSize: '8.5px', fontWeight: 700, color: '#64748B', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                Region
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
-                {['ALL', 'NORTH', 'CENTRAL', 'WEST', 'EAST', 'NORTHEAST', 'SOUTH'].map((reg) => (
-                  <button
-                    key={`reg-${reg}`}
-                    onClick={() => setSelectedRegion(reg)}
-                    style={{
-                      background: selectedRegion === reg ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                      border: selectedRegion === reg ? '1px solid #22D3EE' : '1px solid rgba(255, 255, 255, 0.08)',
-                      color: selectedRegion === reg ? '#22D3EE' : '#94A3B8',
-                      padding: '3px 8px',
-                      borderRadius: '5px',
-                      fontSize: '9.5px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      textTransform: 'capitalize',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {reg === 'ALL' ? 'All India' : reg.toLowerCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Rainfall Severity / Intensity Filters (IMD Classification) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingTop: '1px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '8.5px', fontWeight: 700, color: '#64748B', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  Rainfall Intensity (IMD)
-                </span>
-                {selectedSeverity !== 'ALL' && (
-                  <button
-                    onClick={() => setSelectedSeverity('ALL')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#38BDF8',
-                      fontSize: '8.5px',
-                      cursor: 'pointer',
-                      padding: '0 2px',
-                      fontWeight: 600,
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    Reset Intensity
-                  </button>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', overflowX: 'auto', paddingBottom: '2px' }}>
-                {SEVERITY_OPTIONS.map((opt) => {
-                  const isActive = selectedSeverity === opt.key;
-                  const count = severityCounts[opt.key] ?? 0;
-                  return (
-                    <button
-                      key={`sev-${opt.key}`}
-                      onClick={() => setSelectedSeverity(isActive && opt.key !== 'ALL' ? 'ALL' : opt.key)}
-                      style={{
-                        background: isActive ? opt.activeBg : 'rgba(255, 255, 255, 0.03)',
-                        border: isActive ? `1px solid ${opt.color}` : '1px solid rgba(255, 255, 255, 0.08)',
-                        color: isActive ? opt.color : '#94A3B8',
-                        boxShadow: isActive ? `0 0 10px ${opt.glow}` : 'none',
-                        padding: '2.5px 6px',
-                        borderRadius: '5px',
-                        fontSize: '8.5px',
-                        fontWeight: isActive ? 700 : 500,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3.5px',
-                        transition: 'all 0.15s ease',
-                      }}
-                      title={`${opt.fullLabel} (${opt.range})`}
-                    >
-                      {opt.color && (
-                        <span
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            background: opt.color,
-                            boxShadow: isActive ? `0 0 6px ${opt.color}` : 'none',
-                            flexShrink: 0,
-                          }}
-                        />
-                      )}
-                      <span>{opt.label}</span>
-                      <span
-                        style={{
-                          fontSize: '8px',
-                          padding: '0.5px 4px',
-                          borderRadius: '3px',
-                          background: isActive ? `${opt.color}30` : 'rgba(255, 255, 255, 0.06)',
-                          color: isActive ? '#FFFFFF' : '#64748B',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', overflowX: 'auto', paddingBottom: '2px' }}>
+              {['ALL', 'NORTH', 'CENTRAL', 'WEST', 'EAST', 'NORTHEAST', 'SOUTH'].map((reg) => (
+                <button
+                  key={`reg-${reg}`}
+                  onClick={() => setSelectedRegion(reg)}
+                  style={{
+                    background: selectedRegion === reg ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                    border: selectedRegion === reg ? '1px solid #22D3EE' : '1px solid rgba(255, 255, 255, 0.08)',
+                    color: selectedRegion === reg ? '#22D3EE' : '#94A3B8',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '8.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {reg === 'ALL' ? 'All India' : reg.toLowerCase()}
+                </button>
+              ))}
             </div>
 
             {/* Highest Recorded Rainfall (24h) Spotlight Banner */}
@@ -1125,14 +921,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
 
             {/* Showing Count Status */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '8.5px', color: '#64748B', paddingTop: '2px' }}>
-              <span>
-                Showing <strong>{filteredRainfallData.length}</strong> matching points
-                {selectedSeverity !== 'ALL' && (
-                  <span style={{ color: SEVERITY_OPTIONS.find(o => o.key === selectedSeverity)?.color || '#38BDF8', marginLeft: '5px', fontWeight: 600 }}>
-                    • {SEVERITY_OPTIONS.find(o => o.key === selectedSeverity)?.label}
-                  </span>
-                )}
-              </span>
+              <span>Showing <strong>{filteredRainfallData.length}</strong> matching points</span>
               <span>Units: 24H Total (mm) & Hourly (mm/h)</span>
             </div>
           </div>
@@ -1218,7 +1007,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         />
 
         {/* Voronoi Risk Polygons Overlay */}
-        {zonesGeoJSON && (!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (rainfallFilterMode !== 'active_rain') && (
+        {zonesGeoJSON && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (rainfallFilterMode !== 'active_rain') && (
           <GeoJSON
             data={zonesGeoJSON as any}
             style={zoneStyle}
@@ -1233,7 +1022,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         )}
 
         {/* Beas River Vector Reach with Glow */}
-        {riversGeoJSON && (!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (
+        {riversGeoJSON && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && (
           <GeoJSON
             data={riversGeoJSON as any}
             style={{
@@ -1245,7 +1034,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         )}
 
         {/* Safe Evacuation Corridors */}
-        {(!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && routes.map((route) => {
+        {(selectedRegion === 'ALL' || selectedRegion === 'NORTH') && routes.map((route) => {
           if (!route.coordinates || route.coordinates.length < 2) return null;
           const isBlocked = route.status === 'BLOCKED' || route.is_blocked;
           const color = isBlocked ? '#EF4444' : '#10B981';
@@ -1270,7 +1059,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           );
         })}
 
-        {/* Primary Mandi Beacon & Key Mountain Settlements (Only when rainfall layer disabled & matching filter) */}
+        {/* Primary Mandi Beacon & Key Mountain Settlements */}
         {!showRainfallLayer && visibleReferenceSettlements.map((s) => (
           <Marker
             key={s.name}
@@ -1285,9 +1074,9 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           />
         ))}
 
-        {/* Dynamic Village & Regional Settlement Markers (Strictly filtered according to active filters) */}
+        {/* Dynamic Village & Regional Settlement Markers */}
         {filteredVillages.map((v) => {
-          if (!showRainfallLayer && visibleReferenceSettlements.some(r => r.name.toLowerCase() === v.name.toLowerCase())) return null;
+          if (showRainfallLayer && filteredRainfallData.some(r => Math.abs(r.lat - v.latitude) < 0.04 && Math.abs(r.lon - v.longitude) < 0.04)) return null;
           return (
             <Marker
               key={`v-${v.id}`}
@@ -1301,7 +1090,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         })}
 
         {/* Designated Disaster Relief Shelters */}
-        {(!showRainfallLayer || !isFullPage) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
+        {(selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
           <Marker
             key={`sh-${sh.id}`}
             position={[sh.latitude, sh.longitude]}
@@ -1348,6 +1137,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                   <strong style={{ color: '#0369A1' }}>{r.name}</strong> {r.state ? `(${r.state})` : ''}<br />
                   🌧️ <strong>24H Rain:</strong> {(r.rainfall_24h_mm || 0).toFixed(1)} mm<br />
                   ⚡ <strong>Rate:</strong> {(r.rainfallMmPerHour || 0).toFixed(1)} mm/h {r.weather_description ? `• ${r.weather_description}` : ''}<br />
+                  🌡️ <strong>Temp:</strong> {(r.temperature_c || 25).toFixed(1)}°C • <strong>Humidity:</strong> {(r.humidity_pct || 70).toFixed(0)}%<br />
                   {matchedVillage && (
                     <div style={{ margin: '3px 0', padding: '2px 5px', borderRadius: '3px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#991B1B', fontWeight: 600, fontSize: '10px' }}>
                       🚨 Flood Risk: <strong>{matchedVillage.current_risk_tier}</strong> (Score: {matchedVillage.current_risk_score}/100)
@@ -1586,56 +1376,44 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
-              {RAINFALL_SCALE_TIERS.map((tier) => {
-                const isSelected = selectedSeverity === tier.severity;
-                return (
-                  <div
-                    key={tier.severity}
-                    onClick={() => setSelectedSeverity(isSelected ? 'ALL' : tier.severity as RainfallSeverityFilter)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '9.5px',
-                      color: isSelected ? tier.color : '#F1F7FA',
-                      cursor: 'pointer',
-                      padding: '2px 5px',
-                      borderRadius: '4px',
-                      background: isSelected ? `${tier.color}22` : 'transparent',
-                      border: isSelected ? `1px solid ${tier.color}80` : '1px solid transparent',
-                      boxShadow: isSelected ? `0 0 8px ${tier.color}40` : 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                    title={`Click to filter by ${tier.category}`}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: tier.color,
-                          boxShadow: `0 0 6px ${tier.color}`,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontWeight: isSelected ? 700 : 400 }}>{tier.category}</span>
-                    </div>
+              {RAINFALL_SCALE_TIERS.map((tier) => (
+                <div
+                  key={tier.severity}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '9.5px',
+                    color: '#F1F7FA',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span
                       style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '9px',
-                        color: tier.color,
-                        fontWeight: 600,
-                        marginLeft: '8px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: tier.color,
+                        boxShadow: `0 0 6px ${tier.color}`,
                         flexShrink: 0,
                       }}
-                    >
-                      {tier.label}
-                    </span>
+                    />
+                    <span>{tier.category}</span>
                   </div>
-                );
-              })}
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      color: tier.color,
+                      fontWeight: 600,
+                      marginLeft: '8px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {tier.label}
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div style={{ marginTop: '6px', fontSize: '8px', color: '#64748B', display: 'flex', justifyContent: 'space-between' }}>

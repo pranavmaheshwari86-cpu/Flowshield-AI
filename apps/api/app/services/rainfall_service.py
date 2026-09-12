@@ -125,16 +125,16 @@ class RainfallService:
     """
 
     def __init__(self, provider: Optional[RainfallProvider] = None, cache_ttl_seconds: int = 300):
-        # Prefer OpenMeteo as authoritative primary provider for India (ECMWF Copernicus reanalysis & 24h observed sum)
+        # Prefer OpenWeather when API key is configured in settings/.env
         if provider:
             self.provider = provider
             self.secondary_provider = None
+        elif settings.OPENWEATHER_API_KEY:
+            self.provider = OpenWeatherRainfallProvider(api_key=settings.OPENWEATHER_API_KEY)
+            self.secondary_provider = OpenMeteoRainfallProvider()
         else:
             self.provider = OpenMeteoRainfallProvider()
-            if settings.OPENWEATHER_API_KEY:
-                self.secondary_provider = OpenWeatherRainfallProvider(api_key=settings.OPENWEATHER_API_KEY)
-            else:
-                self.secondary_provider = None
+            self.secondary_provider = None
 
         self.imd_provider = IMDRainfallProvider()
         self.cache_ttl_seconds = cache_ttl_seconds

@@ -12,6 +12,8 @@ from .telemetry_sync_log import TelemetrySyncLog
 from .landslide_assessment import LandslideAssessment
 from .verified_outcome import VerifiedOutcome
 from .model_version import ModelVersion
+from .road_incident import RoadIncident
+from .model_coverage import ModelCoverage
 
 __all__ = [
     "Village",
@@ -29,4 +31,6 @@ __all__ = [
     "LandslideAssessment",
     "VerifiedOutcome",
     "ModelVersion",
+    "RoadIncident",
+    "ModelCoverage",
 ]

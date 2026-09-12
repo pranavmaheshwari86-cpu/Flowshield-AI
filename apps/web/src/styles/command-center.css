@@ -154,18 +154,18 @@
 /* Operations Navigation Buttons — 3D Tactile Extrusion, Radiant Background Light & Interactive Depth */
 .cc-nav-btn {
   width: 100%;
-  height: 54px;
+  height: 44px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
+  gap: 10px;
+  padding: 0 12px;
   background: linear-gradient(180deg, rgba(14, 85, 126, 0.32) 0%, rgba(8, 47, 73, 0.45) 50%, rgba(3, 20, 36, 0.6) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(56, 189, 248, 0.22);
   border-top: 1.5px solid rgba(255, 255, 255, 0.18);
   border-bottom: 1.5px solid rgba(0, 0, 0, 0.6);
-  border-radius: 10px;
+  border-radius: 8px;
   color: #E0F2FE;
   cursor: pointer;
   text-align: left;
@@ -186,8 +186,8 @@
 }
 
 .cc-nav-btn .cc-nav-label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   color: #E0F2FE;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -247,9 +247,9 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 5px;
-  height: 30px;
-  border-radius: 0 4px 4px 0;
+  width: 4px;
+  height: 24px;
+  border-radius: 0 3px 3px 0;
   background: #00E5FF;
   box-shadow: 0 0 10px #00E5FF, 0 0 18px rgba(0, 229, 255, 0.9);
 }
@@ -597,8 +597,8 @@ a:focus-visible {
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 9999px;
-  padding: 4px 6px;
-  gap: 6px;
+  padding: 4px 5px;
+  gap: 4px;
   box-shadow: 
     inset 0 1.5px 2px rgba(255, 255, 255, 0.10),
     inset 0 -2px 4px rgba(0, 0, 0, 0.7),
@@ -614,13 +614,13 @@ a:focus-visible {
   justify-content: center;
   flex-shrink: 0;
   white-space: nowrap !important;
-  gap: 9px;
-  padding: 6px 18px;
-  height: 38px;
+  gap: 7px;
+  padding: 5px 14px;
+  height: 32px;
   box-sizing: border-box;
   border-radius: 9999px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-decoration: none;
   color: #8EA4B8;
