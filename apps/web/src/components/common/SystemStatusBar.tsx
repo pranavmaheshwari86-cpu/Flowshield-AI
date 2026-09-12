@@ -4,6 +4,7 @@ import { CloudRain, Waves, Mountain, Navigation, Clock } from 'lucide-react';
 interface SystemStatusBarProps {
   systemHealth?: number;
   rainfall1h?: number;
+  rainfallRate?: number;
   rainfallTrend?: string;
   riversBreachedCount?: number;
   totalRivers?: number;
@@ -15,14 +16,15 @@ interface SystemStatusBarProps {
 
 export const SystemStatusBar: React.FC<SystemStatusBarProps> = ({
   systemHealth = 98,
-  rainfall1h = 47.3,
-  rainfallTrend = '↑ 18%',
-  riversBreachedCount = 7,
-  totalRivers = 9,
-  landslideRiskTier = 'High',
-  landslideDistrictsCount = 3,
-  evacuationClearCount = 5,
-  totalEvacuationRoutes = 5,
+  rainfall1h,
+  rainfallRate,
+  rainfallTrend = 'Telemetry Live',
+  riversBreachedCount = 0,
+  totalRivers = 0,
+  landslideRiskTier = 'Low',
+  landslideDistrictsCount = 0,
+  evacuationClearCount = 0,
+  totalEvacuationRoutes = 0,
 }) => {
   // Live Clock (defaults to formatted IST time)
   const [timeStr, setTimeStr] = useState<string>('03:57:24 PM');
@@ -153,10 +155,10 @@ export const SystemStatusBar: React.FC<SystemStatusBarProps> = ({
             Rainfall (1h)
           </div>
           <div style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-            {rainfall1h.toFixed(1)} <span style={{ fontSize: '10px', fontWeight: 500, color: '#94A3B8' }}>mm/h</span>
+            {rainfall1h != null ? rainfall1h.toFixed(1) : '—'} <span style={{ fontSize: '10px', fontWeight: 500, color: '#94A3B8' }}>mm</span>
           </div>
-          <div style={{ fontSize: '9.5px', color: '#10B981', fontWeight: 600 }}>
-            {rainfallTrend}
+          <div style={{ fontSize: '9.5px', color: '#38BDF8', fontWeight: 600 }}>
+            {rainfallRate != null ? `Rate: ${rainfallRate.toFixed(1)} mm/h` : rainfallTrend}
           </div>
         </div>
       </div>

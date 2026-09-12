@@ -277,7 +277,7 @@ export const FloodRiskChart: React.FC<FloodRiskChartProps> = ({
   targetFutureHorizons.forEach((targetH) => {
     const h = forecastHorizons.find((item) => item.horizon_hours === targetH);
     let opRisk = h?.operational_risk_score ?? lastHistRisk;
-    let calProb = h?.calibrated_flood_probability ?? Number((opRisk / 100).toFixed(2));
+    let calProb = isModelSupported ? (h?.calibrated_flood_probability ?? null) : null;
     let tier = h?.risk_tier ?? (opRisk >= 75 ? 'CRITICAL' : opRisk >= 50 ? 'HIGH' : opRisk >= 25 ? 'WATCH' : 'LOW');
     let driver = h?.primary_risk_driver || 'Hydrological Rainfall & Stage Runoff Estimate';
 
@@ -285,8 +285,8 @@ export const FloodRiskChart: React.FC<FloodRiskChartProps> = ({
     if (!isModelSupported || h?.operational_risk_score === null || h?.operational_risk_score === undefined) {
       const rainAccum = h?.cumulative_precipitation_mm || 0;
       const rainRate = h?.projected_rainfall_rate_mm_hr || 0;
-      opRisk = Math.min(92, Math.max(8, Math.round(15 + rainAccum * 0.7 + rainRate * 1.8)));
-      calProb = Number((opRisk / 100).toFixed(2));
+      opRisk = h?.operational_risk_score ?? Math.min(92, Math.max(8, Math.round(15 + rainAccum * 0.7 + rainRate * 1.8)));
+      calProb = isModelSupported ? (h?.calibrated_flood_probability ?? null) : null;
       tier = opRisk >= 75 ? 'CRITICAL' : opRisk >= 50 ? 'HIGH' : opRisk >= 25 ? 'WATCH' : 'LOW';
       driver = 'Hydrological Rainfall & Stage Runoff Estimate';
     }
@@ -484,7 +484,7 @@ export const FloodRiskChart: React.FC<FloodRiskChartProps> = ({
 
             {/* Observed Historical Risk Line */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="observedRisk"
               name="Historical Risk Score"
               stroke="#A855F7"
@@ -495,7 +495,7 @@ export const FloodRiskChart: React.FC<FloodRiskChartProps> = ({
 
             {/* Forecast Multi-Horizon Risk Line */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="forecastRisk"
               name="Projected Risk Score"
               stroke="#C084FC"

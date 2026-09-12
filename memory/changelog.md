@@ -152,9 +152,42 @@
 - Fixed danger mark delta inversion in `HydrologicalAnalysisCard.tsx` so stages below danger level render in teal (`#2DD4BF`) with status `Within Channel Banks` (BUG-011).
 - Fixed TypeScript syntax typo in `apps/web/src/types/index.ts` (`bool | boolean` $\rightarrow$ `boolean`) (BUG-012).
 
+---
+
+## [4.1.0] — September 2026
+
+### Milestone: Forensic Scientific Validation & Data Integrity Overhaul
+
+#### Added
+- **Scientific Validation & Physical Consistency Test Suite**:
+  - Created `tests/test_scientific_validation.py` verifying:
+    1. Zero data fabrication and missing telemetry preservation (`None != 0.0`).
+    2. Unit integrity separating accumulation ($mm$) from intensity ($mm/h$).
+    3. Rolling sum calculations replacing arbitrary scaling multipliers.
+    4. ECMWF IFS synoptic cycle operational initialization ($00Z, 06Z, 12Z, 18Z$).
+    5. Location capability bounds: Buxar/Barauni (Bihar) and Dhemaji (Assam) return `is_model_supported=False` and `flood_prob=None`, preventing synthetic 100% chance.
+    6. Ground truth GIS coordinates for alluvial and Himalayan stations.
+- **Synoptic Dissemination Cycle Method**:
+  - Added `ForecastService.get_latest_synoptic_cycle()` computing genuine synoptic initialization cycles accounting for operational dissemination lag ($\ge 4.5$ hours).
+
+#### Changed
+- **Rainfall Accumulator & Timeline Service**:
+  - Refactored `get_observed_timeline_series()` to preserve `None` when readings are missing, avoiding silent zero substitutions.
+  - Replaced arbitrary multipliers (`precip_1h * 2.2` and `rain_3h * 1.8`) with true rolling sum aggregations over `hourly.precipitation` slices.
+  - Eliminated synthetic soil moisture formula `48.0 + (accums["24h"] * 0.35)`.
+- **Frontend Timeline Charts**:
+  - Switched Recharts `<Area>` interpolation from `type="monotone"` to `type="linear"` in `PrecipitationChart.tsx` and `FloodRiskChart.tsx`, eliminating cubic Hermite spline overshoot artifacts.
+  - Passed `location_capabilities` to `<PrecipitationChart />`. When `is_model_supported` is false, future flood probability is strictly `null` and the badge displays `UNSUPPORTED (ML Inactive)` instead of `100% CRITICAL`.
+  - Clarified units in `SystemStatusBar.tsx`: accumulation in $mm$ and rate in $mm/h$.
+
+#### Fixed
+- Fixed unhandled exception in `rainfall_provider.py` by removing call to non-existent `_generate_fallback_readings` (BUG-013).
+- Corrected GIS coordinates and elevations in `scripts/seed_national_flood_data.py` and `flowshield.db` for Jonai Subansiri Belt (`27.7700°N, 95.2200°E, 115m`) and Begusarai Barauni Basin (`25.4630°N, 85.9610°E, 47m`) (BUG-014).
+
 Cross-references:
 - Current Status: [`current-status.md`](./current-status.md)
 - Walkthrough: [`../walkthrough.md`](../walkthrough.md)
 - Bug Log: [`bugs.md`](./bugs.md)
 - Architectural Decisions: [`decisions.md`](./decisions.md)
 - Roadmap: [`todo.md`](./todo.md)
+

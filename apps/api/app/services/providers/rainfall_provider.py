@@ -296,8 +296,7 @@ class OpenMeteoRainfallProvider(RainfallProvider):
             except Exception as e:
                 err_msg = f"Network or parsing error connecting to Open-Meteo: {e}"
                 logger.warning(err_msg)
-                # Fallback to simulated assimilation telemetry rather than returning empty array
-                return self._generate_fallback_readings(targets), f"Open-Meteo unreachable ({e}); deployed IMD assimilated baseline telemetry"
+                return readings, f"Open-Meteo unreachable ({e}); telemetry unavailable"
 
             # Open-Meteo returns a single dict if len(chunk) == 1, or a list of dicts if multiple
             results = [payload] if isinstance(payload, dict) else payload
@@ -338,9 +337,13 @@ class OpenMeteoRainfallProvider(RainfallProvider):
                 # Ensure 24h rain is at least the current 1h rain
                 rainfall_24h = max(rainfall_24h, precip_1h)
 
-                # 3h and 6h accumulation
-                rain_3h = round(min(rainfall_24h, max(precip_1h * 2.2, precip_1h)), 2)
-                rain_6h = round(min(rainfall_24h, max(rain_3h * 1.8, rain_3h)), 2)
+                # 3h and 6h accumulation computed from real hourly series if available
+                if hourly_precip and len(hourly_precip) >= 6:
+                    rain_3h = round(min(rainfall_24h, max(precip_1h, sum(float(x or 0.0) for x in hourly_precip[-3:]))), 2)
+                    rain_6h = round(min(rainfall_24h, max(rain_3h, sum(float(x or 0.0) for x in hourly_precip[-6:]))), 2)
+                else:
+                    rain_3h = round(min(rainfall_24h, precip_1h), 2)
+                    rain_6h = round(min(rainfall_24h, rain_3h), 2)
 
                 # Weather code mapping
                 wmo_code = current.get("weather_code", daily.get("weather_code", [0])[0] if daily.get("weather_code") else 0)
@@ -848,3 +851,350 @@ class IMDRainfallProvider(RainfallProvider):
         if not self.api_key:
             return [], "IMD API Key not configured; deferring to primary provider"
         return [], "IMD Live AWS Gateway awaiting production network tunnel"
+
+
+class TomorrowIORainfallProvider(RainfallProvider):
+    """
+    Live precipitation and hyper-local nowcasting provider backed by Tomorrow.io Weather API v4.
+    Features:
+    - 1-minute precipitation nowcasting (0-60 min)
+    - 120-hour hourly precipitation forecasting
+    - Paced rate-limiting (min 0.4s delay, burst defense)
+    - Persistent disk & memory caching (15-min TTL) to guard 25 req/hr free quota
+    - Automatic 429 backoff and graceful stale fallback
+    """
+
+    BASE_URL = "https://api.tomorrow.io/v4"
+
+    def __init__(self, api_key: Optional[str] = None):
+        import os
+        import threading
+        from ...config import settings
+
+        self.api_key = (
+            api_key
+            or getattr(settings, "TOMORROW_API_KEY", "")
+            or os.getenv("TOMORROW_API_KEY", "")
+        ).strip()
+        self.base_url = (
+            getattr(settings, "TOMORROW_API_BASE_URL", "")
+            or os.getenv("TOMORROW_API_BASE_URL", self.BASE_URL)
+        ).rstrip("/")
+
+        self.cache_dir = Path("scratch")
+        self.cache_file = self.cache_dir / "tomorrow_rainfall_cache.json"
+
+        self._lock = threading.Lock()
+        self._min_request_interval = 0.4  # seconds
+        self._last_request_time = 0.0
+        self._rate_limited_until = 0.0
+        self._rate_limit_error: Optional[str] = None
+        self._cached_stations: Dict[str, Dict[str, Any]] = {}
+        self._cache_ttl_sec = 900  # 15 minutes
+
+        self._load_cache_from_disk()
+
+    @property
+    def name(self) -> str:
+        return "Tomorrow.io High-Resolution Nowcasting Network"
+
+    def _load_cache_from_disk(self):
+        try:
+            if self.cache_file.exists():
+                with open(self.cache_file, "r", encoding="utf-8") as f:
+                    self._cached_stations = json.load(f)
+                logger.info(f"Loaded {len(self._cached_stations)} cached Tomorrow.io rainfall stations from disk.")
+        except Exception as e:
+            logger.debug(f"Could not load Tomorrow.io disk cache: {e}")
+
+    def _save_cache_to_disk(self):
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.cache_file, "w", encoding="utf-8") as f:
+                json.dump(self._cached_stations, f)
+        except Exception as e:
+            logger.debug(f"Could not save Tomorrow.io disk cache: {e}")
+
+    def _pace_request(self):
+        import time
+        with self._lock:
+            now = time.time()
+            elapsed = now - self._last_request_time
+            if elapsed < self._min_request_interval:
+                time.sleep(self._min_request_interval - elapsed)
+            self._last_request_time = time.time()
+
+    def get_provider_status(self) -> Dict[str, Any]:
+        import time
+        is_rate_limited = time.time() < self._rate_limited_until
+        return {
+            "provider": self.name,
+            "api_endpoint": f"{self.base_url}/weather/forecast",
+            "is_configured": bool(self.api_key),
+            "resolution": "1-minute hyper-local nowcasting / 1km radar grid",
+            "update_frequency": "Real-Time (15 min cache)",
+            "citation": "Tomorrow.io Weather Intelligence Platform",
+            "is_synthetic": False,
+            "cached_stations": len(self._cached_stations),
+            "status": "RATE_LIMITED" if is_rate_limited else ("OPERATIONAL" if self.api_key else "UNCONFIGURED"),
+            "rate_limit_message": self._rate_limit_error if is_rate_limited else None,
+        }
+
+    def fetch_station(self, target: LocationTarget) -> Tuple[Optional[Dict[str, Any]], Optional[str], Optional[int]]:
+        """Fetches forecast & nowcast payload with rate-limit and backoff defense."""
+        import time
+        if not self.api_key:
+            return None, "Tomorrow.io API key not configured", 401
+
+        now = time.time()
+        if now < self._rate_limited_until:
+            return None, self._rate_limit_error or "Tomorrow.io rate limit reached. Retrying later.", 429
+
+        self._pace_request()
+        params = {
+            "location": f"{target.latitude:.4f},{target.longitude:.4f}",
+            "timesteps": "1m,1h,1d",
+            "units": "metric",
+            "apikey": self.api_key,
+        }
+        url = f"{self.base_url}/weather/forecast?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Emergency-Intelligence/2.5"})
+
+        try:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=7) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    return data, None, 200
+                return None, f"HTTP {resp.status}", resp.status
+        except urllib.error.HTTPError as he:
+            err_body = he.read().decode("utf-8", errors="ignore")
+            logger.warning(f"Tomorrow.io HTTP {he.code} for {target.name}: {err_body}")
+            if he.code == 429:
+                self._rate_limited_until = time.time() + 180.0
+                self._rate_limit_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
+                return None, self._rate_limit_error, 429
+            elif he.code in (401, 403):
+                self._rate_limit_error = "Tomorrow.io API authentication error (invalid key)"
+                return None, self._rate_limit_error, he.code
+            return None, f"Tomorrow.io error HTTP {he.code}: {err_body}", he.code
+        except Exception as e:
+            logger.warning(f"Tomorrow.io connection error for {target.name}: {e}")
+            return None, f"Weather service temporarily unavailable: {e}", 503
+
+    def _process_horizons(self, hourly_points: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Processes 120-hour forecast into standard Flowshield horizons (1h, 3h, 6h, 12h, 24h, 48h)."""
+        if not hourly_points:
+            return {}
+
+        def get_rain(item: Dict[str, Any]) -> float:
+            v = item.get("values", {})
+            return float(v.get("rainAccumulation", 0.0) or v.get("rainIntensity", 0.0) or 0.0)
+
+        def get_pop(item: Dict[str, Any]) -> float:
+            v = item.get("values", {})
+            return float(v.get("precipitationProbability", 0.0) or 0.0)
+
+        p0 = hourly_points[0] if hourly_points else {}
+        rain_1h = get_rain(p0)
+        pop_1h = get_pop(p0)
+        temp_1h = float(p0.get("values", {}).get("temperature", 20.0))
+
+        p3 = hourly_points[:3]
+        rain_3h = round(sum(get_rain(p) for p in p3), 2)
+        pop_3h = max((get_pop(p) for p in p3), default=pop_1h)
+        temp_3h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p3) / max(1, len(p3)), 1)
+
+        p6 = hourly_points[:6]
+        rain_6h = round(sum(get_rain(p) for p in p6), 2)
+        pop_6h = max((get_pop(p) for p in p6), default=pop_3h)
+        temp_6h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p6) / max(1, len(p6)), 1)
+
+        p12 = hourly_points[:12]
+        rain_12h = round(sum(get_rain(p) for p in p12), 2)
+        pop_12h = max((get_pop(p) for p in p12), default=pop_6h)
+        temp_12h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p12) / max(1, len(p12)), 1)
+
+        p24 = hourly_points[:24]
+        rain_24h = round(sum(get_rain(p) for p in p24), 2)
+        pop_24h = max((get_pop(p) for p in p24), default=pop_12h)
+        temp_24h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p24) / max(1, len(p24)), 1)
+
+        p48 = hourly_points[:48]
+        rain_48h = round(sum(get_rain(p) for p in p48), 2)
+        pop_48h = max((get_pop(p) for p in p48), default=pop_24h)
+        temp_48h = round(sum(float(p.get("values", {}).get("temperature", temp_1h)) for p in p48) / max(1, len(p48)), 1)
+
+        return {
+            "1h": {"rain_mm": rain_1h, "pop_pct": pop_1h, "temp_c": temp_1h, "condition": "Nowcasting"},
+            "3h": {"rain_mm": rain_3h, "pop_pct": pop_3h, "temp_c": temp_3h, "condition": "Short-Range"},
+            "6h": {"rain_mm": rain_6h, "pop_pct": pop_6h, "temp_c": temp_6h, "condition": "Catchment Loading"},
+            "12h": {"rain_mm": rain_12h, "pop_pct": pop_12h, "temp_c": temp_12h, "condition": "Precipitation Window"},
+            "24h": {"rain_mm": rain_24h, "pop_pct": pop_24h, "temp_c": temp_24h, "condition": "Diurnal Total"},
+            "48h": {"rain_mm": rain_48h, "pop_pct": pop_48h, "temp_c": temp_48h, "condition": "Synoptic Trend"},
+        }
+
+    def _parse_to_reading(self, target: LocationTarget, payload: Dict[str, Any], quality: str = "live") -> RainfallReading:
+        timelines = payload.get("timelines", {})
+        minutely = timelines.get("minutely", [])
+        hourly = timelines.get("hourly", [])
+        daily = timelines.get("daily", [])
+
+        base_values = minutely[0]["values"] if minutely and "values" in minutely[0] else (
+            hourly[0]["values"] if hourly and "values" in hourly[0] else {}
+        )
+
+        temp_c = float(base_values.get("temperature", 20.0))
+        feels_like_c = float(base_values.get("temperatureApparent", temp_c))
+        humidity_pct = float(base_values.get("humidity", 70.0))
+        pressure_hpa = float(base_values.get("pressureSurfaceLevel") or base_values.get("pressureSeaLevel") or 1013.25)
+        wind_speed_kmh = round(float(base_values.get("windSpeed", 2.0)) * 3.6, 1)
+        wind_deg = float(base_values.get("windDirection", 0.0))
+        visibility_km = round(float(base_values.get("visibility", 10.0)), 1)
+        cloud_cover_pct = float(base_values.get("cloudCover", 20.0))
+
+        precip_1h = float(base_values.get("rainIntensity", 0.0))
+        horizons = self._process_horizons(hourly)
+        forecast_24h = float(horizons.get("24h", {}).get("rain_mm", 0.0))
+        if forecast_24h == 0.0 and daily:
+            forecast_24h = float(daily[0].get("values", {}).get("rainAccumulationSum", precip_1h * 2.5))
+
+        precip_3h = float(horizons.get("3h", {}).get("rain_mm", precip_1h * 2.5))
+        precip_6h = float(horizons.get("6h", {}).get("rain_mm", precip_3h * 1.8))
+        pop_6h = float(horizons.get("6h", {}).get("pop_pct", 0.0))
+
+        weather_code = base_values.get("weatherCode", 1000)
+        weather_main = "Rain" if precip_1h > 0.1 else ("Clouds" if cloud_cover_pct > 50 else "Clear")
+        weather_desc = f"Code {weather_code} ({'Rainy' if precip_1h > 0 else 'Fair'})"
+
+        severity = compute_rainfall_severity(precip_1h, forecast_24h)
+        risk = calculate_flood_risk(
+            rainfall_rate_mm_hr=precip_1h,
+            forecast_24h_mm=forecast_24h,
+            observed_24h_mm=0.0,
+            elevation_m=getattr(target, "elevation_m", None),
+            pop_pct_next6h=pop_6h,
+            weather_main=weather_main,
+        )
+
+        now_utc = datetime.now(timezone.utc)
+
+        return RainfallReading(
+            id=f"rain_{target.id}",
+            name=target.name,
+            state=getattr(target, "state", "India"),
+            district=getattr(target, "district", target.name),
+            lat=target.latitude,
+            lon=target.longitude,
+            rainfallMmPerHour=round(precip_1h, 2),
+            rainfall_24h_mm=round(forecast_24h, 2),
+            rainfall_3h_mm=round(precip_3h, 2),
+            rainfall_6h_mm=round(precip_6h, 2),
+            forecast_24h_mm=round(forecast_24h, 2),
+            historical_24h_available=False,
+            weather_main=weather_main,
+            weather_description=weather_desc,
+            temperature_c=round(temp_c, 1),
+            feels_like_c=round(feels_like_c, 1),
+            humidity_pct=round(humidity_pct, 1),
+            pressure_hpa=round(pressure_hpa, 1),
+            wind_speed_kmh=round(wind_speed_kmh, 1),
+            wind_deg=round(wind_deg, 1),
+            visibility_km=round(visibility_km, 1),
+            cloud_cover_pct=round(cloud_cover_pct, 1),
+            severity=severity,
+            risk_level=risk["level"],
+            risk_score=risk["score"],
+            risk_reasons=risk["reasons"],
+            forecast_horizons=horizons,
+            timestamp=now_utc.isoformat(),
+            source=self.name,
+            quality=quality,
+            station_type="synoptic_grid",
+        )
+
+    def get_current_rainfall(self, targets: List[LocationTarget]) -> Tuple[List[RainfallReading], Optional[str]]:
+        import time
+        if not targets:
+            return [], None
+
+        if not self.api_key:
+            return [], "Tomorrow.io API key not configured"
+
+        now = time.time()
+        ttl = self._cache_ttl_sec
+        stale_threshold = 3600
+
+        readings: List[RainfallReading] = []
+        uncached_targets: List[LocationTarget] = []
+
+        # 1. Inspect existing station cache
+        for t in targets:
+            coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
+            entry = self._cached_stations.get(t.id) or self._cached_stations.get(coord_key)
+            if entry and (now - entry.get("cached_at", 0)) < ttl:
+                reading = self._parse_to_reading(t, entry["data"], quality="live")
+                readings.append(reading)
+            else:
+                uncached_targets.append(t)
+
+        if not uncached_targets:
+            return readings, None
+
+        # 2. Check if currently rate limited
+        if now < self._rate_limited_until:
+            for t in uncached_targets:
+                coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
+                entry = self._cached_stations.get(t.id) or self._cached_stations.get(coord_key)
+                if entry and (now - entry.get("cached_at", 0)) < stale_threshold:
+                    reading = self._parse_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
+            return readings, self._rate_limit_error or "Tomorrow.io rate limit reached (25 req/hr). Retrying later."
+
+        # 3. Paced fetching for uncached targets
+        logger.info(f"Fetching fresh Tomorrow.io telemetry for {len(uncached_targets)} stations (paced)...")
+        encountered_error: Optional[str] = None
+        newly_fetched = 0
+
+        for t in uncached_targets:
+            data, err, status = self.fetch_station(t)
+            if data:
+                coord_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
+                cache_entry = {
+                    "data": data,
+                    "cached_at": time.time(),
+                }
+                self._cached_stations[t.id] = cache_entry
+                self._cached_stations[coord_key] = cache_entry
+                newly_fetched += 1
+                reading = self._parse_to_reading(t, data, quality="live")
+                readings.append(reading)
+
+            elif status == 429:
+                encountered_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
+                logger.warning(f"Tomorrow.io 429 reached on station {t.name}; aborting uncached batch.")
+                break
+            elif status in (401, 403):
+                encountered_error = "Tomorrow.io API authentication error (invalid key)"
+                break
+            else:
+                if err:
+                    encountered_error = err
+                entry = self._cached_stations.get(t.id)
+                if entry:
+                    reading = self._parse_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
+
+        if newly_fetched > 0:
+            self._save_cache_to_disk()
+
+        # If rate limited during execution, fill missing stations with older cache if available
+        if now < self._rate_limited_until or encountered_error:
+            for t in uncached_targets:
+                if not any(r.id == f"rain_{t.id}" for r in readings):
+                    entry = self._cached_stations.get(t.id)
+                    if entry and (time.time() - entry.get("cached_at", 0)) < stale_threshold:
+                        reading = self._parse_to_reading(t, entry["data"], quality="stale")
+                        readings.append(reading)
+
+        return readings, encountered_error
+

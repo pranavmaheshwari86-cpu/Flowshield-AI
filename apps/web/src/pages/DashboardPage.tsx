@@ -342,9 +342,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map'
 
       {/* Persistent Bottom System Status Bar — Hidden on Map page so map gets 100% full vertical height */}
       {activeSidebarItem !== 'Map' && (() => {
-        const liveMaxRain = villages.length > 0
-          ? Math.max(...villages.map(v => v.latest_rainfall_1h ?? 0))
-          : 14.2;
+        const validRains = villages.map(v => v.latest_rainfall_1h).filter((r): r is number => r != null);
+        const liveMaxRain = validRains.length > 0 ? Math.max(...validRains) : undefined;
+
         const breachedRiversCount = riverGauges.filter(g => g.status === 'CRITICAL' || g.status === 'WARNING').length;
         const totalRiversCount = Math.max(riverGauges.length, 6);
         const highRiskCount = villages.filter(v => (v.current_risk_score || 0) >= 50).length;
@@ -355,7 +355,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map'
         return (
           <SystemStatusBar
             systemHealth={computedHealth}
-            rainfall1h={Number(liveMaxRain.toFixed(1))}
+            rainfall1h={liveMaxRain !== undefined ? Number(liveMaxRain.toFixed(1)) : undefined}
             rainfallTrend={lastSyncedTime ? `Live • ${lastSyncedTime}` : 'Telemetry Live'}
             riversBreachedCount={breachedRiversCount}
             totalRivers={totalRiversCount}

@@ -17,17 +17,19 @@ import {
   ForecastHorizonPoint,
   ThresholdCrossingAnalysis,
   ObservationSnapshot,
+  LocationCapability,
 } from '../../types';
 
 interface PrecipitationChartProps {
   precipitationForecast?: PrecipitationForecastResponse | null;
-  currentRainfallRate: number;
+  currentRainfallRate?: number | null;
   historicalSeries?: HistoricalSeriesPoint[];
   forecastHorizons?: ForecastHorizonPoint[];
   settlementName?: string;
   thresholdAnalysis?: ThresholdCrossingAnalysis | null;
   peakAnalysis?: { rainfall_peak_hours?: number | null; river_crest_peak_hours?: number | null; risk_peak_hours?: number | null; [key: string]: number | null | undefined } | null;
   currentSituation?: ObservationSnapshot | null;
+  capability?: LocationCapability | null;
 }
 
 interface PrecipDataPoint {
@@ -57,9 +59,12 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
   thresholdAnalysis,
   peakAnalysis,
   currentSituation,
+  capability,
 }) => {
   const [scaleMode, setScaleMode] = useState<'auto' | 'full'>('auto');
   const [viewMode, setViewMode] = useState<'combined' | 'flood' | 'rainfall'>('combined');
+
+  const isModelSupported = capability ? capability.flood_risk_model === 'SUPPORTED' : true;
 
   // Build continuous timeline: strictly 1 point per relativeHour to prevent duplicate X-axis labels
   const hourMap = new Map<number, PrecipDataPoint>();
@@ -87,9 +92,9 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
         timeIst: pt.timestamp_ist,
         timestamp: pt.timestamp_utc,
         observedRate: pt.value_mm_hr,
-        floodProbPct: Math.round(observedRisk),
-        riskScore: observedRisk,
-        riskTier: observedRisk >= 75 ? 'CRITICAL' : observedRisk >= 50 ? 'HIGH' : observedRisk >= 25 ? 'WATCH' : 'LOW',
+        floodProbPct: isModelSupported ? Math.round(observedRisk) : null,
+        riskScore: isModelSupported ? observedRisk : null,
+        riskTier: isModelSupported ? (observedRisk >= 75 ? 'CRITICAL' : observedRisk >= 50 ? 'HIGH' : observedRisk >= 25 ? 'WATCH' : 'LOW') : 'UNSUPPORTED',
         isForecast: false,
         status: pt.status,
         source: pt.source,
@@ -102,10 +107,10 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
         label: pt.relative_hour === 0 ? 'NOW' : `${pt.relative_hour}hr`,
         timeIst: pt.timestamp,
         timestamp: pt.timestamp,
-        observedRate: pt.observed_rainfall_rate ?? 0.0,
-        floodProbPct: Math.round(pt.operational_risk_score),
-        riskScore: pt.operational_risk_score,
-        riskTier: pt.operational_risk_score >= 75 ? 'CRITICAL' : pt.operational_risk_score >= 50 ? 'HIGH' : pt.operational_risk_score >= 25 ? 'WATCH' : 'LOW',
+        observedRate: pt.observed_rainfall_rate ?? null,
+        floodProbPct: isModelSupported ? Math.round(pt.operational_risk_score) : null,
+        riskScore: isModelSupported ? pt.operational_risk_score : null,
+        riskTier: isModelSupported ? (pt.operational_risk_score >= 75 ? 'CRITICAL' : pt.operational_risk_score >= 50 ? 'HIGH' : pt.operational_risk_score >= 25 ? 'WATCH' : 'LOW') : 'UNSUPPORTED',
         isForecast: false,
         status: 'OBSERVED',
         source: pt.source_attribution || 'Synoptic Weather Station',
@@ -114,11 +119,13 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
   }
 
   // Anchor at NOW (0h)
-  const nowRate = currentRainfallRate ?? (hourMap.has(0) ? hourMap.get(0)!.observedRate : 0.0);
+  const nowRate = currentRainfallRate ?? (hourMap.has(0) ? hourMap.get(0)!.observedRate : null);
   const nowHorizon = horizonByHour.get(1);
-  const nowProbPct = nowHorizon?.calibrated_flood_probability != null
-    ? Math.round(nowHorizon.calibrated_flood_probability * 100)
-    : Math.round(lastHistRisk);
+  const nowProbPct = isModelSupported
+    ? (nowHorizon?.calibrated_flood_probability != null
+        ? Math.round(nowHorizon.calibrated_flood_probability * 100)
+        : Math.round(lastHistRisk))
+    : null;
 
   hourMap.set(0, {
     relativeHour: 0,
@@ -128,48 +135,46 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
     observedRate: nowRate,
     forecastRate: nowRate, // Anchor to connect seamlessly
     floodProbPct: nowProbPct,
-    riskScore: lastHistRisk,
-    riskTier: lastHistRisk >= 75 ? 'CRITICAL' : lastHistRisk >= 50 ? 'HIGH' : lastHistRisk >= 25 ? 'WATCH' : 'LOW',
-    primaryDriver: nowHorizon?.primary_risk_driver || 'Environmental Telemetry Baseline',
+    riskScore: isModelSupported ? lastHistRisk : null,
+    riskTier: isModelSupported ? (lastHistRisk >= 75 ? 'CRITICAL' : lastHistRisk >= 50 ? 'HIGH' : lastHistRisk >= 25 ? 'WATCH' : 'LOW') : 'UNSUPPORTED',
+    primaryDriver: nowHorizon?.primary_risk_driver || (isModelSupported ? 'Environmental Telemetry Baseline' : 'ML Model Inactive for Catchment'),
     isForecast: false,
     status: 'LIVE_OBSERVED',
     source: 'Automated Weather Telemetry',
   });
 
-  // Ensure requested past milestones (-24hr, -12hr, -6hr, -1hr) exist in hourMap
+  // Ensure requested past milestones (-24hr, -12hr, -6hr, -1hr) exist in hourMap with real observed data
   if (!hourMap.has(-24)) {
-    const rate24 = currentSituation?.rainfall_24h_mm != null ? Math.round((currentSituation.rainfall_24h_mm / 24) * 100) / 100 : 0.0;
     hourMap.set(-24, {
       relativeHour: -24,
       label: '-24hr',
       timeIst: '-24h Past',
       timestamp: new Date(Date.now() - 24 * 3600000).toISOString(),
-      observedRate: rate24,
-      floodProbPct: Math.round(historicalSeries[0]?.operational_risk_score ?? lastHistRisk),
-      riskScore: historicalSeries[0]?.operational_risk_score ?? lastHistRisk,
-      riskTier: 'LOW',
+      observedRate: null, // Do not divide cumulative 24h sum by 24 to fabricate a rate
+      floodProbPct: isModelSupported ? Math.round(historicalSeries[0]?.operational_risk_score ?? lastHistRisk) : null,
+      riskScore: isModelSupported ? (historicalSeries[0]?.operational_risk_score ?? lastHistRisk) : null,
+      riskTier: isModelSupported ? 'LOW' : 'UNSUPPORTED',
       isForecast: false,
       status: 'OBSERVED',
-      source: 'Synoptic 24h Rain Gauge',
+      source: 'Synoptic 24h Telemetry',
     });
   } else {
     hourMap.get(-24)!.label = '-24hr';
   }
 
   if (!hourMap.has(-12)) {
-    const rate12 = currentSituation?.rainfall_12h_mm != null ? Math.round((currentSituation.rainfall_12h_mm / 12) * 100) / 100 : 0.0;
     hourMap.set(-12, {
       relativeHour: -12,
       label: '-12hr',
       timeIst: '-12h Past',
       timestamp: new Date(Date.now() - 12 * 3600000).toISOString(),
-      observedRate: rate12,
-      floodProbPct: Math.round(historicalSeries[0]?.operational_risk_score ?? lastHistRisk),
-      riskScore: historicalSeries[0]?.operational_risk_score ?? lastHistRisk,
-      riskTier: 'LOW',
+      observedRate: null,
+      floodProbPct: isModelSupported ? Math.round(historicalSeries[0]?.operational_risk_score ?? lastHistRisk) : null,
+      riskScore: isModelSupported ? (historicalSeries[0]?.operational_risk_score ?? lastHistRisk) : null,
+      riskTier: isModelSupported ? 'LOW' : 'UNSUPPORTED',
       isForecast: false,
       status: 'OBSERVED',
-      source: 'Synoptic 12h Rain Gauge',
+      source: 'Synoptic 12h Telemetry',
     });
   } else {
     hourMap.get(-12)!.label = '-12hr';
@@ -178,35 +183,34 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
   if (hourMap.has(-6)) {
     hourMap.get(-6)!.label = '-6hr';
   } else {
-    const rate6 = currentSituation?.rainfall_6h_mm != null ? Math.round((currentSituation.rainfall_6h_mm / 6) * 100) / 100 : 0.0;
     hourMap.set(-6, {
       relativeHour: -6,
       label: '-6hr',
       timeIst: '-6h Past',
       timestamp: new Date(Date.now() - 6 * 3600000).toISOString(),
-      observedRate: rate6,
-      floodProbPct: Math.round(historicalSeries.find((h) => h.relative_hour === -6)?.operational_risk_score ?? lastHistRisk),
-      riskScore: historicalSeries.find((h) => h.relative_hour === -6)?.operational_risk_score ?? lastHistRisk,
-      riskTier: 'LOW',
+      observedRate: null,
+      floodProbPct: isModelSupported ? Math.round(historicalSeries.find((h) => h.relative_hour === -6)?.operational_risk_score ?? lastHistRisk) : null,
+      riskScore: isModelSupported ? (historicalSeries.find((h) => h.relative_hour === -6)?.operational_risk_score ?? lastHistRisk) : null,
+      riskTier: isModelSupported ? 'LOW' : 'UNSUPPORTED',
       isForecast: false,
       status: 'OBSERVED',
-      source: 'Synoptic 6h Rain Gauge',
+      source: 'Synoptic 6h Telemetry',
     });
   }
 
   if (hourMap.has(-1)) {
     hourMap.get(-1)!.label = '-1hr';
   } else {
-    const rate1 = currentSituation?.rainfall_1h_mm ?? 0.0;
+    const rate1 = currentSituation?.rainfall_1h_mm ?? null;
     hourMap.set(-1, {
       relativeHour: -1,
       label: '-1hr',
       timeIst: '-1h Past',
       timestamp: new Date(Date.now() - 1 * 3600000).toISOString(),
       observedRate: rate1,
-      floodProbPct: Math.round(historicalSeries.find((h) => h.relative_hour === -1)?.operational_risk_score ?? lastHistRisk),
-      riskScore: historicalSeries.find((h) => h.relative_hour === -1)?.operational_risk_score ?? lastHistRisk,
-      riskTier: 'LOW',
+      floodProbPct: isModelSupported ? Math.round(historicalSeries.find((h) => h.relative_hour === -1)?.operational_risk_score ?? lastHistRisk) : null,
+      riskScore: isModelSupported ? (historicalSeries.find((h) => h.relative_hour === -1)?.operational_risk_score ?? lastHistRisk) : null,
+      riskTier: isModelSupported ? 'LOW' : 'UNSUPPORTED',
       isForecast: false,
       status: 'OBSERVED',
       source: 'Synoptic 1h Rain Gauge',
@@ -217,67 +221,91 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
   const targetFutureHorizons = [1, 6, 12, 24, 48];
 
   // Helper function to interpolate flood probability for intermediate hours
-  const interpolateFloodProbability = (hour: number): { prob: number; score: number; tier: string; driver: string; p10: number; p90: number } => {
+  const interpolateFloodProbability = (hour: number): { prob: number | null; score: number | null; tier: string; driver: string; p10: number | null; p90: number | null } => {
+    if (!isModelSupported) {
+      return {
+        prob: null,
+        score: null,
+        tier: 'UNSUPPORTED',
+        driver: 'Validated ML flood model inactive for location',
+        p10: null,
+        p90: null,
+      };
+    }
+
     // If exact horizon exists
     if (horizonByHour.has(hour)) {
       const h = horizonByHour.get(hour)!;
+      if (h.risk_tier === 'UNSUPPORTED' || (h.calibrated_flood_probability == null && h.operational_risk_score == null)) {
+        return {
+          prob: null,
+          score: null,
+          tier: 'UNSUPPORTED',
+          driver: h.primary_risk_driver || 'ML model inactive for location',
+          p10: null,
+          p90: null,
+        };
+      }
       const prob = h.calibrated_flood_probability != null
         ? Math.round(h.calibrated_flood_probability * 100)
-        : h.operational_risk_score != null
-        ? Math.round(h.operational_risk_score)
-        : Math.min(95, Math.round(Math.max(5, (h.cumulative_precipitation_mm || 0) * 0.75)));
+        : (h.operational_risk_score != null ? Math.round(h.operational_risk_score) : null);
       const score = h.operational_risk_score ?? prob;
-      const tier = h.risk_tier || (score >= 75 ? 'CRITICAL' : score >= 50 ? 'HIGH' : score >= 25 ? 'WATCH' : 'LOW');
+      const tier = h.risk_tier || (score !== null ? (score >= 75 ? 'CRITICAL' : score >= 50 ? 'HIGH' : score >= 25 ? 'WATCH' : 'LOW') : 'LOW');
       return {
         prob,
         score,
         tier,
         driver: h.primary_risk_driver || 'Precipitation Loading',
-        p10: h.uncertainty_band?.p10 ?? Math.max(0, prob - 5),
-        p90: h.uncertainty_band?.p90 ?? Math.min(100, prob + 7),
+        p10: h.uncertainty_band?.p10 ?? (prob !== null ? Math.max(0, prob - 5) : null),
+        p90: h.uncertainty_band?.p90 ?? (prob !== null ? Math.min(100, prob + 7) : null),
       };
     }
 
     // Find bounding horizons for interpolation
     const knownHours = Array.from(horizonByHour.keys()).sort((a, b) => a - b);
-    if (knownHours.length === 0) {
+    const validKnown = knownHours.filter((kh) => {
+      const hz = horizonByHour.get(kh);
+      return hz && hz.risk_tier !== 'UNSUPPORTED' && (hz.calibrated_flood_probability != null || hz.operational_risk_score != null);
+    });
+
+    if (validKnown.length === 0) {
       return {
-        prob: Math.min(90, Math.max(5, Math.round(lastHistRisk + hour * 0.4))),
-        score: lastHistRisk,
-        tier: 'LOW',
-        driver: 'Hydrological Estimate',
-        p10: Math.max(0, lastHistRisk - 5),
-        p90: Math.min(100, lastHistRisk + 10),
+        prob: null,
+        score: null,
+        tier: 'UNSUPPORTED',
+        driver: 'Empirical Hydrology Active',
+        p10: null,
+        p90: null,
       };
     }
 
     let prevH = 0;
-    let nextH = knownHours[0];
-    let prevProb = nowProbPct;
-    let nextProb = 0;
+    let nextH = validKnown[0];
+    let prevProb: number | null = nowProbPct;
+    let nextProb: number | null = null;
 
-    for (let i = 0; i < knownHours.length; i++) {
-      if (knownHours[i] <= hour) {
-        prevH = knownHours[i];
+    for (let i = 0; i < validKnown.length; i++) {
+      if (validKnown[i] <= hour) {
+        prevH = validKnown[i];
         const ph = horizonByHour.get(prevH)!;
         prevProb = ph.calibrated_flood_probability != null ? Math.round(ph.calibrated_flood_probability * 100) : (ph.operational_risk_score ?? prevProb);
       }
-      if (knownHours[i] > hour) {
-        nextH = knownHours[i];
+      if (validKnown[i] > hour) {
+        nextH = validKnown[i];
         const nh = horizonByHour.get(nextH)!;
         nextProb = nh.calibrated_flood_probability != null ? Math.round(nh.calibrated_flood_probability * 100) : (nh.operational_risk_score ?? prevProb);
         break;
       }
     }
 
-    if (nextH === prevH || nextH === 0) {
+    if (prevProb === null || nextProb === null || nextH === prevH || nextH === 0) {
       return {
         prob: prevProb,
         score: prevProb,
-        tier: prevProb >= 75 ? 'CRITICAL' : prevProb >= 50 ? 'HIGH' : prevProb >= 25 ? 'WATCH' : 'LOW',
+        tier: prevProb !== null ? (prevProb >= 75 ? 'CRITICAL' : prevProb >= 50 ? 'HIGH' : prevProb >= 25 ? 'WATCH' : 'LOW') : 'LOW',
         driver: 'Model Projection',
-        p10: Math.max(0, prevProb - 5),
-        p90: Math.min(100, prevProb + 8),
+        p10: prevProb !== null ? Math.max(0, prevProb - 5) : null,
+        p90: prevProb !== null ? Math.min(100, prevProb + 8) : null,
       };
     }
 
@@ -304,7 +332,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
       label: `${h}hr`,
       timeIst: pt?.timestamp_ist || `+${h}h Future`,
       timestamp: pt?.timestamp_utc || new Date(Date.now() + h * 3600000).toISOString(),
-      forecastRate: pt?.value_mm_hr ?? 0.0,
+      forecastRate: pt?.value_mm_hr ?? null,
       floodProbPct: floodInfo.prob,
       riskScore: floodInfo.score,
       riskTier: floodInfo.tier,
@@ -337,10 +365,10 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
 
   // Calculate peak future flood chance across forecast horizons
   const futureForecastPoints = chartData.filter((d) => d.isForecast && d.floodProbPct !== null && d.floodProbPct !== undefined);
-  const peakFutureFloodProb = futureForecastPoints.length > 0
+  const peakFutureFloodProb = (isModelSupported && futureForecastPoints.length > 0)
     ? Math.max(...futureForecastPoints.map((d) => d.floodProbPct || 0))
-    : nowProbPct;
-  const peakFloodPoint = futureForecastPoints.find((d) => d.floodProbPct === peakFutureFloodProb) || chartData.find((d) => d.relativeHour === 0);
+    : (isModelSupported ? nowProbPct : null);
+  const peakFloodPoint = futureForecastPoints.find((d) => d.floodProbPct === peakFutureFloodProb) || (isModelSupported ? chartData.find((d) => d.relativeHour === 0) : null);
 
   // Dynamic Adaptive Scaling (Auto-Zoom) for precipitation
   let yDomainMax: number;
@@ -370,6 +398,12 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
   const peakTimeIst = precipitationForecast?.peak_forecast_time_ist;
   const accum24h = precipitationForecast?.accumulated_24h_forecast_mm;
 
+  // Disaggregate observed historical peak vs forecast NWP peak
+  const observedPeakRate = currentSituation?.observed_peak_rate_mm_hr ??
+    Math.max(currentRainfallRate || 0, ...chartData.filter((d) => !d.isForecast).map((d) => d.observedRate ?? 0));
+  const forecastPeakRate = currentSituation?.forecast_peak_rate_mm_hr ?? peakForecast ??
+    (chartData.some((d) => d.isForecast) ? Math.max(...chartData.filter((d) => d.isForecast).map((d) => d.forecastRate ?? 0)) : null);
+
   // Helper for risk tier colors
   const getRiskColor = (prob: number) => {
     if (prob >= 75) return '#EF4444';
@@ -378,7 +412,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
     return '#10B981';
   };
 
-  const peakRiskColor = getRiskColor(peakFutureFloodProb);
+  const peakRiskColor = peakFutureFloodProb !== null ? getRiskColor(peakFutureFloodProb) : '#94A3B8';
 
   return (
     <div
@@ -561,17 +595,30 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
               <span>Future Flood Chance</span>
             </div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: '#F8FAFC' }}>
-              {peakFutureFloodProb}%{' '}
-              <span style={{ fontSize: '10px', fontWeight: 600, color: peakRiskColor, textTransform: 'uppercase' }}>
-                ({peakFloodPoint?.riskTier || 'LOW'})
-              </span>
+              {peakFutureFloodProb !== null ? (
+                <>
+                  {peakFutureFloodProb}%{' '}
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: peakRiskColor, textTransform: 'uppercase' }}>
+                    ({peakFloodPoint?.riskTier || 'LOW'})
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span style={{ color: '#CBD5E1' }}>UNSUPPORTED</span>{' '}
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: '#F59E0B', textTransform: 'uppercase' }}>
+                    (ML Inactive)
+                  </span>
+                </>
+              )}
             </div>
             <div style={{ fontSize: '9.5px', color: '#94A3B8', marginTop: '1px' }}>
-              Peak Horizon: {peakFloodPoint?.label || 'NOW'}
+              {peakFutureFloodProb !== null
+                ? `Peak Horizon: ${peakFloodPoint?.label || 'NOW'}`
+                : 'Empirical Hydrology Active'}
             </div>
           </div>
 
-          {/* Current Observed */}
+          {/* Current Observed Rate */}
           <div
             style={{
               background: 'rgba(56, 189, 248, 0.08)',
@@ -580,18 +627,21 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
               padding: '6px 12px',
               display: 'flex',
               flexDirection: 'column',
-              minWidth: '105px',
+              minWidth: '115px',
             }}
           >
             <div style={{ fontSize: '10px', fontWeight: 600, color: '#38BDF8', textTransform: 'uppercase' }}>
-              Current Observed
+              Current Rate
             </div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: '#F8FAFC' }}>
-              {currentRainfallRate.toFixed(1)} <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>mm/h</span>
+              {currentRainfallRate != null ? currentRainfallRate.toFixed(1) : '—'} <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>mm/h</span>
+            </div>
+            <div style={{ fontSize: '9.5px', color: '#94A3B8', marginTop: '1px' }}>
+              Obs Peak: {observedPeakRate != null && observedPeakRate > 0 ? `${observedPeakRate.toFixed(1)} mm/h` : '0.0 mm/h'}
             </div>
           </div>
 
-          {/* Peak Forecast Rain Rate */}
+          {/* Forecast Peak Rain Rate */}
           <div
             style={{
               background: 'rgba(245, 158, 11, 0.08)',
@@ -600,18 +650,22 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
               padding: '6px 12px',
               display: 'flex',
               flexDirection: 'column',
-              minWidth: '115px',
+              minWidth: '120px',
             }}
           >
             <div style={{ fontSize: '10px', fontWeight: 600, color: '#F59E0B', textTransform: 'uppercase' }}>
-              Peak Rain Rate
+              Forecast Peak Rate
             </div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: '#F8FAFC' }}>
-              {peakForecast !== undefined && peakForecast !== null ? `${peakForecast.toFixed(1)} mm/h` : 'N/A'}
+              {forecastPeakRate !== undefined && forecastPeakRate !== null ? `${forecastPeakRate.toFixed(1)} mm/h` : 'N/A'}
             </div>
-            {peakTimeIst && (
+            {peakTimeIst ? (
               <div style={{ fontSize: '9.5px', color: '#94A3B8', marginTop: '1px' }}>
                 {peakTimeIst.split(' ')[1]} IST
+              </div>
+            ) : (
+              <div style={{ fontSize: '9.5px', color: '#94A3B8', marginTop: '1px' }}>
+                Numerical Model
               </div>
             )}
           </div>
@@ -973,7 +1027,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
                   {/* Observed Telemetry: Solid Vibrant Cyan Area */}
                   <Area
                     yAxisId={viewMode === 'combined' ? 'rain' : undefined}
-                    type="monotone"
+                    type="linear"
                     dataKey="observedRate"
                     name="Observed Rainfall Rate"
                     stroke="#00f0ff"
@@ -986,7 +1040,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
                   {/* Numerical Forecast: Shaded Area with Glowing Sky Blue Boundary */}
                   <Area
                     yAxisId={viewMode === 'combined' ? 'rain' : undefined}
-                    type="monotone"
+                    type="linear"
                     dataKey="forecastRate"
                     name="Forecast Rainfall Rate"
                     stroke="#38bdf8"
@@ -1003,7 +1057,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
               {/* 2. Flood Probability Series (in Flood or Combined Mode) */}
               {viewMode === 'flood' && (
                 <Area
-                  type="monotone"
+                  type="linear"
                   dataKey="floodProbPct"
                   name="Future Flood Chance (%)"
                   stroke="#C084FC"
@@ -1033,7 +1087,7 @@ export const PrecipitationChart: React.FC<PrecipitationChartProps> = ({
               {viewMode === 'combined' && (
                 <Line
                   yAxisId="flood"
-                  type="monotone"
+                  type="linear"
                   dataKey="floodProbPct"
                   name="Future Flood Probability (%)"
                   stroke="#C084FC"

@@ -113,7 +113,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      abortControllerRef.current = new AbortController();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
       if (forceRefresh) {
         setIsRefreshing(true);
@@ -125,7 +126,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       setErrorMessage(null);
 
       try {
-        const response = await api.getTimelineDetailed(villageId, forceRefresh);
+        const response = await api.getTimelineDetailed(villageId, forceRefresh, controller.signal);
+        // Guard against out-of-order race conditions from rapid clicking
+        if (response.settlement.id !== villageId) {
+          return;
+        }
         setTimelineData(response);
 
         // Evaluate status based on response data quality
@@ -135,14 +140,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           setStatus('LIVE');
         }
       } catch (err: any) {
-        if (err.name === 'AbortError') {
+        if (err.name === 'AbortError' || controller.signal.aborted) {
           return; // Silently handle cancellation
         }
         console.error('Error fetching timeline intelligence:', err);
         setErrorMessage(err.message || 'Telemetry synthesis error. Please retry.');
         setStatus('ERROR');
       } finally {
-        setIsRefreshing(false);
+        if (!controller.signal.aborted) {
+          setIsRefreshing(false);
+        }
       }
     },
     []
@@ -315,6 +322,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             thresholdAnalysis={timelineData.threshold_analysis}
             peakAnalysis={timelineData.peak_analysis}
             currentSituation={timelineData.current_situation}
+            capability={timelineData.location_capabilities}
           />
 
           {/* 3.5 Dedicated Flood Risk Probability Visualizer (Calibrated ML Model 0-100) */}

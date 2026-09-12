@@ -35,6 +35,17 @@ class ForecastService:
     HORIZONS_HOURS = [1, 3, 6, 12, 24, 48]
     API_URL = "https://api.open-meteo.com/v1/forecast"
 
+    @staticmethod
+    def get_latest_synoptic_cycle(ref_time: Optional[datetime] = None) -> datetime:
+        """
+        Calculate true ECMWF IFS synoptic initialization cycle (00Z, 06Z, 12Z, 18Z).
+        ECMWF dissemination finishes ~4.5-5 hours after synoptic initialization.
+        """
+        now = ref_time if ref_time is not None else datetime.now(timezone.utc)
+        effective_time = now - timedelta(hours=5)
+        synoptic_hour = (effective_time.hour // 6) * 6
+        return effective_time.replace(hour=synoptic_hour, minute=0, second=0, microsecond=0)
+
     def get_multi_horizon_forecast(
         self, village: Village, db: Optional[Session] = None
     ) -> MultiHorizonForecastResponse:
@@ -233,22 +244,26 @@ class ForecastService:
         is_live = precip_series is not None
         freshness = FreshnessStatus.LIVE if is_live else FreshnessStatus.UNAVAILABLE
 
+        # Calculate true ECMWF IFS synoptic initialization cycle (00Z, 06Z, 12Z, 18Z)
+        model_run_utc = self.get_latest_synoptic_cycle(now)
+        model_run_ist_str = model_run_utc.astimezone(IST).strftime("%Y-%m-%d %H:%M IST")
+
         provenance = DataProvenance(
             source="Open-Meteo ECMWF Integrated Forecasting System (0.1° High-Res Grid)",
             source_id="ecmwf_ifs_01d",
-            source_timestamp_utc=now,
+            source_timestamp_utc=model_run_utc,
             ingestion_timestamp_utc=now,
             freshness_status=freshness,
             data_type=DataType.FORECAST_NWP,
             is_live=is_live,
             derivation_formula=None,
-            quality_notes="ECMWF High-Resolution Global Numerical Forecast Model"
+            quality_notes="ECMWF High-Resolution Global Numerical Forecast Model synoptic cycle"
         )
 
         return PrecipitationForecastResponse(
             model_name="ECMWF IFS (0.1° High-Res Grid)",
-            model_run_utc=now,
-            model_run_ist=now_ist_str,
+            model_run_utc=model_run_utc,
+            model_run_ist=model_run_ist_str,
             current_rate_mm_hr=current_rate_mm_hr,
             observed_points=observed_points,
             forecast_points=forecast_points,

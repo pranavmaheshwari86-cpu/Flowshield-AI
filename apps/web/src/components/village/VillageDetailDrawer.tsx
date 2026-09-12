@@ -454,7 +454,7 @@ export const VillageDetailDrawer: React.FC<VillageDetailDrawerProps> = ({ villag
           villageName={village.name}
           riskScore={village.current_risk_score}
           riskLevel={village.current_risk_tier}
-          floodProbability={pred?.flood_probability || 0.45}
+          floodProbability={pred?.flood_probability != null ? pred.flood_probability : (village.current_risk_score != null ? village.current_risk_score / 100 : 0.0)}
           keyFactors={pred?.top_shap_factors?.map((f: any) => f.display_name || f.feature_name) || []}
           telemetrySummary={{
             rainfall_1h_mm: obs?.rainfall_1h_mm,

@@ -18,6 +18,9 @@ interface CurrentSituationBarProps {
 export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
   observation,
 }) => {
+  const isAtmosphericLive = observation.atmospheric_freshness_status === 'LIVE';
+  const atmosphericSource = observation.atmospheric_telemetry_source || 'Open-Meteo Synoptic Grid';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
       {/* Real-time Atmospheric Telemetry Ribbon: Precipitation · Wind Speed · Humidity · Soil Moisture */}
@@ -34,24 +37,37 @@ export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.12)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                background: '#10B981',
-                boxShadow: '0 0 8px #10B981',
+                background: isAtmosphericLive ? '#10B981' : '#F59E0B',
+                boxShadow: isAtmosphericLive ? '0 0 8px #10B981' : '0 0 8px #F59E0B',
                 animation: 'pulse 1.5s infinite',
               }}
             />
             <span style={{ fontSize: '11px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               Current Atmospheric & Hydrological Telemetry
             </span>
+            <span
+              style={{
+                fontSize: '9px',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: isAtmosphericLive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                color: isAtmosphericLive ? '#34D399' : '#FBBF24',
+                border: `1px solid ${isAtmosphericLive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+              }}
+            >
+              {observation.atmospheric_freshness_status || 'LIVE'}
+            </span>
           </div>
           <span style={{ fontSize: '9.5px', color: '#94A3B8' }}>
-            Live Synoptic Feed • OpenWeather · Open-Meteo · AgroMonitoring Satellite
+            Telemetry: {atmosphericSource} • {observation.soil_telemetry_source || 'Copernicus ERA5-Land'}
           </span>
         </div>
 
@@ -76,16 +92,16 @@ export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
           >
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Current Precipitation
+                Current Precipitation Rate
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '3px' }}>
                 <span style={{ fontSize: '26px', fontWeight: 800, color: '#38BDF8', fontFamily: 'monospace' }}>
-                  {observation.rainfall_rate_mm_hr.toFixed(1)}
+                  {observation.rainfall_rate_mm_hr != null ? observation.rainfall_rate_mm_hr.toFixed(1) : '—'}
                 </span>
                 <span style={{ fontSize: '11px', color: '#94A3B8' }}>mm/h</span>
               </div>
               <div style={{ fontSize: '10px', color: '#64748B', marginTop: '3px' }}>
-                24h Total: <strong style={{ color: '#CBD5E1' }}>{observation.rainfall_24h_mm.toFixed(1)} mm</strong>
+                24h Total: <strong style={{ color: '#CBD5E1' }}>{observation.rainfall_24h_mm != null ? `${observation.rainfall_24h_mm.toFixed(1)} mm` : '—'}</strong>
               </div>
             </div>
             <div
@@ -127,7 +143,7 @@ export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
                 <span style={{ fontSize: '11px', color: '#94A3B8' }}>km/h</span>
               </div>
               <div style={{ fontSize: '10px', color: '#64748B', marginTop: '3px' }}>
-                Condition: <strong style={{ color: '#CBD5E1' }}>{(observation.wind_speed_kmh || 0) > 25 ? 'High Wind' : (observation.wind_speed_kmh || 0) > 12 ? 'Moderate' : 'Calm'}</strong>
+                Condition: <strong style={{ color: '#CBD5E1' }}>{observation.wind_speed_kmh != null ? (observation.wind_speed_kmh > 25 ? 'High Wind' : observation.wind_speed_kmh > 12 ? 'Moderate' : 'Calm') : '—'}</strong>
               </div>
             </div>
             <div
@@ -168,7 +184,7 @@ export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
                 </span>
               </div>
               <div style={{ fontSize: '10px', color: '#64748B', marginTop: '3px' }}>
-                Air Temp: <strong style={{ color: '#CBD5E1' }}>{observation.temperature_c != null ? `${observation.temperature_c.toFixed(1)}°C` : '21.4°C'}</strong>
+                Air Temp: <strong style={{ color: '#CBD5E1' }}>{observation.temperature_c != null ? `${observation.temperature_c.toFixed(1)}°C` : '—'}</strong>
               </div>
             </div>
             <div
@@ -201,16 +217,27 @@ export const CurrentSituationBar: React.FC<CurrentSituationBarProps> = ({
           >
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Soil Moisture
+                Soil Moisture (VWC)
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '3px' }}>
                 <span style={{ fontSize: '26px', fontWeight: 800, color: '#C084FC', fontFamily: 'monospace' }}>
-                  {observation.soil_saturation_pct.toFixed(1)}%
+                  {observation.soil_moisture_m3_m3 != null ? `${observation.soil_moisture_m3_m3.toFixed(3)}` : '—'}
                 </span>
-                <span style={{ fontSize: '11px', color: '#94A3B8' }}>({observation.soil_moisture_m3_m3.toFixed(3)} m³/m³)</span>
+                <span style={{ fontSize: '11px', color: '#94A3B8' }}>m³/m³</span>
               </div>
               <div style={{ fontSize: '10px', color: '#64748B', marginTop: '3px' }}>
-                Telemetry: <strong style={{ color: '#C084FC' }}>AgroMonitoring / ERA5</strong>
+                {observation.soil_moisture_vwc_pct != null
+                  ? `${observation.soil_moisture_vwc_pct.toFixed(1)}% VWC`
+                  : observation.soil_saturation_pct != null
+                  ? `${observation.soil_saturation_pct.toFixed(1)}% Sat`
+                  : '—'} • {observation.soil_effective_saturation_pct != null
+                  ? `${observation.soil_effective_saturation_pct.toFixed(1)}% Se`
+                  : observation.soil_saturation_pct != null
+                  ? `${observation.soil_saturation_pct.toFixed(1)}% Sat`
+                  : '—'}
+              </div>
+              <div style={{ fontSize: '9px', color: '#A855F7', marginTop: '2px', fontWeight: 600 }}>
+                {observation.soil_telemetry_source || 'AgroMonitoring Sentinel-1'}
               </div>
             </div>
             <div

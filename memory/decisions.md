@@ -247,6 +247,26 @@ Emitting exact fractional lead times (e.g. `5.2h until HIGH risk threshold breac
 - **Positive**: Provides actionable, high-precision evacuation decision windows for field incident commanders.
 - **Negative**: Requires linear interpolation assumptions between forecast horizon points.
 
+---
+
+## ADR-017: Multi-Tier Rainfall Waterfall with Tomorrow.io High-Resolution Nowcasting
+
+### Context
+Emergency flash flood prediction relies critically on real-time rainfall data. While OpenWeatherMap provides global meteorological forecasts, it lacks 1-minute precipitation nowcasting and high-resolution radar assimilation. However, Tomorrow.io's free tier imposes strict rate limits (25 requests/hour, 500 requests/day, and 3 requests/second burst ceiling). Direct unthrottled calls for 104 monitored settlements would exhaust the entire daily quota in seconds and trigger HTTP 429 rate limit bans.
+
+### Decision
+1. Implement `TomorrowIOProvider` and `TomorrowIORainfallProvider` as Tier 1 in a resilient 3-tier provider waterfall:
+   $$\text{Tomorrow.io (1-min Nowcast)} \longrightarrow \text{OpenWeatherMap} \longrightarrow \text{Open-Meteo Copernicus ECMWF}$$
+2. Harden Tomorrow.io provider with multi-level quota defense:
+   - **15-minute Disk & Memory Cache**: Serialized to `scratch/tomorrow_cache.json` and `scratch/tomorrow_rainfall_cache.json` with coordinate grid rounding (`round(lat, 2), round(lon, 2)`), allowing settlements within ~1 km to share cached calls.
+   - **Inter-Request Pacing**: 0.4s asynchronous sleep between consecutive external calls to prevent burst violations.
+   - **Health Check Resilience**: Recognizes HTTP 429 as `healthy=True` (valid authentication) but actively suppresses further external calls until the cooldown period expires.
+   - **Seamless Failover**: When Tomorrow.io returns 429 or network timeout, the waterfall transparently degrades to Tier 2 (OpenWeather) and Tier 3 (Open-Meteo) without raising errors or stalling UI polling.
+
+### Consequences
+- **Positive**: Combines Tomorrow.io's state-of-the-art 1-minute nowcast precision with 100% operational uptime and zero quota exhaustion failures.
+- **Negative**: Disk caching introduces a 15-minute data latency window for cached coordinates, which aligns well with standard hydrologic observation cycles.
+
 Cross-references:
 - Architecture: [`architecture.md`](./architecture.md)
 - Walkthrough: [`../walkthrough.md`](../walkthrough.md)

@@ -809,11 +809,11 @@ class ApiClient {
   }
 
   // Predictive Risk & Multi-Horizon Timeline Intelligence
-  public async getTimelineDetailed(villageId: string, forceRefresh: boolean = false): Promise<TimelineDetailedResponse> {
+  public async getTimelineDetailed(villageId: string, forceRefresh: boolean = false, signal?: AbortSignal): Promise<TimelineDetailedResponse> {
     const params = new URLSearchParams();
     params.append('village_id', villageId);
     if (forceRefresh) params.append('force_refresh', 'true');
-    return this.request<TimelineDetailedResponse>(`/risk/forecast/detailed?${params.toString()}`);
+    return this.request<TimelineDetailedResponse>(`/risk/forecast/detailed?${params.toString()}`, { signal });
   }
 
   public async getTimelineLocations(): Promise<TimelineLocationHierarchy> {

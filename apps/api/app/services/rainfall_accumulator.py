@@ -317,7 +317,7 @@ class RainfallAccumulator:
 
         for rh in rel_hours:
             pt_dt = now_utc + timedelta(hours=rh)
-            
+
             # Find closest observation within +/- 45 minutes of pt_dt
             closest_val: Optional[float] = None
             min_diff_sec = 2700  # 45 min window
@@ -327,17 +327,27 @@ class RainfallAccumulator:
                     min_diff_sec = diff
                     closest_val = val
 
-            rain_rate = closest_val if closest_val is not None else 0.0
+            # Special handling for rh == 0 (current time)
+            if rh == 0 and closest_val is None and current_rate_mm_hr is not None:
+                closest_val = current_rate_mm_hr
 
-            # Calculate deterministic risk score for this historical step
-            risk_score = min(100.0, max(5.0, (rain_rate * 4.2) + (default_soil * 0.25)))
+            rain_rate = closest_val if closest_val is not None else None
+
+            # Calculate deterministic risk score for this historical step if observations exist
+            soil_contrib = (default_soil * 0.25) if default_soil is not None else 0.0
+            if rain_rate is not None:
+                # Hydrological wetness and runoff index bounded [0, 100]
+                risk_score = min(100.0, max(0.0, (rain_rate * 3.5) + soil_contrib))
+            else:
+                # When rate is missing, fallback strictly to baseline soil saturation loading
+                risk_score = min(100.0, max(0.0, soil_contrib))
 
             series.append({
                 "relative_hour": rh,
                 "timestamp": pt_dt,
-                "observed_rainfall_rate": round(rain_rate, 2),
+                "observed_rainfall_rate": round(rain_rate, 2) if rain_rate is not None else None,
                 "observed_river_stage": round(default_river, 2) if default_river is not None else None,
-                "observed_soil_saturation": round(default_soil, 1),
+                "observed_soil_saturation": round(default_soil, 1) if default_soil is not None else None,
                 "operational_risk_score": round(risk_score, 1),
             })
 

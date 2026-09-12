@@ -15,12 +15,14 @@ from ..config import settings
 from .providers.rainfall_provider import (
     RainfallProvider,
     RainfallReading,
-    OpenMeteoRainfallProvider,
+    TomorrowIORainfallProvider,
     OpenWeatherRainfallProvider,
+    OpenMeteoRainfallProvider,
     IMDRainfallProvider,
     RAINFALL_THRESHOLDS,
     compute_rainfall_severity,
 )
+
 from ..models.village import Village
 
 logger = logging.getLogger("flowshield.rainfall_service")
@@ -126,20 +128,32 @@ class RainfallService:
     """
 
     def __init__(self, provider: Optional[RainfallProvider] = None, cache_ttl_seconds: int = 600):
-        # Prefer OpenWeather when API key is configured in settings/.env
+        # Multi-Tier Waterfall: Tomorrow.io (1-min Nowcasting) -> OpenWeatherMap (Synoptic) -> Open-Meteo (Copernicus)
         if provider:
             self.provider = provider
             self.secondary_provider = None
+            self.tertiary_provider = None
+        elif getattr(settings, "TOMORROW_API_KEY", ""):
+            self.provider = TomorrowIORainfallProvider(api_key=settings.TOMORROW_API_KEY)
+            self.secondary_provider = (
+                OpenWeatherRainfallProvider(api_key=settings.OPENWEATHER_API_KEY)
+                if settings.OPENWEATHER_API_KEY
+                else OpenMeteoRainfallProvider()
+            )
+            self.tertiary_provider = OpenMeteoRainfallProvider()
         elif settings.OPENWEATHER_API_KEY:
             self.provider = OpenWeatherRainfallProvider(api_key=settings.OPENWEATHER_API_KEY)
             self.secondary_provider = OpenMeteoRainfallProvider()
+            self.tertiary_provider = None
         else:
             self.provider = OpenMeteoRainfallProvider()
             self.secondary_provider = None
+            self.tertiary_provider = None
 
         self.imd_provider = IMDRainfallProvider()
         self.cache_ttl_seconds = cache_ttl_seconds
         self.stale_threshold_seconds = 3600  # 1 hour
+
 
         self._cached_readings: Optional[List[RainfallReading]] = None
         self._last_fetch_time: Optional[datetime] = None
@@ -208,6 +222,15 @@ class RainfallService:
                 if sec_readings and len(sec_readings) >= len(fresh_readings or []):
                     fresh_readings = sec_readings
                     error = sec_error
+
+            # If still insufficient, try tertiary provider
+            if (not fresh_readings or len(fresh_readings) < len(targets) * 0.3) and getattr(self, "tertiary_provider", None):
+                logger.info(f"Secondary provider returned insufficient data; attempting tertiary ({self.tertiary_provider.name})")
+                tert_readings, tert_error = self.tertiary_provider.get_current_rainfall(targets)
+                if tert_readings and len(tert_readings) >= len(fresh_readings or []):
+                    fresh_readings = tert_readings
+                    error = tert_error
+
 
             if fresh_readings:
                 self._cached_readings = fresh_readings
@@ -320,16 +343,25 @@ class RainfallService:
         forecast_horizons = None
         if hasattr(self.provider, "fetch_station_forecast"):
             forecast_horizons = self.provider.fetch_station_forecast(target.latitude, target.longitude, target.id)
+        elif hasattr(self.provider, "fetch_station"):
+            station_data, _, _ = self.provider.fetch_station(target)
+            if station_data:
+                forecast_horizons = self.provider._process_horizons(station_data.get("timelines", {}).get("hourly", []))
 
         # Get reading from cache or fetch
         reading = None
         if self._cached_readings:
             reading = next((r for r in self._cached_readings if r.id == f"rain_{target.id}" or r.id == target.id), None)
 
-        if not reading and hasattr(self.provider, "fetch_single_weather"):
-            data, _, _ = self.provider.fetch_single_weather(target)
-            if data:
-                reading = self.provider._parse_weather_to_reading(target, data, quality="live")
+        if not reading:
+            if hasattr(self.provider, "fetch_station"):
+                data, _, _ = self.provider.fetch_station(target)
+                if data:
+                    reading = self.provider._parse_to_reading(target, data, quality="live")
+            elif hasattr(self.provider, "fetch_single_weather"):
+                data, _, _ = self.provider.fetch_single_weather(target)
+                if data:
+                    reading = self.provider._parse_weather_to_reading(target, data, quality="live")
 
         reading_dict = reading.model_dump() if reading else None
         if reading_dict and forecast_horizons:
@@ -360,7 +392,16 @@ class RainfallService:
         return {
             "service": "Flowshield Real-Time Rainfall Service",
             "active_provider": self.provider.get_provider_status(),
-            "secondary_provider": self.imd_provider.get_provider_status(),
+            "secondary_provider": (
+                self.secondary_provider.get_provider_status()
+                if getattr(self, "secondary_provider", None)
+                else self.imd_provider.get_provider_status()
+            ),
+            "tertiary_provider": (
+                self.tertiary_provider.get_provider_status()
+                if getattr(self, "tertiary_provider", None)
+                else None
+            ),
             "cache_ttl_seconds": self.cache_ttl_seconds,
             "cache_age_seconds": cache_age_sec,
             "is_cached": self._cached_readings is not None,
@@ -368,6 +409,7 @@ class RainfallService:
             "last_fetch_time": self._last_fetch_time.isoformat() if self._last_fetch_time else None,
             "last_error": self._last_error,
         }
+
 
 
 # Singleton service instance

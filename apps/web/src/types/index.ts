@@ -722,21 +722,31 @@ export interface TemporalProvenance {
 }
 
 export interface ObservationSnapshot {
-  rainfall_rate_mm_hr: number;
-  rainfall_1h_mm: number;
-  rainfall_3h_mm: number;
-  rainfall_6h_mm: number;
-  rainfall_12h_mm?: number;
-  rainfall_24h_mm: number;
+  rainfall_rate_mm_hr?: number | null;
+  rainfall_1h_mm?: number | null;
+  rainfall_3h_mm?: number | null;
+  rainfall_6h_mm?: number | null;
+  rainfall_12h_mm?: number | null;
+  rainfall_24h_mm?: number | null;
   river_stage_meters?: number | null;
   river_danger_mark_meters?: number | null;
   river_surge_rate_m_hr?: number | null;
-  soil_moisture_m3_m3: number;
-  soil_saturation_pct: number;
+  soil_moisture_m3_m3?: number | null;
+  soil_saturation_pct?: number | null;
+  // Disambiguated scientific soil metrics
+  soil_moisture_vwc_pct?: number | null;
+  soil_effective_saturation_pct?: number | null;
+  soil_telemetry_source?: string | null;
+  soil_data_state?: string | null;
+  // Disaggregated Precipitation Peaks
+  observed_peak_rate_mm_hr?: number | null;
+  forecast_peak_rate_mm_hr?: number | null;
   // Live atmospheric telemetry (OWM / Open-Meteo)
   temperature_c?: number | null;
   humidity_pct?: number | null;
   wind_speed_kmh?: number | null;
+  atmospheric_telemetry_source?: string | null;
+  atmospheric_freshness_status?: string | null;
   provenance: TemporalProvenance;
 }
 

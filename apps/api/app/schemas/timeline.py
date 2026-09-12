@@ -19,21 +19,31 @@ class TemporalProvenance(BaseModel):
 
 
 class ObservationSnapshot(BaseModel):
-    rainfall_rate_mm_hr: float
-    rainfall_1h_mm: float
-    rainfall_3h_mm: float
-    rainfall_6h_mm: float
-    rainfall_12h_mm: float = 0.0
-    rainfall_24h_mm: float
+    rainfall_rate_mm_hr: Optional[float] = None
+    rainfall_1h_mm: Optional[float] = None
+    rainfall_3h_mm: Optional[float] = None
+    rainfall_6h_mm: Optional[float] = None
+    rainfall_12h_mm: Optional[float] = 0.0
+    rainfall_24h_mm: Optional[float] = None
     river_stage_meters: Optional[float] = None
     river_danger_mark_meters: Optional[float] = None
     river_surge_rate_m_hr: Optional[float] = None
-    soil_moisture_m3_m3: float
-    soil_saturation_pct: float
+    soil_moisture_m3_m3: Optional[float] = None
+    soil_saturation_pct: Optional[float] = None
+    # Disambiguated scientific soil metrics
+    soil_moisture_vwc_pct: Optional[float] = Field(None, description="Volumetric Water Content by volume percentage (theta = m3/m3 * 100)")
+    soil_effective_saturation_pct: Optional[float] = Field(None, description="Effective saturation Se = theta / theta_s (%)")
+    soil_telemetry_source: Optional[str] = Field(None, description="Source provider e.g. AgroMonitoring Sentinel-1 or Copernicus ERA5-Land")
+    soil_data_state: Optional[str] = Field(None, description="Data state e.g. SATELLITE_OBSERVED or REANALYSIS")
+    # Disaggregated Precipitation Peaks
+    observed_peak_rate_mm_hr: Optional[float] = Field(None, description="Observed peak precipitation rate from history")
+    forecast_peak_rate_mm_hr: Optional[float] = Field(None, description="Forecast peak precipitation rate from NWP")
     # Live atmospheric telemetry (OWM / Open-Meteo)
     temperature_c: Optional[float] = None
     humidity_pct: Optional[float] = None
     wind_speed_kmh: Optional[float] = None
+    atmospheric_telemetry_source: Optional[str] = Field(None, description="Source provider for atmospheric metrics")
+    atmospheric_freshness_status: Optional[str] = Field(None, description="Freshness status e.g. LIVE, STALE, UNAVAILABLE")
     provenance: TemporalProvenance
 
 

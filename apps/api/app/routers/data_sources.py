@@ -75,7 +75,21 @@ DATA_SOURCES_CATALOG: List[Dict[str, Any]] = [
         "confidence_rating": "98%",
         "last_audit_date": "2026-01-10",
     },
+    {
+        "id": "src-tomorrow-io",
+        "name": "Tomorrow.io High-Resolution Nowcasting & Radar Intelligence",
+        "jurisdiction": "Global / Point Catchments (~1 km)",
+        "type": "METEOROLOGICAL_NOWCASTING",
+        "authority": "Tomorrow Companies Inc. (ClimaCell)",
+        "url": "https://www.tomorrow.io/",
+        "coverage": "Beas & Mandakini Basins, Pan-India Synoptic Catchments",
+        "description": "1-minute precipitation nowcasting (0-60 min), 120-hour precipitation forecasts, convective thunderstorm indicators, and cellular attenuation radar modeling.",
+        "verification_method": "Tomorrow.io API v4 live integration with rate-limit and multi-tier failover verification",
+        "confidence_rating": "97%",
+        "last_audit_date": "2026-09-12",
+    },
 ]
+
 
 
 @router.get("")

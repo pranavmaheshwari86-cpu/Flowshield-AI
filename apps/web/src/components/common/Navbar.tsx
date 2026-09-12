@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/dashboard"
           className={`nav-3d-pill ${location.pathname === '/dashboard' ? 'active' : ''}`}
         >
-          <Home size={14} className="nav-3d-icon" />
+          <Home size={15} className="nav-3d-icon" />
           <span>Command Center</span>
         </Link>
 
@@ -117,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/responder"
           className={`nav-3d-pill ${location.pathname === '/responder' ? 'active' : ''}`}
         >
-          <Shield size={14} className="nav-3d-icon" />
+          <Shield size={15} className="nav-3d-icon" />
           <span>Tactical Responder</span>
         </Link>
 
@@ -125,7 +125,7 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           to="/citizen"
           className={`nav-3d-pill ${location.pathname === '/citizen' ? 'active' : ''}`}
         >
-          <Smartphone size={14} className="nav-3d-icon" />
+          <Smartphone size={15} className="nav-3d-icon" />
           <span>Citizen Mode</span>
         </Link>
 
@@ -197,19 +197,22 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(17, 38, 58, 0.50)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(56, 189, 248, 0.30)',
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 10px rgba(0, 0, 0, 0.2)',
+              gap: '7px',
+              height: '35px',
+              boxSizing: 'border-box',
+              background: 'rgba(15, 28, 48, 0.65)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.25)',
               color: '#F1F7FA',
-              padding: '6px 14px',
-              borderRadius: '8px',
+              padding: '0 16px',
+              borderRadius: '9999px',
               fontSize: '12.5px',
               fontWeight: 600,
+              letterSpacing: '0.01em',
               textDecoration: 'none',
-              transition: 'all 0.15s ease',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             Authority Login

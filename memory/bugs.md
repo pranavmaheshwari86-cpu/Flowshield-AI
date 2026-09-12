@@ -119,6 +119,28 @@
 
 ---
 
+### BUG-013: AttributeError in OpenMeteoRainfallProvider Network Failure Handler
+- **Symptom**: Network timeouts or upstream 5xx errors from Open-Meteo triggered an unhandled `AttributeError: 'OpenMeteoRainfallProvider' object has no attribute '_generate_fallback_readings'`.
+- **Root Cause**: An obsolete fallback helper was referenced in the except block without implementation.
+- **Resolution**: Removed reference to the missing method; return `([], err_msg)` adhering to zero data fabrication principles.
+- **Status**: **RESOLVED**
+
+---
+
+### BUG-014: Recharts Cubic Hermite Spline Overshoot Artificially Amplifying Rainfall Peaks
+- **Problem**: In `PrecipitationChart.tsx` and `FloodRiskChart.tsx`, `<Area type="monotone" ...>` created cubic polynomial arcs between data points. A sharp jump from $0.0$ to $1.1\text{ mm/h}$ curved upward to $7\text{--}8\text{ mm/h}$ visually, conflicting with KPI cards.
+- **Resolution**: Replaced `type="monotone"` with `type="linear"` across all precipitation and risk charts. Visual peak strictly matches reported numeric telemetry ($1.1\text{ mm/h} \equiv 1.1\text{ mm/h}$).
+- **Status**: **RESOLVED**
+
+---
+
+### BUG-015: Contradictory "100% Future Flood Chance" Badge on Uncalibrated Regions
+- **Problem**: When viewing uncalibrated alluvial settlements like Buxar or Begusarai, `FloodRiskChart.tsx` correctly reported `UNSUPPORTED`, but `PrecipitationChart.tsx` bypassed capability checks and executed `Math.min(95, accum * 0.75)`, causing the top badge to display `100% CRITICAL`.
+- **Resolution**: Bound `location_capabilities` to `PrecipitationChart.tsx`. When `is_model_supported` is false, probabilities remain `null` and the badge displays `UNSUPPORTED (ML Inactive)`.
+- **Status**: **RESOLVED**
+
+---
+
 ## 2. Active Considerations & Edge Cases
 
 | Issue ID | Description | Severity | Workaround / Mitigation |

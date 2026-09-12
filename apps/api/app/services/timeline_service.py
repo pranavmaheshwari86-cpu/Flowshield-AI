@@ -211,13 +211,16 @@ class TimelineService:
         is_demo = getattr(settings, "DEMO_MODE", False) or os.getenv("DATA_MODE", "live").lower() == "demo"
         data_quality = self._compile_quality_matrix(stream_qualities, is_demo)
 
-        # 10. Summary Brief, Capabilities, & Precipitation Contract
         location_capabilities = location_capability_service.evaluate_capabilities(village, db)
         precip_forecast = forecast_service.get_standardized_precipitation_forecast(
             village=village,
             db=db,
             precip_series=precip_series
         )
+        fc_peak = precip_forecast.peak_forecast_mm_hr if precip_forecast else None
+        obs_snapshot.forecast_peak_rate_mm_hr = fc_peak
+        peaks["observed_peak_rate_mm_hr"] = obs_snapshot.observed_peak_rate_mm_hr
+        peaks["forecast_peak_rate_mm_hr"] = fc_peak
 
         valid_risks = [r for r in risk_scores if r is not None]
         trend_direction = "STABLE"
@@ -424,19 +427,55 @@ class TimelineService:
                 if latest_ts >= cutoff:
                     return latest
 
-            # Fetch live weather from OpenWeatherMap
-            api_key = settings.WEATHER_API_KEY or settings.OPENWEATHER_API_KEY
-            base_url = settings.WEATHER_API_BASE_URL or "https://api.openweathermap.org/data/2.5"
+            # Fetch live weather (Priority: Tomorrow.io -> OpenWeatherMap -> Open-Meteo)
             rain_1h: Optional[float] = None
             rain_rate: float = 0.0
             temp: Optional[float] = None
             humidity: Optional[float] = None
             pressure: Optional[float] = None
             wind_speed: Optional[float] = None
-            source_desc = "OpenWeather Synoptic Station"
+            source_desc = "Synoptic Meteorological Station"
 
-            owm_success = False
-            if api_key:
+            weather_success = False
+
+            # 1. Probe Tomorrow.io if configured
+            tomorrow_key = getattr(settings, "TOMORROW_API_KEY", "")
+            tomorrow_base = getattr(settings, "TOMORROW_API_BASE_URL", "https://api.tomorrow.io/v4").rstrip("/")
+            if tomorrow_key:
+                try:
+                    t_url = f"{tomorrow_base}/weather/realtime?location={village.latitude:.4f},{village.longitude:.4f}&apikey={tomorrow_key}&units=metric"
+                    t_req = urllib.request.Request(t_url, headers={"User-Agent": "FlowShield/4.0"})
+                    with urllib.request.urlopen(t_req, context=get_ssl_context(), timeout=3) as t_resp:
+                        if t_resp.status == 200:
+                            t_data = json.loads(t_resp.read().decode("utf-8"))
+                            t_values = t_data.get("data", {}).get("values", {})
+                            if "temperature" in t_values and t_values["temperature"] is not None:
+                                temp = float(t_values["temperature"])
+                            if "humidity" in t_values and t_values["humidity"] is not None:
+                                humidity = float(t_values["humidity"])
+                            if "pressureSurfaceLevel" in t_values and t_values["pressureSurfaceLevel"] is not None:
+                                pressure = float(t_values["pressureSurfaceLevel"])
+                            elif "pressureSeaLevel" in t_values and t_values["pressureSeaLevel"] is not None:
+                                pressure = float(t_values["pressureSeaLevel"])
+                            if "windSpeed" in t_values and t_values["windSpeed"] is not None:
+                                wind_speed = float(t_values["windSpeed"]) * 3.6
+                            if "rainIntensity" in t_values and t_values["rainIntensity"] is not None:
+                                rain_1h = float(t_values["rainIntensity"])
+                                rain_rate = rain_1h
+                            else:
+                                rain_1h = 0.0
+                                rain_rate = 0.0
+                            weather_success = True
+                            source_desc = f"Tomorrow.io Hyper-Local Radar ({village.name})"
+                except Exception as te:
+                    logger.debug(f"Tomorrow.io live probe skipped: {te}")
+
+            # 2. Probe OpenWeatherMap if Tomorrow.io was skipped or failed
+            api_key = settings.WEATHER_API_KEY or settings.OPENWEATHER_API_KEY
+            base_url = settings.WEATHER_API_BASE_URL or "https://api.openweathermap.org/data/2.5"
+            owm_success = weather_success
+            if not weather_success and api_key:
+
                 try:
                     params = {
                         "lat": f"{village.latitude:.4f}",
@@ -505,15 +544,30 @@ class TimelineService:
                 except Exception as om_err:
                     logger.debug(f"Open-Meteo current probe skipped: {om_err}")
 
-            # Fallback for atmospheric parameters if external providers timed out
-            if temp is None:
-                temp = 21.4
-            if humidity is None:
-                humidity = 78.0
-            if wind_speed is None:
-                wind_speed = 8.5
-            if pressure is None:
-                pressure = 1012.0
+            # If external providers timed out or returned None, check prior observation for fallback
+            # NEVER hardcode 21.4, 78.0, 8.5, 1012.0
+            recent_prior = None
+            if temp is None or humidity is None or wind_speed is None:
+                recent_prior = (
+                    db.query(EnvironmentalObservation)
+                    .filter(
+                        EnvironmentalObservation.village_id == village.id,
+                        EnvironmentalObservation.timestamp >= now - timedelta(hours=6)
+                    )
+                    .order_by(EnvironmentalObservation.timestamp.desc())
+                    .first()
+                )
+                if recent_prior:
+                    if temp is None and recent_prior.temperature is not None:
+                        temp = float(recent_prior.temperature)
+                    if humidity is None and recent_prior.humidity is not None:
+                        humidity = float(recent_prior.humidity)
+                    if wind_speed is None and recent_prior.wind_speed is not None:
+                        wind_speed = float(recent_prior.wind_speed)
+                    if pressure is None and recent_prior.surface_pressure is not None:
+                        pressure = float(recent_prior.surface_pressure)
+                    if not owm_success:
+                        source_desc = f"Stale Synoptic Telemetry ({recent_prior.source or 'Station Archive'})"
 
             # Gather prior observations to compute rolling accumulations
             prior_obs = (
@@ -560,7 +614,11 @@ class TimelineService:
                 if stage is None:
                     stage = None
 
-            soil_sat = min(95.0, max(20.0, 48.0 + (accums["24h"] * 0.35)))
+            # Soil moisture resolution from prior observation; avoid synthetic 48 + accum*0.35 formula
+            prior_soil = None
+            if recent_prior and recent_prior.soil_moisture is not None:
+                prior_soil = float(recent_prior.soil_moisture)
+            soil_sat = prior_soil if prior_soil is not None else 50.0
 
             new_obs = EnvironmentalObservation(
                 village_id=village.id,
@@ -642,24 +700,26 @@ class TimelineService:
             staleness = int(max(0.0, (now - obs_time).total_seconds()))
 
             if staleness > 7200:
-                q_status: Literal["GOOD", "DEGRADED", "STALE", "MISSING"] = "MISSING"
+                q_status: Literal["GOOD", "DEGRADED", "STALE", "MISSING"] = "STALE"
             elif staleness > 1800:
                 q_status = "STALE"
             else:
                 q_status = "GOOD"
 
-            rain_rate = float(latest_obs.rainfall_intensity if latest_obs.rainfall_intensity is not None else (latest_obs.rainfall_1h or 0.0))
-            soil_sat = float(latest_obs.soil_moisture or 50.0)
-            vol_moist = round(soil_sat * 0.005, 3)
+            rain_rate = float(latest_obs.rainfall_intensity) if latest_obs.rainfall_intensity is not None else (float(latest_obs.rainfall_1h) if latest_obs.rainfall_1h is not None else None)
             source_name = getattr(latest_obs, "source", None) or "Synoptic Telemetry Station"
+            temp_c = float(latest_obs.temperature) if latest_obs.temperature is not None else None
+            hum_pct = float(latest_obs.humidity) if latest_obs.humidity is not None else None
+            wind_kmh = float(latest_obs.wind_speed) if latest_obs.wind_speed is not None else None
         else:
             obs_time = now
             staleness = 0
-            q_status = "DEGRADED"
-            rain_rate = 0.0
-            soil_sat = 48.0
-            vol_moist = 0.24
-            source_name = "Regional Hydrological Catchment Baseline"
+            q_status = "MISSING"
+            rain_rate = None
+            source_name = "Environmental Sensor Unavailable"
+            temp_c = None
+            hum_pct = None
+            wind_kmh = None
 
         # Check for genuine AgroMonitoring satellite observations for this district / state
         agro_obs = None
@@ -682,15 +742,38 @@ class TimelineService:
 
         if agro_obs and agro_obs.soil_moisture is not None:
             vol_moist = round(float(agro_obs.soil_moisture), 3)
+            vwc_pct = round(vol_moist * 100.0, 1)
             soil_sat = round(min(100.0, max(5.0, (vol_moist / 0.50) * 100.0)), 1)
             soil_stream_name = "AgroMonitoring Satellite Soil Moisture"
             soil_source_attr = f"AgroMonitoring Satellite Telemetry ({agro_obs.agro_polygon_id[:8] if agro_obs.agro_polygon_id else 'Registered'}...)"
+            soil_data_state = "SATELLITE_OBSERVED"
+        elif latest_obs and latest_obs.soil_moisture is not None:
+            soil_sat = round(float(latest_obs.soil_moisture), 1)
+            vwc_pct = round(soil_sat * 0.50, 1)
+            vol_moist = round(vwc_pct / 100.0, 3)
+            soil_stream_name = "Copernicus ERA5-Land Soil Moisture"
+            soil_source_attr = "Copernicus ERA5-Land Atmospheric Reanalysis (0.1° Grid)"
+            soil_data_state = "REANALYSIS"
         else:
-            soil_stream_name = "ERA5 Land Surface Soil Moisture"
-            soil_source_attr = "Copernicus ERA5-Land / In-Situ Sensor"
+            vol_moist = None
+            vwc_pct = None
+            soil_sat = None
+            soil_stream_name = "Soil Moisture Sensor Network"
+            soil_source_attr = "No Soil Telemetry Available for Basin"
+            soil_data_state = "UNAVAILABLE"
 
         # Calculate true rolling accumulations
-        accums = rainfall_accumulator.calculate_rolling_accumulations(obs_dicts, now, current_rate=rain_rate)
+        accums = rainfall_accumulator.calculate_rolling_accumulations(obs_dicts, now, current_rate=rain_rate or 0.0)
+
+        # Calculate true observed peak precipitation rate from history & current
+        obs_rates = [
+            float(o.get("rainfall_rate_mm_hr") or o.get("rainfall_mm") or 0.0)
+            for o in obs_dicts
+            if o.get("rainfall_rate_mm_hr") is not None or o.get("rainfall_mm") is not None
+        ]
+        if rain_rate is not None:
+            obs_rates.append(rain_rate)
+        obs_peak = round(max(obs_rates), 2) if obs_rates else (round(rain_rate, 2) if rain_rate is not None else None)
 
         qualities.append(
             DataStreamQuality(
@@ -705,7 +788,7 @@ class TimelineService:
         qualities.append(
             DataStreamQuality(
                 stream_name=soil_stream_name,
-                status="GOOD" if soil_sat > 0 else "MISSING",
+                status="GOOD" if soil_sat is not None and soil_sat > 0 else "MISSING",
                 last_updated_at=obs_time.isoformat(),
                 staleness_seconds=staleness,
                 source_attribution=soil_source_attr
@@ -747,13 +830,8 @@ class TimelineService:
                     current_river_m = None
                     surge_river_m = None
 
-        # Resolve atmospheric telemetry from latest observation record
-        temp_c = float(latest_obs.temperature) if latest_obs and latest_obs.temperature is not None else 21.4
-        hum_pct = float(latest_obs.humidity) if latest_obs and latest_obs.humidity is not None else 78.0
-        wind_kmh = float(latest_obs.wind_speed) if latest_obs and latest_obs.wind_speed is not None else 8.5
-
         snapshot = ObservationSnapshot(
-            rainfall_rate_mm_hr=round(rain_rate, 2),
+            rainfall_rate_mm_hr=round(rain_rate, 2) if rain_rate is not None else None,
             rainfall_1h_mm=accums["1h"],
             rainfall_3h_mm=accums["3h"],
             rainfall_6h_mm=accums["6h"],
@@ -763,10 +841,18 @@ class TimelineService:
             river_danger_mark_meters=danger_river_m,
             river_surge_rate_m_hr=surge_river_m,
             soil_moisture_m3_m3=vol_moist,
-            soil_saturation_pct=round(soil_sat, 1),
-            temperature_c=temp_c,
-            humidity_pct=hum_pct,
-            wind_speed_kmh=wind_kmh,
+            soil_saturation_pct=round(soil_sat, 1) if soil_sat is not None else None,
+            soil_moisture_vwc_pct=vwc_pct,
+            soil_effective_saturation_pct=round(soil_sat, 1) if soil_sat is not None else None,
+            soil_telemetry_source=soil_source_attr,
+            soil_data_state=soil_data_state,
+            observed_peak_rate_mm_hr=obs_peak,
+            forecast_peak_rate_mm_hr=None,
+            temperature_c=round(temp_c, 1) if temp_c is not None else None,
+            humidity_pct=round(hum_pct, 1) if hum_pct is not None else None,
+            wind_speed_kmh=round(wind_kmh, 1) if wind_kmh is not None else None,
+            atmospheric_telemetry_source=source_name,
+            atmospheric_freshness_status=q_status,
             provenance=provenance
         )
         return snapshot, qualities, obs_dicts
@@ -794,18 +880,20 @@ class TimelineService:
 
         for pt in raw_series:
             rh = pt["relative_hour"]
-            rain_rate = float(pt.get("observed_rainfall_rate", pt.get("rainfall_rate_mm_hr", 0.0)))
-            soil = float(pt.get("observed_soil_saturation", pt.get("soil_saturation_pct", 50.0)))
-            risk = float(pt.get("operational_risk_score", min(100.0, max(5.0, (rain_rate * 3.2) + (soil * 0.32)))))
+            raw_rate = pt.get("observed_rainfall_rate")
+            rain_rate = float(raw_rate) if raw_rate is not None else None
+            raw_soil = pt.get("observed_soil_saturation")
+            soil = float(raw_soil) if raw_soil is not None else None
+            risk = float(pt.get("operational_risk_score", 15.0))
             river = pt.get("observed_river_stage")
 
             points.append(
                 HistoricalSeriesPoint(
                     relative_hour=rh,
                     timestamp=pt["timestamp"],
-                    observed_rainfall_rate=rain_rate,
-                    observed_river_stage=river,
-                    observed_soil_saturation=soil,
+                    observed_rainfall_rate=round(rain_rate, 2) if rain_rate is not None else None,
+                    observed_river_stage=round(river, 2) if river is not None else None,
+                    observed_soil_saturation=round(soil, 1) if soil is not None else None,
                     operational_risk_score=round(risk, 1),
                     is_forecast=False,
                     units={

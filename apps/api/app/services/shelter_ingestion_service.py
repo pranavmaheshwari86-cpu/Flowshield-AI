@@ -52,6 +52,180 @@ DISTRICT_BOUNDS: Dict[str, Dict[str, Tuple[float, float]]] = {
         "lat": (30.75, 31.50),
         "lon": (77.00, 78.00),
     },
+    # Uttarakhand — Pauri Garhwal & Dehradun
+    "Pauri Garhwal": {
+        "lat": (29.75, 30.35),
+        "lon": (78.35, 79.20),
+    },
+    "Dehradun": {
+        "lat": (29.95, 30.90),
+        "lon": (77.55, 78.35),
+    },
+    # Arunachal Pradesh
+    "Papum Pare": {
+        "lat": (26.80, 27.50),
+        "lon": (93.30, 94.00),
+    },
+    "East Siang": {
+        "lat": (27.70, 28.50),
+        "lon": (94.90, 95.80),
+    },
+    "West Siang": {
+        "lat": (27.80, 28.60),
+        "lon": (94.30, 95.30),
+    },
+    "Upper Subansiri": {
+        "lat": (27.50, 28.50),
+        "lon": (93.70, 94.70),
+    },
+    "East Kameng": {
+        "lat": (26.90, 27.80),
+        "lon": (92.50, 93.50),
+    },
+    "Lohit": {
+        "lat": (27.40, 28.40),
+        "lon": (95.60, 96.70),
+    },
+    # Jammu & Kashmir
+    "Srinagar": {
+        "lat": (33.80, 34.40),
+        "lon": (74.50, 75.10),
+    },
+    "Anantnag": {
+        "lat": (33.40, 34.00),
+        "lon": (74.80, 75.50),
+    },
+    "Ramban": {
+        "lat": (33.10, 33.80),
+        "lon": (74.80, 75.60),
+    },
+    "Jammu": {
+        "lat": (32.40, 33.10),
+        "lon": (74.50, 75.30),
+    },
+    "Doda": {
+        "lat": (32.80, 33.60),
+        "lon": (75.30, 76.30),
+    },
+    "Baramulla": {
+        "lat": (33.80, 34.60),
+        "lon": (73.90, 74.80),
+    },
+    # Leh & Ladakh
+    "Leh": {
+        "lat": (33.50, 35.00),
+        "lon": (76.50, 78.50),
+    },
+    # Manipur
+    "Imphal West": {
+        "lat": (24.50, 25.10),
+        "lon": (93.60, 94.20),
+    },
+    "Bishnupur": {
+        "lat": (24.30, 24.90),
+        "lon": (93.50, 94.10),
+    },
+    "Churachandpur": {
+        "lat": (23.90, 24.70),
+        "lon": (93.30, 93.90),
+    },
+    "Jiribam": {
+        "lat": (24.50, 25.10),
+        "lon": (92.80, 93.40),
+    },
+    "Thoubal": {
+        "lat": (24.30, 24.90),
+        "lon": (93.80, 94.40),
+    },
+    # Meghalaya
+    "East Khasi Hills": {
+        "lat": (25.10, 25.70),
+        "lon": (91.40, 92.20),
+    },
+    "West Jaintia Hills": {
+        "lat": (25.00, 25.60),
+        "lon": (91.80, 92.50),
+    },
+    "West Garo Hills": {
+        "lat": (25.20, 25.80),
+        "lon": (89.80, 90.70),
+    },
+    "West Khasi Hills": {
+        "lat": (25.20, 25.80),
+        "lon": (90.90, 91.60),
+    },
+    # Mizoram
+    "Aizawl": {
+        "lat": (23.40, 24.10),
+        "lon": (92.40, 93.10),
+    },
+    "Kolasib": {
+        "lat": (23.90, 24.60),
+        "lon": (92.30, 93.00),
+    },
+    "Lunglei": {
+        "lat": (22.50, 23.30),
+        "lon": (92.40, 93.10),
+    },
+    "Saiha": {
+        "lat": (22.10, 22.90),
+        "lon": (92.60, 93.40),
+    },
+    "Champhai": {
+        "lat": (23.10, 23.90),
+        "lon": (93.00, 93.70),
+    },
+    # Nagaland
+    "Kohima": {
+        "lat": (25.30, 26.10),
+        "lon": (93.70, 94.50),
+    },
+    "Dimapur": {
+        "lat": (25.60, 26.30),
+        "lon": (93.40, 94.10),
+    },
+    "Mokokchung": {
+        "lat": (26.00, 26.70),
+        "lon": (94.20, 94.90),
+    },
+    "Wokha": {
+        "lat": (25.80, 26.50),
+        "lon": (93.90, 94.60),
+    },
+    "Zunheboto": {
+        "lat": (25.60, 26.40),
+        "lon": (94.20, 94.90),
+    },
+    # Sikkim
+    "East Sikkim": {
+        "lat": (27.00, 27.60),
+        "lon": (88.30, 88.80),
+    },
+    "North Sikkim": {
+        "lat": (27.30, 28.00),
+        "lon": (88.30, 88.90),
+    },
+    "South Sikkim": {
+        "lat": (26.80, 27.40),
+        "lon": (88.10, 88.60),
+    },
+    # Tripura
+    "West Tripura": {
+        "lat": (23.50, 24.20),
+        "lon": (91.00, 91.60),
+    },
+    "North Tripura": {
+        "lat": (23.90, 24.60),
+        "lon": (91.80, 92.60),
+    },
+    "Gomati": {
+        "lat": (23.20, 23.90),
+        "lon": (91.20, 91.80),
+    },
+    "South Tripura": {
+        "lat": (22.90, 23.60),
+        "lon": (91.10, 91.80),
+    },
 }
 
 # Authoritative Government & Open Datasets Registry

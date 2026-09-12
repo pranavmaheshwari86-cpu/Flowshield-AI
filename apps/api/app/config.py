@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     METADATA_PATH: str = os.getenv("METADATA_PATH", "ml/models/v2_decision_pipeline.json")
 
     # Weather & Meteorological Provider Configuration
+    TOMORROW_API_KEY: str = os.getenv("TOMORROW_API_KEY", "")
+    TOMORROW_API_BASE_URL: str = os.getenv("TOMORROW_API_BASE_URL", "https://api.tomorrow.io/v4")
     OPENWEATHER_API_KEY: str = os.getenv("OPENWEATHER_API_KEY", "")
     WEATHER_API_KEY: str = os.getenv("WEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
     WEATHER_API_BASE_URL: str = os.getenv("WEATHER_API_BASE_URL", "https://api.openweathermap.org/data/2.5")

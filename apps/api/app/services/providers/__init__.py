@@ -6,6 +6,15 @@ Flowshield — Data Providers Module (v2.4)
 from .base import DataProvider, FreshnessPolicy, LocationTarget
 from .open_meteo import OpenMeteoProvider
 from .open_weather import OpenWeatherProvider
+from .tomorrow_io import TomorrowIOProvider
+from .rainfall_provider import (
+    RainfallProvider,
+    RainfallReading,
+    OpenMeteoRainfallProvider,
+    OpenWeatherRainfallProvider,
+    TomorrowIORainfallProvider,
+    IMDRainfallProvider,
+)
 from .cwc_gauge import CwcRiverGaugeProvider, VERIFIED_CWC_GAUGES
 from .replay import HistoricalReplayProvider
 from .ai_provider import (
@@ -23,6 +32,13 @@ __all__ = [
     "LocationTarget",
     "OpenMeteoProvider",
     "OpenWeatherProvider",
+    "TomorrowIOProvider",
+    "RainfallProvider",
+    "RainfallReading",
+    "OpenMeteoRainfallProvider",
+    "OpenWeatherRainfallProvider",
+    "TomorrowIORainfallProvider",
+    "IMDRainfallProvider",
     "CwcRiverGaugeProvider",
     "VERIFIED_CWC_GAUGES",
     "HistoricalReplayProvider",
@@ -33,3 +49,4 @@ __all__ = [
     "CompositeAIProvider",
     "ai_provider",
 ]
+

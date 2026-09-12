@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Navigation,
-  RotateCcw,
   Hospital,
   Radio,
   Ban,
@@ -16,10 +15,8 @@ import {
   Info,
   Flame,
   ChevronDown,
-  Shield,
   PhoneCall,
   ArrowRight,
-  UserCheck,
   FileCheck,
 } from 'lucide-react';
 import {
@@ -35,8 +32,8 @@ import { api } from '../services/api';
 import { EvacuationTacticalMap } from '../components/map/EvacuationTacticalMap';
 
 export const ResponderPage: React.FC = () => {
-  // Mode Selection: Operational Command vs Citizen Safe Evacuation
-  const [activeMode, setActiveMode] = useState<'COMMAND' | 'CITIZEN'>('COMMAND');
+  // Mode Selection: Operational Command
+  const [activeMode] = useState<'COMMAND' | 'CITIZEN'>('COMMAND');
 
   // Geography & Area Selection State
   const [states, setStates] = useState<GeographyState[]>([]);
@@ -86,17 +83,6 @@ export const ResponderPage: React.FC = () => {
   // Active Map Selections
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [activeCorridorId, setActiveCorridorId] = useState<string | null>(null);
-
-  // Realistic Simulation & Dynamic Rerouting Engine
-  const [isSimulatingScenario, setIsSimulatingScenario] = useState<boolean>(false);
-  const [rerouteAlertBanner, setRerouteAlertBanner] = useState<{
-    status: string;
-    alert: string;
-    oldEta: number | null;
-    newEta: number | null;
-    reason: string;
-    newRouteName?: string;
-  } | null>(null);
 
   // Citizen Guidance Wizard State
   const [citizenStep, setCitizenStep] = useState<1 | 2 | 3 | 4>(1);
@@ -293,114 +279,6 @@ export const ResponderPage: React.FC = () => {
     }
   };
 
-  // Trigger Realistic Flash Flood & Landslide Scenario Simulation
-  const handleTriggerRealisticScenario = async () => {
-    try {
-      setIsSimulatingScenario(true);
-      setActionNotice({
-        message: 'Simulating multi-hazard cloudburst anomaly: High rainfall triggered → Landslide severance initiated on NH-107 corridor...',
-        type: 'warning',
-      });
-
-      // 1. Post to backend simulation endpoint
-      const simEvent = await api.triggerDemoDisaster(selectedState, selectedDistrict);
-
-      // 2. Perform dynamic reroute bypassing the severed corridor
-      const lat = parseFloat(evalLat) || 30.598;
-      const lon = parseFloat(evalLon) || 79.036;
-
-      const rerouteRes = await api.rerouteEvacuation({
-        current_route_id: primaryRoute?.id,
-        current_latitude: lat,
-        current_longitude: lon,
-        state: selectedState,
-        district: selectedDistrict,
-        blockage_reason: 'Torrential debris flow and rockfall on NH-107 carriage-way',
-      });
-
-      // 3. Refresh live layers
-      const [updatedRoutes, updatedEvents, updatedShelters] = await Promise.all([
-        api.getRoutes({ state: selectedState, district: selectedDistrict }),
-        api.getActiveDisasterEvents(selectedState, selectedDistrict),
-        api.getRecommendedShelters({
-          lat,
-          lon,
-          state: selectedState,
-          district: selectedDistrict,
-          limit: 6,
-        }),
-      ]);
-
-      setRoutes(updatedRoutes);
-      setDisasterEvents(updatedEvents);
-      setRecommendedShelters(updatedShelters);
-
-      if (rerouteRes.new_safe_route) {
-        setPrimaryRoute(rerouteRes.new_safe_route);
-        setActiveCorridorId(rerouteRes.new_safe_route.id);
-      }
-      setAlternateRoutes(rerouteRes.alternate_routes || []);
-
-      // 4. Set Reroute Alert Banner with Old vs New ETA
-      setRerouteAlertBanner({
-        status: rerouteRes.status,
-        alert: rerouteRes.reroute_alert,
-        oldEta: rerouteRes.old_eta_min,
-        newEta: rerouteRes.new_eta_min,
-        reason: rerouteRes.reason,
-        newRouteName: rerouteRes.new_safe_route?.name,
-      });
-
-      setActionNotice({
-        message: `Scenario Live: ${simEvent.location_name} severed. Dynamic rerouting engine computed safe bypass.`,
-        type: 'success',
-      });
-      setTimeout(() => setActionNotice(null), 8000);
-    } catch (err: any) {
-      console.error('Demo simulation error:', err);
-      setActionNotice({
-        message: `Simulation failed: ${err.message}`,
-        type: 'error',
-      });
-    } finally {
-      setIsSimulatingScenario(false);
-    }
-  };
-
-  // Reset Realistic Scenario
-  const handleResetScenario = async () => {
-    try {
-      setIsSimulatingScenario(true);
-      await api.resetDemoDisaster(selectedState, selectedDistrict);
-      setRerouteAlertBanner(null);
-
-      // Refresh all data back to baseline
-      const [routeList, eventList, shelterList] = await Promise.all([
-        api.getRoutes({ state: selectedState, district: selectedDistrict }),
-        api.getActiveDisasterEvents(selectedState, selectedDistrict),
-        api.getShelters({ state: selectedState, district: selectedDistrict }),
-      ]);
-
-      setRoutes(routeList);
-      setDisasterEvents(eventList);
-      setShelters(shelterList);
-
-      const lat = parseFloat(evalLat) || 30.598;
-      const lon = parseFloat(evalLon) || 79.036;
-      await evaluateDisasterRoute(lat, lon, selectedSettlementId || undefined);
-
-      setActionNotice({
-        message: 'Scenario reset: All demonstration hazards cleared and corridors restored to OPEN.',
-        type: 'success',
-      });
-      setTimeout(() => setActionNotice(null), 5000);
-    } catch (err: any) {
-      console.error('Scenario reset failed:', err);
-    } finally {
-      setIsSimulatingScenario(false);
-    }
-  };
-
   // Handle Corridor Blockage Report / Toggle
   const handleToggleBlockage = async (route: EvacuationRoute, shouldBlock: boolean, reason?: string) => {
     try {
@@ -469,11 +347,6 @@ export const ResponderPage: React.FC = () => {
       return 0;
     });
 
-  // Calculate Metrics
-  const blockedCount = routes.filter((r) => r.is_blocked || r.status === 'BLOCKED').length;
-  const verifiedCount = shelters.filter((s) => s.verification_status === 'VERIFIED').length;
-  const totalPopulationAtRisk = settlements.reduce((sum, s) => sum + (s.population || 0), 0);
-
   if (loading && states.length === 0) {
     return (
       <div style={{ padding: '80px 20px', textAlign: 'center', color: '#94a3b8' }}>
@@ -506,168 +379,7 @@ export const ResponderPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Dual Mode Switcher Tabs */}
-        <div style={{ display: 'flex', gap: '8px', background: '#091526', padding: '4px', borderRadius: '10px', border: '1px solid #1e355b' }}>
-          <button
-            onClick={() => setActiveMode('COMMAND')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeMode === 'COMMAND' ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' : 'transparent',
-              color: activeMode === 'COMMAND' ? '#ffffff' : '#94a3b8',
-              fontWeight: 700,
-              fontSize: '12.5px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Shield size={14} /> Operational Commander
-          </button>
-          <button
-            onClick={() => setActiveMode('CITIZEN')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeMode === 'CITIZEN' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
-              color: activeMode === 'CITIZEN' ? '#ffffff' : '#94a3b8',
-              fontWeight: 700,
-              fontSize: '12.5px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <UserCheck size={14} /> Citizen Safe Evacuation
-          </button>
-        </div>
       </div>
-
-      {/* 2. Realistic Demonstration Simulation Control Bar */}
-      <div
-        className="card"
-        style={{
-          padding: '14px 20px',
-          marginBottom: '20px',
-          background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(15, 33, 62, 0.8) 50%, rgba(6, 182, 212, 0.12) 100%)',
-          border: '1px solid rgba(239, 68, 68, 0.35)',
-          borderRadius: '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: '#ef4444', color: 'white', padding: '6px', borderRadius: '8px' }}>
-            <Flame size={18} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>REALISTIC DISASTER SCENARIO ENGINE</span>
-              <span style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.25)', color: '#fca5a5', padding: '1px 6px', borderRadius: '4px', border: '1px solid #ef4444' }}>
-                HIMALAYAN MONSOON SURGE
-              </span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
-              Simulate heavy rainfall anomaly triggering active landslide on NH-107, corridor severance, and instant dynamic rerouting.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            onClick={handleTriggerRealisticScenario}
-            disabled={isSimulatingScenario}
-            style={{
-              padding: '8px 16px',
-              background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
-            }}
-          >
-            <Flame size={14} />
-            {isSimulatingScenario ? 'Simulating Scenario...' : 'Trigger Flash Flood & Landslide Scenario'}
-          </button>
-
-          <button
-            onClick={handleResetScenario}
-            disabled={isSimulatingScenario}
-            className="btn btn-sm btn-secondary"
-            style={{ fontSize: '12px' }}
-          >
-            <RotateCcw size={13} /> Reset Baseline
-          </button>
-        </div>
-      </div>
-
-      {/* Reroute Alert Notification Modal / Card */}
-      {rerouteAlertBanner && (
-        <div
-          style={{
-            padding: '16px 20px',
-            marginBottom: '20px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.25) 100%)',
-            border: '2px solid #ef4444',
-            boxShadow: '0 8px 24px rgba(239, 68, 68, 0.3)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '14px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', maxWidth: '850px' }}>
-            <AlertTriangle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '14px', color: '#fca5a5' }}>
-                {rerouteAlertBanner.alert}
-              </div>
-              <div style={{ fontSize: '12px', color: '#e2e8f0', marginTop: '4px' }}>
-                Reason: <strong>{rerouteAlertBanner.reason}</strong>
-              </div>
-              {rerouteAlertBanner.newRouteName && (
-                <div style={{ fontSize: '12px', color: '#38bdf8', marginTop: '2px', fontWeight: 600 }}>
-                  Diverted to safe corridor: <strong>{rerouteAlertBanner.newRouteName}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#0a1628', padding: '10px 16px', borderRadius: '8px', border: '1px solid #1e355b' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#94a3b8' }}>PREVIOUS ETA</div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#94a3b8', textDecoration: 'line-through' }}>
-                {rerouteAlertBanner.oldEta ? `${rerouteAlertBanner.oldEta} min` : '18 min'}
-              </div>
-            </div>
-            <ArrowRight size={16} color="#38bdf8" />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#38bdf8' }}>UPDATED SAFE ETA</div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: '#34d399' }}>
-                {rerouteAlertBanner.newEta ? `${rerouteAlertBanner.newEta} min` : '35 min'}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 3. Evacuation Area Selector Bar (State -> District + AI Action Button) */}
       <div
@@ -715,11 +427,11 @@ export const ResponderPage: React.FC = () => {
               <select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
-                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none' }}
+                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
               >
                 {states.map((s) => (
                   <option key={s.state} value={s.state} style={{ background: '#0b172a' }}>
-                    {s.state} ({s.districts_count} districts)
+                    {s.state} ({s.districts_count} {s.districts_count === 1 ? 'district' : 'districts'})
                   </option>
                 ))}
               </select>
@@ -738,34 +450,11 @@ export const ResponderPage: React.FC = () => {
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none' }}
+                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
               >
                 {districts.map((d) => (
                   <option key={d.district} value={d.district} style={{ background: '#0b172a' }}>
                     {d.district} — {d.river_basin || 'Himalayan Basin'}
-                  </option>
-                ))}
-              </select>
-              <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#38bdf8' }}>
-                <ChevronDown size={16} />
-              </div>
-            </div>
-          </div>
-
-          {/* Settlement Dropdown */}
-          <div style={{ flex: '1 1 220px' }}>
-            <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
-              Origin Settlement / Sector
-            </label>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={selectedSettlementId}
-                onChange={(e) => handleSettlementChange(e.target.value)}
-                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none' }}
-              >
-                {settlements.map((s) => (
-                  <option key={s.id} value={s.id} style={{ background: '#0b172a' }}>
-                    {s.name} ({s.population ? `${s.population} pop` : 'Settlement'})
                   </option>
                 ))}
               </select>
@@ -801,6 +490,8 @@ export const ResponderPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+
 
       {/* 4. Action Notification Banner */}
       {actionNotice && (
@@ -1415,43 +1106,8 @@ export const ResponderPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* OPERATIONAL COMMAND VIEW (Full Responder Dashboard, Table, Blockage Control, KPIs) */
+        /* OPERATIONAL COMMAND VIEW (Full Responder Dashboard, Table, Blockage Control, Corridors & Shelters) */
         <div>
-          {/* Tactical Operational KPIs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-            <div style={{ background: '#0f213e', border: '1px solid #1e355b', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>DISTRICT RISK TIER</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: blockedCount > 0 ? '#ef4444' : '#10b981', marginTop: '4px' }}>
-                {blockedCount > 0 ? 'HIGH HAZARD' : 'OPERATIONAL CLEAR'}
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{selectedDistrict} Catchment</div>
-            </div>
-
-            <div style={{ background: '#0f213e', border: '1px solid #1e355b', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>AFFECTED POPULATION POOL</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
-                {totalPopulationAtRisk > 0 ? totalPopulationAtRisk.toLocaleString() : '12,500'} Residents
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Census & DDMP Registered</div>
-            </div>
-
-            <div style={{ background: '#0f213e', border: '1px solid #1e355b', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>VERIFIED SAFE SHELTERS</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#34d399', marginTop: '4px' }}>
-                {verifiedCount} Facilities
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>USDMA / HPSDMA / OSM</div>
-            </div>
-
-            <div style={{ background: '#0f213e', border: '1px solid #1e355b', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>OPEN CORRIDORS</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: routes.length - blockedCount > 0 ? '#34d399' : '#ef4444', marginTop: '4px' }}>
-                {routes.length - blockedCount} / {routes.length} Active
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Navigable Mountain Roads</div>
-            </div>
-          </div>
-
           {/* Main Content Grid: Corridors & Dynamic Evaluation (Left) + Shelter Logistics (Right) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '24px' }}>
             {/* Left Column: Corridors & Dynamic Evaluation */}

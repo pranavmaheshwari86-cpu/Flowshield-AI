@@ -19,9 +19,11 @@ from ..models.alert import Alert
 from ..models.telemetry_sync_log import TelemetrySyncLog
 
 from .providers.base import LocationTarget
+from .providers.tomorrow_io import TomorrowIOProvider
 from .providers.open_meteo import OpenMeteoProvider
 from .providers.open_weather import OpenWeatherProvider
 from .providers.cwc_gauge import CwcRiverGaugeProvider
+
 from .freshness_service import freshness_service, FreshnessState, DegradationTier
 from .prediction_service import prediction_service
 from .risk_engine import risk_engine
@@ -39,17 +41,20 @@ class LiveTelemetryService:
     """
 
     def __init__(self):
+        self.tomorrow_provider = TomorrowIOProvider()
         self.open_meteo_provider = OpenMeteoProvider()
         self.open_weather_provider = OpenWeatherProvider()
         self.cwc_provider = CwcRiverGaugeProvider()
         self.last_sync_time: Optional[datetime] = None
         self.last_sync_status: str = "INITIALIZED"
         self.last_synced_count: int = 0
-        self.provider: str = (
-            "OpenWeatherMap Live API + CWC Hydro Telemetry"
-            if settings.OPENWEATHER_API_KEY
-            else "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
-        )
+        if getattr(settings, "TOMORROW_API_KEY", ""):
+            self.provider = "Tomorrow.io High-Resolution Nowcasting + CWC Hydro Telemetry"
+        elif settings.OPENWEATHER_API_KEY:
+            self.provider = "OpenWeatherMap Live API + CWC Hydro Telemetry"
+        else:
+            self.provider = "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
+
 
     def sync_live_telemetry(self, db: Session, force: bool = False) -> Dict[str, Any]:
         """
@@ -92,8 +97,20 @@ class LiveTelemetryService:
         normalized_obs_list = []
         active_provider_name = "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
 
-        # 1. Attempt OpenWeatherMap if API Key is configured
-        if settings.OPENWEATHER_API_KEY:
+        # 1. Attempt Tomorrow.io if API Key is configured
+        if getattr(settings, "TOMORROW_API_KEY", ""):
+            self.tomorrow_provider.api_key = settings.TOMORROW_API_KEY
+            tm_payload = self.tomorrow_provider.fetch(targets)
+            tm_valid, tm_errors = self.tomorrow_provider.validate(tm_payload)
+            if tm_valid:
+                normalized_obs_list = self.tomorrow_provider.normalize(tm_payload, targets)
+                active_provider_name = "Tomorrow.io High-Resolution Nowcasting + CWC Hydro Telemetry"
+                logger.info(f"Acquired telemetry for {len(normalized_obs_list)} settlements via Tomorrow.io Weather API.")
+            else:
+                logger.warning(f"Tomorrow.io fetch failed ({tm_errors}). Falling back to OpenWeatherMap.")
+
+        # 2. Attempt OpenWeatherMap if Tomorrow.io unconfigured or failed
+        if not normalized_obs_list and settings.OPENWEATHER_API_KEY:
             self.open_weather_provider.api_key = settings.OPENWEATHER_API_KEY
             ow_payload = self.open_weather_provider.fetch(targets)
             ow_valid, ow_errors = self.open_weather_provider.validate(ow_payload)
@@ -104,7 +121,7 @@ class LiveTelemetryService:
             else:
                 logger.warning(f"OpenWeatherMap fetch failed ({ow_errors}). Gracefully falling back to Open-Meteo Copernicus.")
 
-        # 2. Fallback to Open-Meteo if OpenWeather was unconfigured or failed
+        # 3. Fallback to Open-Meteo if previous providers unconfigured or failed
         if not normalized_obs_list:
             raw_payload = self.open_meteo_provider.fetch(targets)
             is_valid, errors = self.open_meteo_provider.validate(raw_payload)
@@ -113,6 +130,7 @@ class LiveTelemetryService:
                 return self._handle_degraded_cached_fallback(db, villages, sync_id, errors, now)
             normalized_obs_list = self.open_meteo_provider.normalize(raw_payload, targets)
             active_provider_name = "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
+
 
         self.provider = active_provider_name
         norm_map = {obs.location_id: obs for obs in normalized_obs_list}

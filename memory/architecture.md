@@ -49,8 +49,12 @@ Flowshield is architected deliberately as a **clean, modular monolith** rather t
 ## 2. Subsystem Boundaries & Responsibilities
 
 ### 2.1 Environmental Telemetry & Ingestion Subsystem
-- **Path**: `apps/api/app/schemas/observation.py`, `ml/preprocessing/pipeline.py`, `ml/configs/feature_catalog.json`
+- **Path**: `apps/api/app/schemas/observation.py`, `apps/api/app/services/providers/`, `apps/api/app/services/rainfall_service.py`, `apps/api/app/services/live_telemetry_service.py`, `ml/preprocessing/pipeline.py`, `ml/configs/feature_catalog.json`
 - **Responsibility**: Ingests multi-source environmental telemetry across 15 canonical features (7 rainfall accumulation horizons: 1h, 3h, 6h, 12h, 24h, 48h, 72h; 3 ERA5 soil moisture depths: 0-7cm, 7-28cm, 28-100cm; soil saturation proxy; antecedent precipitation index API; topography: slope, elevation, upstream catchment area). Enforces physical bounds checks and validates telemetry freshness.
+- **Multi-Tier Rainfall Provider Waterfall (v5.1)**:
+  1. **Tier 1 — Tomorrow.io High-Resolution Nowcasting Network**: 1-minute precipitation nowcast, radar reflectivity, and multi-horizon hourly accumulation. Hardened with 15-minute disk and memory cache (`scratch/tomorrow_cache.json`, `scratch/tomorrow_rainfall_cache.json`), 0.4s inter-request pacing, coordinate grid rounding (`round(lat, 2), round(lon, 2)`), and exponential backoff to strictly protect the 25 req/hr and 3 req/sec free-tier ceilings.
+  2. **Tier 2 — OpenWeatherMap Weather 3.0**: Synoptic weather observations and 5-day / 3-hour forecasts with fallback failover.
+  3. **Tier 3 — Open-Meteo Copernicus ECMWF / GFS**: High-availability, keyless European Centre for Medium-Range Weather Forecasts reanalysis and forecast fallback guaranteeing zero system downtime during external API quota exhaustion or network outages.
 
 ### 2.2 Machine Learning & Inference Subsystem (v1.1.0 Real-Data Baseline)
 - **Path**: `ml/`, `apps/api/app/services/ai_service.py`, `apps/api/app/api/ai.py`
