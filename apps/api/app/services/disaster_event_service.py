@@ -24,7 +24,7 @@ class DisasterEventService:
     @staticmethod
     def _format_event_dict(event: DisasterEvent) -> Dict[str, Any]:
         return {
-            "id": event.id,
+            "id": event.id or event.event_id or f"evt-{uuid.uuid4().hex[:8]}",
             "event_id": event.event_id,
             "disaster_type": event.disaster_type,
             "severity": event.severity,
@@ -85,6 +85,7 @@ class DisasterEventService:
             loc_name = f"{high_risk_village.name} Sector" if high_risk_village else f"{district or 'Valley'} Catchment"
 
             auto_event = DisasterEvent(
+                id=f"evt-{uuid.uuid4().hex[:12]}",
                 event_id=f"EVT-{district[:3].upper() if district else 'RUD'}-MONITOR",
                 disaster_type="HEAVY_RAINFALL",
                 severity="WATCH",

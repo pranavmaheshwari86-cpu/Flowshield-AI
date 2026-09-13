@@ -31,6 +31,9 @@ if is_sqlite:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA cache_size=-64000")
+        cursor.execute("PRAGMA temp_store=MEMORY")
         cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -83,6 +86,23 @@ def reconcile_sqlite_schema(db_engine=engine, declarative_base=Base):
                         logger.info(f"Auto-reconciled schema: {table_name}.{col.name} ({col_type}{default_clause})")
                     except Exception as err:
                         logger.warning(f"Could not add column {col.name} to {table_name}: {err}")
+
+        # Ensure performance indexes exist for high-frequency queries
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_obs_village_time_desc ON environmental_observations(village_id, timestamp DESC);",
+            "CREATE INDEX IF NOT EXISTS idx_obs_time_desc ON environmental_observations(timestamp DESC);",
+            "CREATE INDEX IF NOT EXISTS idx_snap_village_time_desc ON risk_snapshots(village_id, timestamp DESC);",
+            "CREATE INDEX IF NOT EXISTS idx_pred_village_created_desc ON predictions(village_id, created_at DESC);",
+            "CREATE INDEX IF NOT EXISTS idx_villages_state_dist ON villages(state, district);",
+            "CREATE INDEX IF NOT EXISTS idx_alerts_village_status ON alerts(village_id, status);",
+            "CREATE INDEX IF NOT EXISTS idx_shelters_state_dist ON shelters(state, district);",
+        ]
+        for idx_sql in indexes:
+            try:
+                conn.execute(text(idx_sql))
+                conn.commit()
+            except Exception as e:
+                logger.debug(f"Index creation note: {e}")
 
 
 def get_db() -> Generator[Session, None, None]:

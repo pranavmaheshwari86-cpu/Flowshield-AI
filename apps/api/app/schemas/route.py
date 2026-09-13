@@ -34,6 +34,7 @@ class RouteResponse(BaseModel):
     recommendation: Optional[str] = "CLEAR FOR TRANSIT"
     notes: Optional[str] = None
     geometry: Dict[str, Any]
+    turn_by_turn_instructions: Optional[List[Dict[str, Any]]] = None
 
     class Config:
         from_attributes = True
@@ -59,6 +60,9 @@ class RouteEvaluateRequest(BaseModel):
     destination_shelter_id: Optional[str] = None
     state: Optional[str] = None
     district: Optional[str] = None
+    disaster_type: Optional[str] = "FLOOD"
+    avoid_hazards: Optional[bool] = True
+    radius_km: Optional[float] = 25.0
 
 
 class RouteEvaluationResult(BaseModel):

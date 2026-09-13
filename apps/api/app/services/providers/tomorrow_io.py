@@ -23,6 +23,9 @@ from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.tomorrow_io")
 
+_GLOBAL_TOMORROW_RATE_LIMITED_UNTIL: float = 0.0
+_GLOBAL_TOMORROW_RATE_LIMIT_ERROR: Optional[str] = None
+
 
 class TomorrowIOProvider(DataProvider):
     """
@@ -55,9 +58,25 @@ class TomorrowIOProvider(DataProvider):
         self._lock = threading.Lock()
         self._min_request_interval = 0.4  # seconds between calls (max 2.5 req/s < 3 req/s limit)
         self._last_request_time = 0.0
-        self._rate_limited_until = 0.0
-        self._rate_limit_error: Optional[str] = None
         self._cached_payloads = self._load_cache()
+
+    @property
+    def _rate_limited_until(self) -> float:
+        return _GLOBAL_TOMORROW_RATE_LIMITED_UNTIL
+
+    @_rate_limited_until.setter
+    def _rate_limited_until(self, val: float):
+        global _GLOBAL_TOMORROW_RATE_LIMITED_UNTIL
+        _GLOBAL_TOMORROW_RATE_LIMITED_UNTIL = val
+
+    @property
+    def _rate_limit_error(self) -> Optional[str]:
+        return _GLOBAL_TOMORROW_RATE_LIMIT_ERROR
+
+    @_rate_limit_error.setter
+    def _rate_limit_error(self, val: Optional[str]):
+        global _GLOBAL_TOMORROW_RATE_LIMIT_ERROR
+        _GLOBAL_TOMORROW_RATE_LIMIT_ERROR = val
 
     @property
     def name(self) -> str:
@@ -171,7 +190,9 @@ class TomorrowIOProvider(DataProvider):
                 self._rate_limited_until = time.time() + 180.0
                 self._rate_limit_error = "Tomorrow.io rate limit reached (25 req/hr or 3 req/s). Retrying later."
             elif he.code in (401, 403):
-                return {"target_id": target.id, "target_name": target.name, "error": "Tomorrow.io API authentication error (invalid key)"}
+                self._rate_limited_until = time.time() + 600.0
+                self._rate_limit_error = "Tomorrow.io API authentication error (invalid key)"
+                return {"target_id": target.id, "target_name": target.name, "error": self._rate_limit_error}
 
             if cached:
                 return {"target_id": target.id, "target_name": target.name, "data": cached.get("data", {}), "from_cache": True, "warning": "Served from cache due to HTTP error"}
@@ -188,12 +209,23 @@ class TomorrowIOProvider(DataProvider):
         if not self.api_key:
             return {"error": "Missing TOMORROW_API_KEY", "results": []}
 
-        # ponytail: sequential fetch if 1 target, ThreadPoolExecutor with 2 workers if batch
+        # Fast return if circuit breaker / rate-limit is currently active
+        now = time.time()
+        if now < self._rate_limited_until:
+            return {"error": self._rate_limit_error or "Tomorrow.io rate limit active", "results": []}
+
+        # Probe first target before spawning pool
+        first_target_res = self.fetch_target(targets[0])
+        if "error" in first_target_res and (time.time() < self._rate_limited_until):
+            logger.warning(f"Tomorrow.io fast probe triggered circuit breaker: {first_target_res['error']}")
+            return {"error": self._rate_limit_error or first_target_res["error"], "results": [first_target_res]}
+
         if len(targets) == 1:
-            return {"results": [self.fetch_target(targets[0])]}
+            return {"results": [first_target_res]}
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            return {"results": list(executor.map(self.fetch_target, targets))}
+            rest_results = list(executor.map(self.fetch_target, targets[1:]))
+            return {"results": [first_target_res] + rest_results}
 
     def validate(self, raw_payload: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []

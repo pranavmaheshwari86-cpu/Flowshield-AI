@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -9,7 +9,7 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from 'recharts';
-import { ShieldAlert, AlertTriangle, Info, ArrowRight, Activity, Sparkles } from 'lucide-react';
+import { ShieldAlert, Info, ArrowRight } from 'lucide-react';
 import {
   HistoricalSeriesPoint,
   ForecastHorizonPoint,
@@ -43,145 +43,10 @@ export const FloodRiskChart: React.FC<FloodRiskChartProps> = ({
   historicalSeries,
   forecastHorizons,
   capability,
-  settlementName,
+  settlementName: _settlementName,
   onSelectSettlement,
 }) => {
   const isModelSupported = capability ? capability.flood_risk_model === 'SUPPORTED' : true;
-  const [showHydrologicalFallback, setShowHydrologicalFallback] = useState<boolean>(false);
-
-  // If model is unsupported and user hasn't toggled hydrological fallback, render the informative prompt
-  if (!isModelSupported && !showHydrologicalFallback) {
-    return (
-      <div
-        className="timeline-glass-card"
-        style={{
-          background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.75) 0%, rgba(20, 14, 8, 0.88) 100%)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: '12px',
-          padding: '28px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: '14px',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.35)',
-        }}
-      >
-        <div
-          style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '50%',
-            background: 'rgba(245, 158, 11, 0.15)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <AlertTriangle size={24} color="#F59E0B" />
-        </div>
-        <div>
-          <div style={{ fontSize: '17px', fontWeight: 700, color: '#FEF3C7', letterSpacing: '-0.01em' }}>
-            Validated ML Flood-Risk Model Inactive for This Settlement
-          </div>
-          <div style={{ fontSize: '13px', color: '#D97706', fontWeight: 600, marginTop: '3px' }}>
-            {capability?.unsupported_reason || `No validated flood-risk machine learning model trained for ${settlementName || 'this settlement'}.`}
-          </div>
-        </div>
-        <div style={{ fontSize: '12px', color: '#94A3B8', maxWidth: '640px', lineHeight: 1.6 }}>
-          FlowShield enforces strict scientific zero-fabrication standards: mountain flood-risk neural models are restricted from uncalibrated execution on alluvial Gangetic plains. You can switch immediately to a fully calibrated Himalayan catchment or view the empirical hydrological risk projection.
-        </div>
-
-        {/* 1-Click Fast Actions */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={() => onSelectSettlement && onSelectSettlement('vil-hp-mnd-01')}
-            style={{
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(168, 85, 247, 0.5)',
-              borderRadius: '8px',
-              padding: '9px 18px',
-              fontSize: '12.5px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
-              transition: 'all 0.18s ease',
-            }}
-          >
-            <Sparkles size={14} />
-            <span>Switch to Validated ML Model: Mandi Sadar Urban (HP)</span>
-          </button>
-
-          <button
-            onClick={() => onSelectSettlement && onSelectSettlement('vil-hp-mnd-02')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#E2E8F0',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '8px',
-              padding: '9px 16px',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.18s ease',
-            }}
-          >
-            <span>Pandoh Dam Sector (HP)</span>
-          </button>
-
-          <button
-            onClick={() => setShowHydrologicalFallback(true)}
-            style={{
-              background: 'rgba(56, 189, 248, 0.12)',
-              color: '#38BDF8',
-              border: '1px solid rgba(56, 189, 248, 0.35)',
-              borderRadius: '8px',
-              padding: '9px 16px',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.18s ease',
-            }}
-          >
-            <Activity size={14} />
-            <span>Show Hydrological Runoff Risk Curve</span>
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            marginTop: '8px',
-            padding: '8px 16px',
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '8px',
-            fontSize: '11px',
-            color: '#CBD5E1',
-          }}
-        >
-          <span>✓ Real-Time Weather: <strong>Active</strong></span>
-          <span>•</span>
-          <span>✓ ECMWF IFS Forecast: <strong>Active</strong></span>
-          <span>•</span>
-          <span>✓ CWC River Bulletins: <strong>Active</strong></span>
-        </div>
-      </div>
-    );
-  }
 
   // Assemble risk chart data
   const riskMap = new Map<number, RiskChartPoint>();

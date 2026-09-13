@@ -311,9 +311,12 @@ class RainfallAccumulator:
         now_utc = self.parse_timestamp(now) if now else datetime.now(timezone.utc)
         cleaned = self.clean_and_sort_observations(observations)
 
-        # Target relative hours: -6 to 0
-        rel_hours = [-6, -5, -4, -3, -2, -1, 0]
+        # Target relative hours: -24, -12, and -6 to 0
+        rel_hours = [-24, -12, -6, -5, -4, -3, -2, -1, 0]
         series = []
+
+        rainfall_24h = kwargs.get("rainfall_24h_mm")
+        rainfall_12h = kwargs.get("rainfall_12h_mm")
 
         for rh in rel_hours:
             pt_dt = now_utc + timedelta(hours=rh)
@@ -327,9 +330,14 @@ class RainfallAccumulator:
                     min_diff_sec = diff
                     closest_val = val
 
-            # Special handling for rh == 0 (current time)
-            if rh == 0 and closest_val is None and current_rate_mm_hr is not None:
-                closest_val = current_rate_mm_hr
+            # Special handling & fallback estimations for historical milestones
+            if closest_val is None:
+                if rh == 0 and current_rate_mm_hr is not None:
+                    closest_val = current_rate_mm_hr
+                elif rh == -12 and rainfall_12h is not None and isinstance(rainfall_12h, (int, float)):
+                    closest_val = round(max(0.0, float(rainfall_12h) / 12.0), 2)
+                elif rh == -24 and rainfall_24h is not None and isinstance(rainfall_24h, (int, float)):
+                    closest_val = round(max(0.0, float(rainfall_24h) / 24.0), 2)
 
             rain_rate = closest_val if closest_val is not None else None
 

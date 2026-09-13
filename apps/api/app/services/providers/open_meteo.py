@@ -5,10 +5,11 @@ Fetches live atmospheric, precipitation, and multi-layer soil saturation telemet
 """
 
 import json
+import time
 import logging
 import urllib.request
 import urllib.parse
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timezone
 
 from .base import DataProvider, FreshnessPolicy, LocationTarget
@@ -17,11 +18,35 @@ from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.open_meteo")
 
+_GLOBAL_OPENMETEO_RATE_LIMITED_UNTIL: float = 0.0
+_GLOBAL_OPENMETEO_ERROR: Optional[str] = None
+
 
 class OpenMeteoProvider(DataProvider):
     """Acquires live real-time atmospheric and hydrometeorological telemetry from Open-Meteo API."""
 
     API_URL = "https://api.open-meteo.com/v1/forecast"
+
+    def __init__(self):
+        pass
+
+    @property
+    def _rate_limited_until(self) -> float:
+        return _GLOBAL_OPENMETEO_RATE_LIMITED_UNTIL
+
+    @_rate_limited_until.setter
+    def _rate_limited_until(self, val: float):
+        global _GLOBAL_OPENMETEO_RATE_LIMITED_UNTIL
+        _GLOBAL_OPENMETEO_RATE_LIMITED_UNTIL = val
+
+    @property
+    def _circuit_breaker_error(self) -> Optional[str]:
+        return _GLOBAL_OPENMETEO_ERROR
+
+    @_circuit_breaker_error.setter
+    def _circuit_breaker_error(self, val: Optional[str]):
+        global _GLOBAL_OPENMETEO_ERROR
+        _GLOBAL_OPENMETEO_ERROR = val
 
     @property
     def name(self) -> str:
@@ -64,6 +89,10 @@ class OpenMeteoProvider(DataProvider):
         if not targets:
             return {"results": []}
 
+        now = time.time()
+        if now < self._rate_limited_until:
+            return {"error": self._circuit_breaker_error or "Open-Meteo circuit breaker active (HTTP 429)", "results": []}
+
         lats = ",".join(f"{t.latitude:.4f}" for t in targets)
         lons = ",".join(f"{t.longitude:.4f}" for t in targets)
 
@@ -82,9 +111,18 @@ class OpenMeteoProvider(DataProvider):
         req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
 
         try:
-            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=10) as response:
+            with urllib.request.urlopen(req, context=get_ssl_context(), timeout=4) as response:
                 payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as he:
+            if he.code == 429:
+                self._rate_limited_until = time.time() + 300.0  # 5 min backoff
+                self._circuit_breaker_error = f"Open-Meteo HTTP 429: Daily request limit reached"
+                logger.warning(f"Open-Meteo 429 encountered; circuit breaker engaged for 5m.")
+            return {"error": f"Open-Meteo HTTP {he.code}", "results": []}
         except Exception as e:
+            if "429" in str(e):
+                self._rate_limited_until = time.time() + 300.0
+                self._circuit_breaker_error = "Open-Meteo rate limit (HTTP 429)"
             logger.warning(f"Open-Meteo fetch failed ({e}); returning error payload")
             return {"error": str(e), "results": []}
 

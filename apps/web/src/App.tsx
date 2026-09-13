@@ -6,9 +6,8 @@ import { Navbar } from './components/common/Navbar';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 
-// Lazy-loaded secondary route modules for ultra-fast initial bundle loading
-const ResponderPage = lazy(() => import('./pages/ResponderPage').then(m => ({ default: m.ResponderPage })));
-const CitizenPage = lazy(() => import('./pages/CitizenPage').then(m => ({ default: m.CitizenPage })));
+import { ResponderPage } from './pages/ResponderPage';
+import { CitizenPage } from './pages/CitizenPage';
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
 
@@ -31,7 +30,7 @@ export const App: React.FC = () => {
     };
 
     fetchStatus();
-    const interval = setInterval(fetchStatus, 8000);
+    const interval = setInterval(fetchStatus, 15000);
 
     if (api.getToken()) {
       api.getMe()

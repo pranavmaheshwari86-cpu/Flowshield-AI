@@ -5,6 +5,7 @@ Fetches live atmospheric, temperature, humidity, pressure, wind, and precipitati
 """
 
 import json
+import time
 import logging
 import urllib.request
 import urllib.parse
@@ -19,6 +20,9 @@ from ...utils.ssl_context import get_ssl_context
 
 logger = logging.getLogger("flowshield.providers.open_weather")
 
+_GLOBAL_OPENWEATHER_BLOCKED_UNTIL: float = 0.0
+_GLOBAL_OPENWEATHER_ERROR: Optional[str] = None
+
 
 class OpenWeatherProvider(DataProvider):
     """Acquires live real-time atmospheric and precipitation telemetry from OpenWeatherMap API."""
@@ -28,6 +32,24 @@ class OpenWeatherProvider(DataProvider):
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = (api_key or settings.OPENWEATHER_API_KEY or "").strip()
+
+    @property
+    def _circuit_breaker_until(self) -> float:
+        return _GLOBAL_OPENWEATHER_BLOCKED_UNTIL
+
+    @_circuit_breaker_until.setter
+    def _circuit_breaker_until(self, val: float):
+        global _GLOBAL_OPENWEATHER_BLOCKED_UNTIL
+        _GLOBAL_OPENWEATHER_BLOCKED_UNTIL = val
+
+    @property
+    def _circuit_breaker_error(self) -> Optional[str]:
+        return _GLOBAL_OPENWEATHER_ERROR
+
+    @_circuit_breaker_error.setter
+    def _circuit_breaker_error(self, val: Optional[str]):
+        global _GLOBAL_OPENWEATHER_ERROR
+        _GLOBAL_OPENWEATHER_ERROR = val
 
     @property
     def name(self) -> str:
@@ -76,6 +98,10 @@ class OpenWeatherProvider(DataProvider):
         if not self.api_key:
             return {"error": "Missing OPENWEATHER_API_KEY", "results": []}
 
+        now = time.time()
+        if now < self._circuit_breaker_until:
+            return {"error": self._circuit_breaker_error or "OpenWeather circuit breaker active", "results": []}
+
         ssl_ctx = get_ssl_context()
 
         def fetch_target(target: LocationTarget) -> Dict[str, Any]:
@@ -91,7 +117,7 @@ class OpenWeatherProvider(DataProvider):
                 url = f"{self.API_URL_WEATHER}?{query}"
                 req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
 
-                with urllib.request.urlopen(req, context=ssl_ctx, timeout=6) as resp:
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=3) as resp:
                     current_data = json.loads(resp.read().decode("utf-8"))
 
                 # 2. Fetch short-term forecast for multi-hour accumulation
@@ -99,7 +125,7 @@ class OpenWeatherProvider(DataProvider):
                 try:
                     f_url = f"{self.API_URL_FORECAST}?{query}"
                     f_req = urllib.request.Request(f_url, headers={"User-Agent": "Flowshield-Disaster-Intelligence/2.4"})
-                    with urllib.request.urlopen(f_req, context=ssl_ctx, timeout=6) as f_resp:
+                    with urllib.request.urlopen(f_req, context=ssl_ctx, timeout=3) as f_resp:
                         forecast_data = json.loads(f_resp.read().decode("utf-8"))
                 except Exception as fe:
                     logger.debug(f"OpenWeather forecast query skipped/failed for {target.name}: {fe}")
@@ -113,6 +139,9 @@ class OpenWeatherProvider(DataProvider):
             except urllib.error.HTTPError as he:
                 err_body = he.read().decode("utf-8", errors="ignore")
                 logger.warning(f"OpenWeather HTTP {he.code} for {target.name}: {err_body}")
+                if he.code in (401, 403, 429):
+                    self._circuit_breaker_until = time.time() + 600.0  # 10 minute cooldown
+                    self._circuit_breaker_error = f"OpenWeather HTTP {he.code}: {err_body}"
                 return {
                     "target_id": target.id,
                     "target_name": target.name,
@@ -126,11 +155,18 @@ class OpenWeatherProvider(DataProvider):
                     "error": str(e),
                 }
 
-        results = []
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            future_to_target = {executor.submit(fetch_target, t): t for t in targets}
-            for future in as_completed(future_to_target):
-                results.append(future.result())
+        # Fast probe: test first target before spawning pool
+        first_res = fetch_target(targets[0])
+        if "error" in first_res and (time.time() < self._circuit_breaker_until):
+            logger.warning(f"OpenWeather fast probe triggered circuit breaker: {first_res['error']}")
+            return {"error": first_res["error"], "results": [first_res]}
+
+        results = [first_res]
+        if len(targets) > 1:
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                future_to_target = {executor.submit(fetch_target, t): t for t in targets[1:]}
+                for future in as_completed(future_to_target):
+                    results.append(future.result())
 
         return {"results": results}
 

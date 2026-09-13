@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Shield, Smartphone, UserCheck, LogOut } from 'lucide-react';
+import { Home, Shield, UserCheck, LogOut } from 'lucide-react';
 import { SystemStatus, User } from '../../types';
 
 interface NavbarProps {
@@ -121,13 +121,6 @@ export const Navbar: React.FC<NavbarProps> = ({ systemStatus: _systemStatus, use
           <span>Tactical Responder</span>
         </Link>
 
-        <Link
-          to="/citizen"
-          className={`nav-3d-pill ${location.pathname === '/citizen' ? 'active' : ''}`}
-        >
-          <Smartphone size={15} className="nav-3d-icon" />
-          <span>Citizen Mode</span>
-        </Link>
 
 
       </nav>

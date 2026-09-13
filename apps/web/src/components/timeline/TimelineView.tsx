@@ -8,11 +8,8 @@ import { TimelineHeader } from './TimelineHeader';
 import { CurrentSituationBar } from './CurrentSituationBar';
 import { PrecipitationChart } from './PrecipitationChart';
 import { FloodRiskChart } from './FloodRiskChart';
-import { MultiHorizonForecastGrid } from './MultiHorizonForecastGrid';
-import { SituationAnalysisCard } from './SituationAnalysisCard';
 import { HydrologicalAnalysisCard } from './HydrologicalAnalysisCard';
 import { ExposureEvacuationCard } from './ExposureEvacuationCard';
-import { DataQualityTransparencyCard } from './DataQualityTransparencyCard';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface TimelineViewProps {
@@ -32,7 +29,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   // Detailed Timeline Intelligence State
   const [timelineData, setTimelineData] = useState<TimelineDetailedResponse | null>(null);
-  const [selectedHorizonHours, setSelectedHorizonHours] = useState<number | null>(null);
 
   // Status & Concurrency State
   const [status, setStatus] = useState<'INITIALIZING' | 'LOADING' | 'LIVE' | 'UPDATING' | 'DEGRADED' | 'ERROR'>('INITIALIZING');
@@ -41,6 +37,21 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   // Active in-flight request abort controller
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // In-memory cache for loaded settlements to make navigation instantaneous
+  const detailedCacheRef = useRef<Map<string, TimelineDetailedResponse>>(new Map());
+
+  // Derive immediate settlement metadata from the location hierarchy (zero waiting for header render)
+  const currentSettlementInfo = React.useMemo(() => {
+    if (!locations) return null;
+    for (const st of locations.states) {
+      for (const dist of st.districts) {
+        const match = dist.settlements.find((v) => v.id === selectedVillageId);
+        if (match) return match;
+      }
+    }
+    return null;
+  }, [locations, selectedVillageId]);
 
   // 1. Fetch Location Hierarchy on Mount
   useEffect(() => {
@@ -116,10 +127,19 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      if (forceRefresh) {
+      // Check client-side memory cache for instantaneous render
+      const cached = detailedCacheRef.current.get(villageId);
+      if (cached && !forceRefresh) {
+        setTimelineData(cached);
+        setStatus(
+          cached.data_quality.overall_health === 'COMPROMISED' || cached.data_quality.overall_health === 'DEGRADED'
+            ? 'DEGRADED'
+            : 'LIVE'
+        );
+      } else if (forceRefresh) {
         setIsRefreshing(true);
         setStatus('UPDATING');
-      } else if (!timelineDataRef.current) {
+      } else if (!timelineDataRef.current || timelineDataRef.current.settlement.id !== villageId) {
         setStatus('LOADING');
       }
 
@@ -131,6 +151,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         if (response.settlement.id !== villageId) {
           return;
         }
+        detailedCacheRef.current.set(villageId, response);
         setTimelineData(response);
 
         // Evaluate status based on response data quality
@@ -232,9 +253,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         isRefreshing={isRefreshing}
         onRefresh={handleRefresh}
         lastUpdated={timelineData?.generated_at || ''}
-        settlementName={timelineData?.settlement.name || 'Selecting Location...'}
-        elevationMeters={timelineData?.settlement.elevation_meters || 500}
-        riverBasin={timelineData?.settlement.river_basin || 'Catchment Basin'}
+        settlementName={timelineData?.settlement.name || currentSettlementInfo?.name || 'Selecting Location...'}
+        elevationMeters={timelineData?.settlement.elevation_meters || (currentSettlementInfo?.elevation_m != null ? Math.round(currentSettlementInfo.elevation_m) : 500)}
+        riverBasin={timelineData?.settlement.river_basin || currentSettlementInfo?.basin || 'Catchment Basin'}
       />
 
       {/* Loading Skeleton */}
@@ -348,35 +369,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             }}
           />
 
-          {/* 4. Multi-Horizon Forecast Projection Grid (+1h to +48h) */}
-          <MultiHorizonForecastGrid
-            horizons={timelineData.forecast_horizons}
-            selectedHorizonHours={selectedHorizonHours}
-            onSelectHorizon={setSelectedHorizonHours}
-          />
-
-          {/* 5. Commander Situation Brief & Explainable Risk Drivers */}
-          <SituationAnalysisCard
-            situationSummary={timelineData.situation_summary}
-            thresholdAnalysis={timelineData.threshold_analysis}
-            peaks={timelineData.peak_analysis}
-            riskDrivers={timelineData.risk_drivers}
-            trendRatePointsPerHr={trendRate}
-          />
-
-          {/* 6. Dual Card: Hydrological River Dynamics & Spatial Exposure */}
+          {/* 4. Dual Card: Hydrological River Dynamics & Spatial Exposure */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '14px' }}>
             <HydrologicalAnalysisCard hydrology={timelineData.hydrology} />
             <ExposureEvacuationCard exposure={timelineData.exposure} settlementName={timelineData.settlement.name} />
           </div>
-
-          {/* 7. Auditable Data Quality & Telemetry Provenance Matrix */}
-          <DataQualityTransparencyCard
-            dataQuality={timelineData.data_quality}
-            modelMetadata={timelineData.model_metadata}
-            locationCapabilities={timelineData.location_capabilities}
-            currentSituation={timelineData.current_situation}
-          />
         </>
       )}
     </div>

@@ -7,7 +7,6 @@ import {
   Building2,
   BarChart3,
   TrendingUp,
-  Sparkles,
 } from 'lucide-react';
 
 interface CommandSidebarProps {
@@ -36,7 +35,6 @@ export const CommandSidebar: React.FC<CommandSidebarProps> = ({
   const navItems = [
     { id: 'Map', label: 'Map', icon: MapIcon },
     { id: 'Timeline', label: 'Timeline', icon: TrendingUp },
-    { id: 'AI Intel', label: 'AI Intel', icon: Sparkles },
     ...(SHOW_EXTENDED_NAV ? extendedNavItems : []),
   ];
 

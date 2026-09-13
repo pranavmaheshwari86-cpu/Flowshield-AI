@@ -35,6 +35,9 @@ class DriftMonitorService:
     def __init__(self):
         self._baseline_metadata: Dict[str, Any] = {}
         self._baseline_features: Dict[str, Dict[str, Any]] = {}
+        self._cached_metrics: Optional[Dict[str, Any]] = None
+        self._cache_timestamp: float = 0.0
+        self._cache_ttl_sec: float = 120.0  # Cache drift metrics for 2 minutes
         self._load_baseline()
 
     def _load_baseline(self):
@@ -130,15 +133,23 @@ class DriftMonitorService:
         """
         Evaluates covariate and prediction drift across recent observations within window_hours.
         Computes Population Stability Index (PSI) and Z-score divergence against baseline.
+        Results are cached in-memory for 120s to ensure ultra-low latency on status polling.
         """
+        import time
+        now_ts = time.time()
+        if self._cached_metrics and (now_ts - self._cache_timestamp) < self._cache_ttl_sec:
+            return self._cached_metrics
+
         now = datetime.now(timezone.utc)
         window_start = now - timedelta(hours=window_hours)
 
-        # 1. Fetch recent observations with joined village metadata
+        # 1. Fetch recent observations with joined village metadata (capped at 500 recent for instantaneous statistical profiling)
         obs = (
             db.query(EnvironmentalObservation)
             .join(Village, EnvironmentalObservation.village_id == Village.id)
             .filter(EnvironmentalObservation.timestamp >= window_start)
+            .order_by(EnvironmentalObservation.timestamp.desc())
+            .limit(500)
             .all()
         )
 
@@ -265,7 +276,7 @@ class DriftMonitorService:
             drift_level = "HEALTHY"
             rec = "Telemetry distributions and prediction probabilities align closely with calibrated baseline."
 
-        return {
+        res_dict = {
             "status": "EVALUATED",
             "sample_count": sample_count,
             "window_hours": window_hours,
@@ -284,6 +295,9 @@ class DriftMonitorService:
             "recommendation": rec,
             "last_evaluated": now.isoformat(),
         }
+        self._cached_metrics = res_dict
+        self._cache_timestamp = now_ts
+        return res_dict
 
 
 drift_monitor = DriftMonitorService()

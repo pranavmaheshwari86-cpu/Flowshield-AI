@@ -242,11 +242,17 @@ class OpenMeteoRainfallProvider(RainfallProvider):
 
     API_URL = "https://api.open-meteo.com/v1/forecast"
 
+    def __init__(self):
+        self._rate_limited_until = 0.0
+        self._rate_limit_error: Optional[str] = None
+
     @property
     def name(self) -> str:
         return "Open-Meteo / ECMWF Copernicus Reanalysis & Forecast"
 
     def get_provider_status(self) -> Dict[str, Any]:
+        import time
+        is_rate_limited = time.time() < self._rate_limited_until
         return {
             "provider": self.name,
             "api_endpoint": self.API_URL,
@@ -256,12 +262,17 @@ class OpenMeteoRainfallProvider(RainfallProvider):
             "citation": "Copernicus Climate Change Service / ECMWF",
             "is_synthetic": False,
             "type": "NUMERICAL_PREDICTION_AND_SATELLITE_ASSIMILATION",
-            "status": "OPERATIONAL",
+            "status": "RATE_LIMITED" if is_rate_limited else "OPERATIONAL",
+            "rate_limit_message": self._rate_limit_error if is_rate_limited else None,
         }
 
     def get_current_rainfall(self, targets: List[LocationTarget]) -> Tuple[List[RainfallReading], Optional[str]]:
+        import time
         if not targets:
             return [], None
+
+        if time.time() < self._rate_limited_until:
+            return [], self._rate_limit_error or "Open-Meteo API daily rate limit reached. Retrying later."
 
         readings: List[RainfallReading] = []
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -286,17 +297,41 @@ class OpenMeteoRainfallProvider(RainfallProvider):
             url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
             req = urllib.request.Request(url, headers={"User-Agent": "Flowshield-Precipitation-Engine/2.4"})
 
-            try:
-                with urllib.request.urlopen(req, context=get_ssl_context(), timeout=12) as response:
-                    if response.status != 200:
-                        err_msg = f"HTTP {response.status} from Open-Meteo"
-                        logger.warning(err_msg)
-                        return readings, err_msg
-                    payload = json.loads(response.read().decode("utf-8"))
-            except Exception as e:
-                err_msg = f"Network or parsing error connecting to Open-Meteo: {e}"
-                logger.warning(err_msg)
-                return readings, f"Open-Meteo unreachable ({e}); telemetry unavailable"
+            payload = None
+            last_err = None
+            is_429 = False
+            for attempt in range(2):
+                try:
+                    with urllib.request.urlopen(req, context=get_ssl_context(), timeout=12) as response:
+                        if response.status == 200:
+                            payload = json.loads(response.read().decode("utf-8"))
+                            break
+                        last_err = f"HTTP {response.status} from Open-Meteo"
+                except urllib.error.HTTPError as he:
+                    err_body = he.read().decode("utf-8", errors="ignore") if hasattr(he, "read") else ""
+                    if he.code == 429:
+                        is_429 = True
+                        self._rate_limited_until = time.time() + 3600  # 1 hour backoff circuit breaker
+                        self._rate_limit_error = "Open-Meteo API daily request limit exceeded. Retrying later."
+                        logger.warning("Open-Meteo 429 Daily Request Limit reached; engaging circuit breaker.")
+                        break
+                    last_err = f"HTTP {he.code}: {err_body}"
+                except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str:
+                        is_429 = True
+                        self._rate_limited_until = time.time() + 3600
+                        self._rate_limit_error = "Open-Meteo API daily request limit exceeded. Retrying later."
+                        logger.warning("Open-Meteo 429 Daily Request Limit reached; engaging circuit breaker.")
+                        break
+                    last_err = f"Open-Meteo connection error: {e}"
+
+            if is_429:
+                return readings, self._rate_limit_error
+
+            if not payload:
+                logger.warning(f"Batch {i//chunk_size} failed after retry ({last_err}); continuing remaining batches")
+                continue
 
             # Open-Meteo returns a single dict if len(chunk) == 1, or a list of dicts if multiple
             results = [payload] if isinstance(payload, dict) else payload
@@ -367,6 +402,14 @@ class OpenMeteoRainfallProvider(RainfallProvider):
                 target_district = getattr(target, "district", target.name)
 
                 severity = compute_rainfall_severity(precip_1h, rainfall_24h)
+                weather_main = "Rain" if precip_1h > 0.1 else ("Clouds" if "cloud" in weather_desc.lower() else "Clear")
+                risk = calculate_flood_risk(
+                    rainfall_rate_mm_hr=precip_1h,
+                    forecast_24h_mm=rainfall_24h,
+                    observed_24h_mm=rainfall_24h,
+                    elevation_m=getattr(target, "elevation_m", None),
+                    weather_main=weather_main,
+                )
 
                 readings.append(
                     RainfallReading(
@@ -380,10 +423,16 @@ class OpenMeteoRainfallProvider(RainfallProvider):
                         rainfall_24h_mm=round(rainfall_24h, 2),
                         rainfall_3h_mm=rain_3h,
                         rainfall_6h_mm=rain_6h,
+                        forecast_24h_mm=round(rainfall_24h, 2),
+                        historical_24h_available=True,
+                        weather_main=weather_main,
                         weather_description=weather_desc,
                         temperature_c=round(temp_c, 1),
                         humidity_pct=round(humidity_pct, 1),
                         severity=severity,
+                        risk_level=risk["level"],
+                        risk_score=risk["score"],
+                        risk_reasons=risk["reasons"],
                         timestamp=time_str,
                         source=self.name,
                         quality="live",
@@ -435,20 +484,44 @@ class OpenWeatherRainfallProvider(RainfallProvider):
         return "OpenWeatherMap Live Synoptic Network"
 
     def _load_cache_from_disk(self):
-        try:
-            if self.cache_file.exists():
-                with open(self.cache_file, "r", encoding="utf-8") as f:
-                    self._cached_station_readings = json.load(f)
-                logger.info(f"Loaded {len(self._cached_station_readings)} cached OpenWeather stations from disk.")
-        except Exception as e:
-            logger.debug(f"Could not load OpenWeather disk cache: {e}")
+        possible_station_files = [
+            self.cache_file,
+            Path("apps/api/scratch/openweather_cache.json"),
+            Path("scratch/openweather_cache.json"),
+            Path(__file__).resolve().parent.parent.parent.parent.parent / "scratch" / "openweather_cache.json",
+            Path(__file__).resolve().parent.parent.parent / "scratch" / "openweather_cache.json",
+        ]
+        for p in possible_station_files:
+            try:
+                if p.exists():
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if data and len(data) > len(self._cached_station_readings):
+                            self._cached_station_readings = data
+                            self.cache_file = p
+            except Exception as e:
+                logger.debug(f"Could not load OpenWeather disk cache from {p}: {e}")
 
-        try:
-            if self.forecast_cache_file.exists():
-                with open(self.forecast_cache_file, "r", encoding="utf-8") as f:
-                    self._cached_forecasts = json.load(f)
-        except Exception:
-            pass
+        if self._cached_station_readings:
+            logger.info(f"Loaded {len(self._cached_station_readings)} cached OpenWeather stations from disk ({self.cache_file}).")
+
+        possible_forecast_files = [
+            self.forecast_cache_file,
+            Path("apps/api/scratch/openweather_forecast_cache.json"),
+            Path("scratch/openweather_forecast_cache.json"),
+            Path(__file__).resolve().parent.parent.parent.parent.parent / "scratch" / "openweather_forecast_cache.json",
+            Path(__file__).resolve().parent.parent.parent / "scratch" / "openweather_forecast_cache.json",
+        ]
+        for p in possible_forecast_files:
+            try:
+                if p.exists():
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if data and len(data) > len(self._cached_forecasts):
+                            self._cached_forecasts = data
+                            self.forecast_cache_file = p
+            except Exception:
+                pass
 
     def _save_cache_to_disk(self):
         try:
@@ -764,22 +837,35 @@ class OpenWeatherRainfallProvider(RainfallProvider):
             # Everything served fresh from cache
             return readings, None
 
+        # If we have cached readings for the majority of uncached targets, serve them as stale
+        # rather than performing sequential HTTP calls that would take 200+ seconds and hit rate limits
+        available_cached = [t for t in uncached_targets if t.id in self._cached_station_readings]
+        if len(available_cached) >= len(uncached_targets) * 0.5:
+            for t in uncached_targets:
+                entry = self._cached_station_readings.get(t.id)
+                if entry:
+                    reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
+            return readings, None
+
         # 2. Check if currently rate limited
         if now < self._rate_limited_until:
             # Under 429 backoff; serve whatever cached data exists as STALE
             for t in uncached_targets:
                 entry = self._cached_station_readings.get(t.id)
-                if entry and (now - entry.get("cached_at", 0)) < stale_threshold:
+                if entry:
                     reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
                     readings.append(reading)
             return readings, self._rate_limit_error or "Weather API rate limit reached. Retrying later."
 
-        # 3. Paced fetching for uncached targets
-        logger.info(f"Fetching fresh OpenWeather telemetry for {len(uncached_targets)} stations (paced)...")
+        # 3. Paced fetching for uncached targets (cap batch to max 5 targets per pass to maintain sub-5s response)
+        logger.info(f"Fetching fresh OpenWeather telemetry for {len(uncached_targets)} stations (capped)...")
         encountered_error: Optional[str] = None
         newly_fetched = 0
+        fetch_slice = uncached_targets[:5]
+        deferred_slice = uncached_targets[5:]
 
-        for t in uncached_targets:
+        for t in fetch_slice:
             data, err, status = self.fetch_single_weather(t)
             if data:
                 self._cached_station_readings[t.id] = {
@@ -799,7 +885,6 @@ class OpenWeatherRainfallProvider(RainfallProvider):
             else:
                 if err:
                     encountered_error = err
-                # For this target, see if older cached data exists
                 entry = self._cached_station_readings.get(t.id)
                 if entry:
                     reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
@@ -808,14 +893,13 @@ class OpenWeatherRainfallProvider(RainfallProvider):
         if newly_fetched > 0:
             self._save_cache_to_disk()
 
-        # If rate limit was hit during the loop, fill remaining targets from older cache as stale
-        if now < self._rate_limited_until or encountered_error:
-            for t in uncached_targets:
-                if not any(r.id == f"rain_{t.id}" for r in readings):
-                    entry = self._cached_station_readings.get(t.id)
-                    if entry and (time.time() - entry.get("cached_at", 0)) < stale_threshold:
-                        reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
-                        readings.append(reading)
+        # Fill any remaining deferred or errored targets from cached readings
+        for t in (fetch_slice + deferred_slice):
+            if not any(r.id == f"rain_{t.id}" for r in readings):
+                entry = self._cached_station_readings.get(t.id)
+                if entry:
+                    reading = self._parse_weather_to_reading(t, entry["data"], quality="stale")
+                    readings.append(reading)
 
         return readings, encountered_error
 
@@ -1025,7 +1109,14 @@ class TomorrowIORainfallProvider(RainfallProvider):
         readings: List[RainfallReading] = []
         last_error = None
 
+        import time
         for t in targets:
+            # If rate-limited and target is not cached, skip network attempt to avoid hanging
+            if time.time() < self._io._rate_limited_until:
+                cache_key = f"{round(t.latitude, 2):.2f}_{round(t.longitude, 2):.2f}"
+                if cache_key not in self._io._cached_payloads:
+                    last_error = self._io._rate_limit_error or "Tomorrow.io rate limit active"
+                    continue
             data, err, _ = self.fetch_station(t)
             if data:
                 quality = "stale" if err and "stale" in err.lower() else "live"

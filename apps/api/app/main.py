@@ -46,6 +46,10 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     reconcile_sqlite_schema(engine, Base)
     
+    # Invalidate in-memory timeline caches on startup
+    from .services.timeline_service import TimelineService
+    TimelineService.clear_all_caches()
+    
     # Load ML Model & SHAP Explainer
     loaded = prediction_service.load_artifacts()
     if loaded:

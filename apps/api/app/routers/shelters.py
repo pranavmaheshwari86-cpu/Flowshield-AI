@@ -58,6 +58,8 @@ def get_recommended_shelters(
     state: Optional[str] = Query(None, description="State name"),
     district: Optional[str] = Query(None, description="District name"),
     village_id: Optional[str] = Query(None, description="Settlement ID"),
+    disaster_type: str = Query("FLOOD", description="Disaster scenario: FLOOD, LANDSLIDE, CYCLONE, EARTHQUAKE, FIRE, MULTI_HAZARD"),
+    radius_km: Optional[float] = Query(25.0, description="Search radius in kilometers"),
     limit: int = Query(5, ge=1, le=20, description="Max shelters to return"),
     db: Session = Depends(get_db),
 ):
@@ -72,6 +74,8 @@ def get_recommended_shelters(
         state=state,
         district=district,
         village_id=village_id,
+        disaster_type=disaster_type,
+        radius_km=radius_km,
         limit=limit,
     )
     return [ShelterResponse(**r) for r in results]

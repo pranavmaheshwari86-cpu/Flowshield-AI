@@ -109,17 +109,17 @@ class TestRainfallAccumulationEngine:
         assert cleaned[0][1] == 0.0
         assert cleaned[1][1] == 10.0
 
-    def test_observed_timeline_series_seven_points(self):
-        """Verifies get_observed_timeline_series produces exact 7 points (-6h to NOW)."""
+    def test_observed_timeline_series_milestone_points(self):
+        """Verifies get_observed_timeline_series produces exact 9 points (-24h, -12h, -6h to NOW)."""
         now = datetime(2026, 9, 15, 12, 0, 0, tzinfo=timezone.utc)
         observations = [
             {"timestamp": (now - timedelta(hours=i)).isoformat(), "rainfall_mm": float(i)}
-            for i in range(8)
+            for i in range(25)
         ]
 
         series = rainfall_accumulator.get_observed_timeline_series(observations, now=now)
-        assert len(series) == 7
-        expected_rhs = [-6, -5, -4, -3, -2, -1, 0]
+        assert len(series) == 9
+        expected_rhs = [-24, -12, -6, -5, -4, -3, -2, -1, 0]
         for idx, pt in enumerate(series):
             assert pt["relative_hour"] == expected_rhs[idx]
             assert "operational_risk_score" in pt
@@ -257,9 +257,9 @@ class TestTimelineServiceIntegration:
         assert hasattr(curr, "rainfall_24h_mm")
         assert curr.rainfall_12h_mm is not None
 
-        # 3. Exactly 7 historical points
-        assert len(resp.historical_series) == 7
-        assert [p.relative_hour for p in resp.historical_series] == [-6, -5, -4, -3, -2, -1, 0]
+        # 3. Exactly 9 historical points (-24h, -12h, -6h to NOW)
+        assert len(resp.historical_series) == 9
+        assert [p.relative_hour for p in resp.historical_series] == [-24, -12, -6, -5, -4, -3, -2, -1, 0]
 
         # 4. Exactly 6 forecast horizons
         assert len(resp.forecast_horizons) == 6

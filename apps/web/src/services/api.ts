@@ -28,6 +28,8 @@ import {
   AgroStatus,
   AgroMonitoringPolygon,
   SoilGeoJSONFeatureCollection,
+  RouteEvaluationResult,
+  ResolvedLocation,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL 
@@ -36,6 +38,20 @@ const API_BASE = import.meta.env.VITE_API_URL
 
 class ApiClient {
   private token: string | null = null;
+  private cache = new Map<string, { data: any; expiresAt: number }>();
+
+  private getCached<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.data as T;
+    }
+    return null;
+  }
+
+  private setCached<T>(key: string, data: T, ttlMs: number = 60000): T {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+    return data;
+  }
 
   constructor() {
     this.token = localStorage.getItem('flowshield_token');
@@ -352,17 +368,28 @@ class ApiClient {
     });
   }
 
-  // Geography Endpoints
+  // Geography Endpoints (Cached in-memory with 5-minute TTL)
   public async getGeographyStates(): Promise<any[]> {
-    return this.request<any[]>('/geography/states');
+    const cached = this.getCached<any[]>('geo_states');
+    if (cached) return cached;
+    const res = await this.request<any[]>('/geography/states');
+    return this.setCached('geo_states', res, 300000);
   }
 
   public async getGeographyDistricts(state: string): Promise<any[]> {
-    return this.request<any[]>(`/geography/states/${encodeURIComponent(state)}/districts`);
+    const key = `geo_dist_${state}`;
+    const cached = this.getCached<any[]>(key);
+    if (cached) return cached;
+    const res = await this.request<any[]>(`/geography/states/${encodeURIComponent(state)}/districts`);
+    return this.setCached(key, res, 300000);
   }
 
   public async getGeographySettlements(district: string, state: string = 'Uttarakhand'): Promise<any[]> {
-    return this.request<any[]>(`/geography/districts/${encodeURIComponent(district)}/settlements?state=${encodeURIComponent(state)}`);
+    const key = `geo_settle_${state}_${district}`;
+    const cached = this.getCached<any[]>(key);
+    if (cached) return cached;
+    const res = await this.request<any[]>(`/geography/districts/${encodeURIComponent(district)}/settlements?state=${encodeURIComponent(state)}`);
+    return this.setCached(key, res, 300000);
   }
 
   // Shelters & Routes
@@ -409,6 +436,8 @@ class ApiClient {
     state?: string;
     district?: string;
     village_id?: string;
+    disaster_type?: string;
+    radius_km?: number;
     limit?: number;
   }): Promise<Shelter[]> {
     const q = new URLSearchParams({
@@ -419,8 +448,14 @@ class ApiClient {
     if (params.state) q.append('state', params.state);
     if (params.district) q.append('district', params.district);
     if (params.village_id) q.append('village_id', params.village_id);
+    if (params.disaster_type) q.append('disaster_type', params.disaster_type);
+    if (params.radius_km) q.append('radius_km', String(params.radius_km));
 
     return this.request<Shelter[]>(`/shelters/recommended?${q.toString()}`);
+  }
+
+  public async reverseGeocode(lat: number, lon: number): Promise<ResolvedLocation> {
+    return this.request<ResolvedLocation>(`/geography/reverse-geocode?lat=${lat}&lon=${lon}`);
   }
 
   public async getNearestShelters(villageId: any): Promise<Shelter[]> {
@@ -519,11 +554,39 @@ class ApiClient {
     destination_shelter_id?: string | number;
     state?: string;
     district?: string;
-  }): Promise<any> {
-    return this.request<any>('/routes/evaluate-disaster-aware', {
+    disaster_type?: string;
+    avoid_hazards?: boolean;
+    radius_km?: number;
+  }): Promise<RouteEvaluationResult> {
+    const raw = await this.request<RouteEvaluationResult>('/routes/evaluate-disaster-aware', {
       method: 'POST',
       body: JSON.stringify(req),
     });
+
+    const normalize = (r: any): EvacuationRoute => {
+      if (!r) return r;
+      let coords: [number, number][] = [];
+      if (r.geometry?.coordinates && Array.isArray(r.geometry.coordinates)) {
+        coords = r.geometry.coordinates.map((c: any) => [c[1], c[0]]);
+      } else if (r.coordinates && Array.isArray(r.coordinates)) {
+        coords = r.coordinates.map((pt: any) => (pt[0] > 50 && pt[1] < 45 ? [pt[1], pt[0]] : [pt[0], pt[1]]));
+      }
+      return {
+        ...r,
+        coordinates: coords,
+        status: r.is_blocked ? 'BLOCKED' : ((r.assessed_risk_score || 0) > 50 ? 'CAUTION' : 'CLEAR'),
+        distance_km: r.distance_km || 2.5,
+        estimated_time_min: r.estimated_travel_time_min || Math.round((r.distance_km || 2.5) * 2.2),
+        safety_score: r.safety_score ?? (r.is_blocked ? 0 : Math.max(0, 100 - (r.assessed_risk_score || 15))),
+      };
+    };
+
+    return {
+      ...raw,
+      selected_route: raw.selected_route ? normalize(raw.selected_route) : null,
+      alternate_routes: (raw.alternate_routes || []).map(normalize),
+      blocked_routes: (raw.blocked_routes || []).map(normalize),
+    };
   }
 
   public async rerouteEvacuation(req: {
@@ -536,10 +599,34 @@ class ApiClient {
     new_blockage_corridor_id?: string;
     blockage_reason?: string;
   }): Promise<any> {
-    return this.request<any>('/routes/reroute', {
+    const raw = await this.request<any>('/routes/reroute', {
       method: 'POST',
       body: JSON.stringify(req),
     });
+
+    const normalize = (r: any): EvacuationRoute => {
+      if (!r) return r;
+      let coords: [number, number][] = [];
+      if (r.geometry?.coordinates && Array.isArray(r.geometry.coordinates)) {
+        coords = r.geometry.coordinates.map((c: any) => [c[1], c[0]]);
+      } else if (r.coordinates && Array.isArray(r.coordinates)) {
+        coords = r.coordinates.map((pt: any) => (pt[0] > 50 && pt[1] < 45 ? [pt[1], pt[0]] : [pt[0], pt[1]]));
+      }
+      return {
+        ...r,
+        coordinates: coords,
+        status: r.is_blocked ? 'BLOCKED' : ((r.assessed_risk_score || 0) > 50 ? 'CAUTION' : 'CLEAR'),
+        distance_km: r.distance_km || 2.5,
+        estimated_time_min: r.estimated_travel_time_min || Math.round((r.distance_km || 2.5) * 2.2),
+        safety_score: r.safety_score ?? (r.is_blocked ? 0 : Math.max(0, 100 - (r.assessed_risk_score || 15))),
+      };
+    };
+
+    return {
+      ...raw,
+      new_safe_route: raw.new_safe_route ? normalize(raw.new_safe_route) : null,
+      alternate_routes: (raw.alternate_routes || []).map(normalize),
+    };
   }
 
   public async getEmergencyFacilities(district?: string): Promise<any[]> {

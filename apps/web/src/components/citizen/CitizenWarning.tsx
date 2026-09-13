@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { Village, Shelter } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Village, Shelter, EvacuationRoute } from '../../types';
+import { api } from '../../services/api';
+import { EvacuationTacticalMap } from '../map/EvacuationTacticalMap';
+import { TurnByTurnNavigation } from '../map/TurnByTurnNavigation';
 import {
   PhoneCall,
   MapPin,
@@ -8,7 +11,7 @@ import {
   ShieldCheck,
   CheckSquare,
   Navigation,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 
 interface CitizenWarningProps {
@@ -25,6 +28,9 @@ export const CitizenWarning: React.FC<CitizenWarningProps> = ({
   shelters,
 }) => {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [activeRoute, setActiveRoute] = useState<EvacuationRoute | null>(null);
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState<boolean>(false);
+  const [loadingRoute, setLoadingRoute] = useState<boolean>(false);
 
   const village = villages.find(v => String(v.id) === String(selectedVillageId)) || villages[0];
   const isCritical = village?.current_risk_tier === 'CRITICAL' || village?.current_risk_tier === 'SEVERE';
@@ -32,7 +38,7 @@ export const CitizenWarning: React.FC<CitizenWarningProps> = ({
   const isModerate = village?.current_risk_tier === 'MODERATE';
 
   // Find nearest shelter geographically to the selected village
-  const nearestShelter = React.useMemo(() => {
+  const nearestShelter = useMemo(() => {
     if (!shelters || shelters.length === 0) return null;
     if (!village) return shelters[0];
     const sorted = [...shelters].sort((a, b) => {
@@ -89,6 +95,34 @@ export const CitizenWarning: React.FC<CitizenWarningProps> = ({
   const toggleCheck = (key: string) => {
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Automatically compute safe road corridor from citizen village to nearest shelter
+  useEffect(() => {
+    if (!village || !nearestShelter) return;
+    let isMounted = true;
+    setLoadingRoute(true);
+
+    api.evaluateDisasterAwareRoute({
+      origin_latitude: village.latitude,
+      origin_longitude: village.longitude,
+      destination_shelter_id: nearestShelter.id,
+      state: village.state,
+      district: village.district,
+      avoid_hazards: true,
+      radius_km: 30,
+    })
+      .then((res) => {
+        if (isMounted && res && res.selected_route) {
+          setActiveRoute(res.selected_route);
+        }
+      })
+      .catch((e) => console.error('Failed to compute citizen evacuation corridor:', e))
+      .finally(() => {
+        if (isMounted) setLoadingRoute(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [village?.id, nearestShelter?.id]);
 
   // Plain-Language Status Styling
   const getBannerInfo = () => {
@@ -281,6 +315,127 @@ export const CitizenWarning: React.FC<CitizenWarningProps> = ({
               Open GPS Navigation to Safe Shelter
             </a>
           </div>
+        </div>
+      )}
+
+      {/* Interactive Real-Life Evacuation Map & Road Guidance for Citizen */}
+      {nearestShelter && (
+        <div
+          style={{
+            background: 'rgba(6, 20, 38, 0.18)',
+            backdropFilter: 'blur(28px) saturate(180%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px',
+            padding: '18px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Navigation size={18} color="#06b6d4" />
+                <span>Live Safe Evacuation Route & Real-Life Map</span>
+                {loadingRoute && (
+                  <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 500 }}>
+                    • Calculating safe road path...
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                From <strong>{village?.name}</strong> to <strong>{nearestShelter.name}</strong> • Toggle Streets or Satellite for real visual landmarks.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {activeRoute && (
+                <button
+                  onClick={() => setIsNavDrawerOpen(!isNavDrawerOpen)}
+                  style={{
+                    padding: '7px 12px',
+                    background: isNavDrawerOpen ? '#0284c7' : 'rgba(6, 182, 212, 0.15)',
+                    border: '1px solid #06b6d4',
+                    color: '#ffffff',
+                    borderRadius: '6px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Navigation size={13} />
+                  <span>{isNavDrawerOpen ? 'Close Navigation Steps' : '🧭 Show Turn-by-Turn Guidance'}</span>
+                </button>
+              )}
+
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&origin=${village?.latitude},${village?.longitude}&destination=${nearestShelter.latitude},${nearestShelter.longitude}&travelmode=driving`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  padding: '7px 12px',
+                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                  color: '#ffffff',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+                }}
+              >
+                <ExternalLink size={13} />
+                <span>Open in Google Maps (Voice GPS)</span>
+              </a>
+            </div>
+          </div>
+
+          <EvacuationTacticalMap
+            center={[village?.latitude || 30.5, village?.longitude || 79.03]}
+            zoom={13}
+            originCoords={village ? [village.latitude, village.longitude] : null}
+            originName={`${village?.name} (Your Village)`}
+            shelters={shelters}
+            routes={activeRoute ? [activeRoute] : []}
+            selectedShelterId={nearestShelter.id}
+            selectedSafeHaven={nearestShelter}
+            primaryRouteId={activeRoute?.id}
+            primaryRoute={activeRoute}
+            onOpenNavDrawer={() => setIsNavDrawerOpen(true)}
+            height="460px"
+          />
+
+          {/* Floating Turn-by-Turn Drawer for Citizen */}
+          {isNavDrawerOpen && activeRoute && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '74px',
+                right: '28px',
+                bottom: '28px',
+                width: '380px',
+                maxWidth: 'calc(100% - 56px)',
+                zIndex: 1050,
+                boxShadow: '-8px 8px 32px rgba(0, 0, 0, 0.85)',
+                borderRadius: '14px',
+                overflow: 'hidden',
+              }}
+            >
+              <TurnByTurnNavigation
+                route={activeRoute}
+                shelter={nearestShelter}
+                originCoords={village ? [village.latitude, village.longitude] : null}
+                onClose={() => setIsNavDrawerOpen(false)}
+              />
+            </div>
+          )}
         </div>
       )}
 

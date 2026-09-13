@@ -1,6 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database import get_db
 from ..models.village import Village
 from ..models.observation import EnvironmentalObservation
@@ -28,25 +29,58 @@ def list_villages(
     if district and district.upper() != "ALL":
         query = query.filter(Village.district.ilike(f"%{district}%"))
     villages = query.order_by(Village.name).all()
+    if not villages:
+        return []
+
+    village_ids = [v.id for v in villages]
+
+    # Batch query latest snapshots in 1 query
+    latest_snaps = {}
+    snap_rows = (
+        db.query(
+            RiskSnapshot.village_id,
+            RiskSnapshot.risk_score,
+            RiskSnapshot.risk_level,
+            RiskSnapshot.trend,
+            func.max(RiskSnapshot.timestamp),
+        )
+        .filter(RiskSnapshot.village_id.in_(village_ids))
+        .group_by(RiskSnapshot.village_id)
+        .all()
+    )
+    for row in snap_rows:
+        latest_snaps[row[0]] = {
+            "risk_score": row[1],
+            "risk_level": row[2],
+            "trend": row[3],
+        }
+
+    # Batch query active alerts in 1 query
+    active_alerts = set(
+        r[0]
+        for r in db.query(Alert.village_id)
+        .filter(Alert.village_id.in_(village_ids), Alert.status == "ACTIVE")
+        .all()
+    )
+
+    # Batch query latest observation timestamps in 1 query
+    latest_obs_times = {}
+    obs_rows = (
+        db.query(
+            EnvironmentalObservation.village_id,
+            func.max(EnvironmentalObservation.timestamp),
+        )
+        .filter(EnvironmentalObservation.village_id.in_(village_ids))
+        .group_by(EnvironmentalObservation.village_id)
+        .all()
+    )
+    for row in obs_rows:
+        latest_obs_times[row[0]] = row[1]
+
     results = []
     for v in villages:
-        latest_snap = (
-            db.query(RiskSnapshot)
-            .filter(RiskSnapshot.village_id == v.id)
-            .order_by(RiskSnapshot.timestamp.desc())
-            .first()
-        )
-        active_alert = (
-            db.query(Alert)
-            .filter(Alert.village_id == v.id, Alert.status == "ACTIVE")
-            .first()
-        )
-        latest_obs = (
-            db.query(EnvironmentalObservation)
-            .filter(EnvironmentalObservation.village_id == v.id)
-            .order_by(EnvironmentalObservation.timestamp.desc())
-            .first()
-        )
+        snap_info = latest_snaps.get(v.id)
+        obs_time = latest_obs_times.get(v.id)
 
         results.append(
             VillageResponse(
@@ -63,11 +97,11 @@ def list_villages(
                 vulnerability_index=v.vulnerability_index,
                 latitude=v.latitude,
                 longitude=v.longitude,
-                risk_score=latest_snap.risk_score if latest_snap else 10,
-                risk_level=latest_snap.risk_level if latest_snap else "LOW",
-                trend=latest_snap.trend if latest_snap else "STABLE",
-                has_active_alert=active_alert is not None,
-                latest_observation_time=latest_obs.timestamp if latest_obs else None,
+                risk_score=snap_info["risk_score"] if snap_info else 10,
+                risk_level=snap_info["risk_level"] if snap_info else "LOW",
+                trend=snap_info["trend"] if snap_info else "STABLE",
+                has_active_alert=v.id in active_alerts,
+                latest_observation_time=obs_time,
                 created_at=v.created_at,
             )
         )

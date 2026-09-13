@@ -188,6 +188,31 @@ export interface Shelter {
   corridor_blocked?: boolean;
   is_safe_haven?: boolean;
   hazard_exposure_score?: number;
+  is_best_safe_option?: boolean;
+  disaster_type?: string;
+}
+
+export interface TurnByTurnStep {
+  step: number;
+  instruction: string;
+  distance_m: number;
+  duration_s: number;
+  maneuver: string;
+  road_name?: string;
+  is_safe?: boolean;
+}
+
+export interface ResolvedLocation {
+  latitude: number;
+  longitude: number;
+  state: string;
+  district: string;
+  area_name: string;
+  name?: string;
+  display_name: string;
+  nearest_village_id: string | null;
+  distance_to_nearest_settlement_km: number;
+  elevation_meters: number;
 }
 
 export interface EvacuationRoute {
@@ -221,6 +246,7 @@ export interface EvacuationRoute {
   blockage_reason?: string;
   coordinates?: [number, number][];
   geometry?: any;
+  turn_by_turn_instructions?: TurnByTurnStep[];
 }
 
 export interface DisasterEvent {

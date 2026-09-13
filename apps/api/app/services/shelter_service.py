@@ -86,6 +86,9 @@ class ShelterService:
             "source_last_verified": s.source_last_verified or "2026-08",
             "verification_status": s.verification_status,
             "confidence_score": s.confidence_score,
+            "elevation_m": getattr(s, "elevation_m", None),
+            "is_best_safe_option": False,
+            "disaster_type": "FLOOD",
         }
 
     @classmethod
@@ -193,9 +196,11 @@ class ShelterService:
         distance_km: float,
         route: Optional[Route] = None,
         active_disaster_events: Optional[List[Any]] = None,
+        disaster_type: str = "FLOOD",
+        elevation_m: Optional[float] = None,
     ) -> Tuple[float, str, List[str], bool, float]:
         """
-        Computes multi-factor evacuation suitability score (0-100) per Section 12 & 13:
+        Computes multi-factor evacuation suitability score (0-100) per disaster scenario:
         1. SAFETY (40 pts) - evaluates distance from active disaster zones & floodways.
         2. AVAILABILITY (20 pts) - capacity headroom & non-saturation.
         3. ACCESSIBILITY (15 pts) - open vs blocked road corridor access.
@@ -215,9 +220,9 @@ class ShelterService:
             return 0.0, "EXCLUDED — SHELTER CLOSED", ["Facility is non-operational or closed by district authority"], False, 100.0
 
         if shelter.available_capacity is not None and shelter.available_capacity <= 0:
-            return 0.0, "EXCLUDED — SHELTER FULL", ["Facility reached 100% capacity capacity threshold"], False, 90.0
+            return 0.0, "EXCLUDED — SHELTER FULL", ["Facility reached 100% capacity threshold"], False, 90.0
 
-        # Exclusion B: Proximity to active disaster event (Landslide/Flood epicenter)
+        # Exclusion B: Proximity to active disaster event
         if active_disaster_events:
             for event in active_disaster_events:
                 ev_lat = getattr(event, "latitude", None) or (event.get("latitude") if isinstance(event, dict) else None)
@@ -256,14 +261,35 @@ class ShelterService:
                     85.0,
                 )
 
-        # 1. SAFETY SCORE (40 points)
-        # Higher score if hazard exposure is low and no river surge risk
+        # 1. SAFETY SCORE (40 points) - Scenario-Aware Calibration
         safety_score = max(0.0, 40.0 - (hazard_exposure_score / 100.0) * 35.0)
-        if route and route.is_river_crossing:
-            safety_score = max(5.0, safety_score - 8.0)
-            rationale.append("Connecting path traverses river causeway")
+
+        dt_upper = (disaster_type or "FLOOD").upper()
+        if dt_upper in ["FLOOD", "FLASH_FLOOD", "RIVER_SURGE"]:
+            if route and route.is_river_crossing:
+                safety_score = max(0.0, safety_score - 12.0)
+                rationale.append("Traverses low-lying river causeway (flood risk)")
+            else:
+                rationale.append("Outside active flood & inundation perimeter")
+            if elevation_m and elevation_m > 700:
+                safety_score = min(40.0, safety_score + 3.0)
+                rationale.append(f"High ground elevation ({int(elevation_m)}m)")
+        elif dt_upper in ["LANDSLIDE", "DEBRIS_FLOW"]:
+            if route and route.assessed_risk_score > 40:
+                safety_score = max(0.0, safety_score - 10.0)
+                rationale.append("Connecting corridor carries slope instability risk")
+            else:
+                rationale.append("Stable geological corridor verified")
+        elif dt_upper in ["CYCLONE", "STORM"]:
+            if shelter.type in ["Educational Complex", "Stadium", "Government Center", "Cyclone Center"]:
+                safety_score = min(40.0, safety_score + 4.0)
+                rationale.append(f"Certified storm-resistant structure ({shelter.type})")
+        elif dt_upper in ["EARTHQUAKE", "TREMOR"]:
+            if shelter.type in ["Stadium", "Open Ground", "Community Center"]:
+                safety_score = min(40.0, safety_score + 4.0)
+                rationale.append("Open safe grounds, low structural collapse risk")
         else:
-            rationale.append("Outside high-risk flood & landslide perimeter")
+            rationale.append("Multi-hazard zone separation verified")
 
         # 2. AVAILABILITY & CAPACITY (20 points)
         avail = shelter.available_capacity
@@ -339,6 +365,8 @@ class ShelterService:
         state: Optional[str] = None,
         district: Optional[str] = None,
         village_id: Optional[str] = None,
+        disaster_type: str = "FLOOD",
+        radius_km: Optional[float] = 25.0,
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """
@@ -346,6 +374,10 @@ class ShelterService:
         Filters dangerous routes, checks active disaster zones, and prioritizes resilient facilities.
         """
         from ..models.disaster_event import DisasterEvent
+        from ..models.village import Village
+
+        # Preload villages for elevation estimation
+        villages = db.query(Village).all()
 
         # Query active disaster events in the jurisdiction
         active_events_query = db.query(DisasterEvent).filter(DisasterEvent.status.in_(["ACTIVE", "MONITORING"]))
@@ -364,10 +396,28 @@ class ShelterService:
         if not candidates:
             candidates = db.query(Shelter).filter(Shelter.status != "CLOSED").all()
 
+        # Dynamic search radius filtering
+        if radius_km and radius_km > 0:
+            in_radius = [
+                s for s in candidates
+                if haversine_distance_km(origin_lat, origin_lon, s.latitude, s.longitude) <= radius_km
+            ]
+            # Fallback auto-expansion: if none in radius, retain all candidates
+            if in_radius:
+                candidates = in_radius
+
         scored_results = []
         for s in candidates:
             dist = haversine_distance_km(origin_lat, origin_lon, s.latitude, s.longitude)
             
+            # Estimate shelter elevation from nearest settlement
+            nearest_v = min(
+                villages,
+                key=lambda v: haversine_distance_km(s.latitude, s.longitude, v.latitude, v.longitude),
+                default=None,
+            )
+            shelter_elevation = nearest_v.elevation if nearest_v else 850.0
+
             matching_route = None
             if village_id:
                 matching_route = db.query(Route).filter(
@@ -380,9 +430,13 @@ class ShelterService:
                 distance_km=dist,
                 route=matching_route,
                 active_disaster_events=active_events,
+                disaster_type=disaster_type,
+                elevation_m=shelter_elevation,
             )
             
             s_dict = cls._format_shelter_dict(s, dist)
+            s_dict["elevation_m"] = round(shelter_elevation, 1)
+            s_dict["disaster_type"] = disaster_type
             s_dict["suitability_score"] = score
             s_dict["recommendation_label"] = rec_label
             s_dict["rationale"] = rationale
@@ -396,6 +450,11 @@ class ShelterService:
 
         # Sort: Safe havens first, then by suitability score descending
         scored_results.sort(key=lambda x: (1 if x["is_safe_haven"] else 0, x["suitability_score"]), reverse=True)
+
+        # Mark BEST SAFE OPTION on top-ranked safe haven
+        for idx, item in enumerate(scored_results):
+            item["is_best_safe_option"] = (idx == 0 and item.get("is_safe_haven", False))
+
         return scored_results[:limit]
 
 

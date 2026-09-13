@@ -56,3 +56,17 @@ def get_coverage_summary(db: Session = Depends(get_db)):
     Returns the comprehensive geographic coverage registry for the platform.
     """
     return geography_service.get_coverage_summary(db)
+
+
+@router.get("/reverse-geocode")
+def reverse_geocode_location(
+    lat: float,
+    lon: float,
+    db: Session = Depends(get_db),
+):
+    """
+    Resolves arbitrary coordinates to administrative region and nearest settlement.
+    """
+    from ..services.location_service import location_service
+    return location_service.resolve_location(db, lat=lat, lon=lon)
+

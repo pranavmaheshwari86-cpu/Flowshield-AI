@@ -97,7 +97,7 @@ def test_location_hierarchy_and_detailed_timeline_integration():
         
         assert detailed.settlement.id == first_village_id
         assert len(detailed.forecast_horizons) == 6
-        assert len(detailed.historical_series) == 7
+        assert len(detailed.historical_series) == 9
         assert detailed.current_situation.rainfall_rate_mm_hr >= 0.0
         assert detailed.data_quality.active_mode in ["LIVE", "DEMO"]
     finally:
@@ -125,8 +125,8 @@ def test_buxar_ganga_detailed_timeline():
         assert detailed.hydrology.upstream_dam_discharge_cumec is None
         assert detailed.hydrology.dam_name is None
 
-        # Series verification: 7 historical points (-6h to NOW), 6 forecast horizons (+1h to +48h)
-        assert len(detailed.historical_series) == 7
+        # Series verification: 9 historical points (-24h, -12h, -6h to NOW), 6 forecast horizons (+1h to +48h)
+        assert len(detailed.historical_series) == 9
         assert len(detailed.forecast_horizons) == 6
     finally:
         db.close()

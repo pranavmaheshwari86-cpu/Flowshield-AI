@@ -18,6 +18,9 @@ import {
   PhoneCall,
   ArrowRight,
   FileCheck,
+  Locate,
+  Crosshair,
+  ExternalLink,
 } from 'lucide-react';
 import {
   EvacuationRoute,
@@ -30,10 +33,11 @@ import {
 } from '../types';
 import { api } from '../services/api';
 import { EvacuationTacticalMap } from '../components/map/EvacuationTacticalMap';
+import { TurnByTurnNavigation } from '../components/map/TurnByTurnNavigation';
 
 export const ResponderPage: React.FC = () => {
-  // Mode Selection: Operational Command
-  const [activeMode] = useState<'COMMAND' | 'CITIZEN'>('COMMAND');
+  // Mode Selection: Operational Command vs Citizen Guide
+  const [activeMode, setActiveMode] = useState<'COMMAND' | 'CITIZEN'>('COMMAND');
 
   // Geography & Area Selection State
   const [states, setStates] = useState<GeographyState[]>([]);
@@ -49,6 +53,21 @@ export const ResponderPage: React.FC = () => {
   const [evalLat, setEvalLat] = useState<string>('30.598');
   const [evalLon, setEvalLon] = useState<string>('79.036');
   const [originName, setOriginName] = useState<string>('Sonprayag Sector');
+
+  // Live Geolocation & Device Location State
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [reverseGeocodedName, setReverseGeocodedName] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Disaster Scenario Selection State (Floods, Landslides, Earthquakes, Cyclones, Fires, Multi-hazard)
+  const [disasterScenario, setDisasterScenario] = useState<string>('FLOOD');
+
+  // Search Radius State (5, 10, 25, 50 km)
+  const [evacRadiusKm, setEvacRadiusKm] = useState<number>(25);
+
+  // Turn-by-Turn Navigation Slide-out State
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState<boolean>(false);
 
   // Core Data
   const [routes, setRoutes] = useState<EvacuationRoute[]>([]);
@@ -116,10 +135,13 @@ export const ResponderPage: React.FC = () => {
         const distList = await api.getGeographyDistricts(selectedState);
         setDistricts(distList);
         if (distList.length > 0) {
-          const firstDistrict = distList[0];
-          setSelectedDistrict(firstDistrict.district);
-          setMapCenter([firstDistrict.center_lat, firstDistrict.center_lon]);
-          setMapZoom(firstDistrict.default_zoom || 11);
+          const currentValid = distList.find((d) => d.district === selectedDistrict);
+          const activeDist = currentValid || distList[0];
+          if (!currentValid) {
+            setSelectedDistrict(activeDist.district);
+          }
+          setMapCenter([activeDist.center_lat, activeDist.center_lon]);
+          setMapZoom(activeDist.default_zoom || 11);
         }
       } catch (err) {
         console.error(`Failed to load districts for ${selectedState}:`, err);
@@ -141,7 +163,7 @@ export const ResponderPage: React.FC = () => {
     const loadDistrictData = async () => {
       try {
         setShelterLoading(true);
-        const [settlementList, routeList, shelterList, alertList, eventList, facilitiesList] = await Promise.all([
+        const [settlementsRes, routesRes, sheltersRes, alertsRes, eventsRes, facilitiesRes] = await Promise.allSettled([
           api.getGeographySettlements(selectedDistrict, selectedState),
           api.getRoutes({ state: selectedState, district: selectedDistrict }),
           api.getShelters({ state: selectedState, district: selectedDistrict }),
@@ -149,6 +171,13 @@ export const ResponderPage: React.FC = () => {
           api.getActiveDisasterEvents(selectedState, selectedDistrict),
           api.getEmergencyFacilities(selectedDistrict),
         ]);
+
+        const settlementList = settlementsRes.status === 'fulfilled' ? settlementsRes.value : [];
+        const routeList = routesRes.status === 'fulfilled' ? routesRes.value : [];
+        const shelterList = sheltersRes.status === 'fulfilled' ? sheltersRes.value : [];
+        const alertList = alertsRes.status === 'fulfilled' ? alertsRes.value : [];
+        const eventList = eventsRes.status === 'fulfilled' ? eventsRes.value : [];
+        const facilitiesList = facilitiesRes.status === 'fulfilled' ? facilitiesRes.value : [];
 
         setSettlements(settlementList);
         setRoutes(routeList);
@@ -181,17 +210,40 @@ export const ResponderPage: React.FC = () => {
     loadDistrictData();
   }, [selectedState, selectedDistrict]);
 
+  // Disaster Scenarios Config
+  const SCENARIOS = [
+    { id: 'FLOOD', label: 'Flood Surge', icon: '🌊', color: '#38bdf8' },
+    { id: 'LANDSLIDE', label: 'Landslide', icon: '⛰️', color: '#f59e0b' },
+    { id: 'EARTHQUAKE', label: 'Earthquake', icon: '🌋', color: '#ec4899' },
+    { id: 'CYCLONE', label: 'Cyclone', icon: '🌀', color: '#06b6d4' },
+    { id: 'FIRE', label: 'Wildfire', icon: '🔥', color: '#ef4444' },
+    { id: 'MULTI_HAZARD', label: 'Multi-Hazard', icon: '⚡', color: '#a855f7' },
+  ];
+
+  const RADII = [5, 10, 25, 50];
+
   // Evaluates Disaster-Aware Route and populates primary, alternate, and safe shelters
-  const evaluateDisasterRoute = async (lat: number, lon: number, villageId?: string) => {
+  const evaluateDisasterRoute = async (
+    lat: number,
+    lon: number,
+    villageId?: string,
+    scenario: string = disasterScenario,
+    radius: number = evacRadiusKm,
+    targetShelterId?: string
+  ) => {
     try {
       setEvaluating(true);
-      const [res, recList] = await Promise.all([
+      const [resResult, recListResult] = await Promise.allSettled([
         api.evaluateDisasterAwareRoute({
           origin_latitude: lat,
           origin_longitude: lon,
           village_id: villageId,
+          destination_shelter_id: targetShelterId,
           state: selectedState,
           district: selectedDistrict,
+          disaster_type: scenario,
+          avoid_hazards: true,
+          radius_km: radius,
         }),
         api.getRecommendedShelters({
           lat,
@@ -199,33 +251,135 @@ export const ResponderPage: React.FC = () => {
           state: selectedState,
           district: selectedDistrict,
           village_id: villageId,
-          limit: 6,
+          disaster_type: scenario,
+          radius_km: radius,
+          limit: 8,
         }),
       ]);
 
-      setEvalResult(res);
-      setRecommendedShelters(recList);
+      const res = resResult.status === 'fulfilled' ? resResult.value : null;
+      const recList = recListResult.status === 'fulfilled' ? recListResult.value : [];
 
-      if (res.selected_route) {
-        setPrimaryRoute(res.selected_route);
-        setActiveCorridorId(res.selected_route.id);
-        setSelectedShelterId(res.selected_route.destination_shelter_id);
-      } else {
-        setPrimaryRoute(null);
+      if (res) {
+        setEvalResult(res);
+        if (res.selected_route) {
+          setPrimaryRoute(res.selected_route);
+          setActiveCorridorId(res.selected_route.id);
+          setSelectedShelterId(res.selected_route.destination_shelter_id);
+        } else {
+          setPrimaryRoute(null);
+        }
+        setAlternateRoutes(res.alternate_routes || []);
+        setBlockedRoutes(res.blocked_routes || []);
+        setShortestRouteWarning(res.shortest_route_hazardous_warning || null);
       }
 
-      setAlternateRoutes(res.alternate_routes || []);
-      setBlockedRoutes(res.blocked_routes || []);
-      setShortestRouteWarning(res.shortest_route_hazardous_warning || null);
+      setRecommendedShelters(recList);
 
       if (recList.length > 0) {
-        setSelectedSafeHaven(recList[0]);
+        const bestOption = targetShelterId
+          ? recList.find((s) => s.id === targetShelterId) || recList[0]
+          : recList.find((s) => s.is_best_safe_option) || recList[0];
+        setSelectedSafeHaven(bestOption);
+        if (!selectedShelterId || targetShelterId) {
+          setSelectedShelterId(bestOption.id);
+        }
       }
     } catch (err) {
       console.error('Disaster route evaluation failed:', err);
     } finally {
       setEvaluating(false);
     }
+  };
+
+  // Dedicated shelter selection with on-demand routing calculation
+  const handleSelectShelter = async (shelter: Shelter) => {
+    setSelectedShelterId(shelter.id);
+    setSelectedSafeHaven(shelter);
+    setIsNavDrawerOpen(true);
+    if (shelter.corridor_id) setActiveCorridorId(shelter.corridor_id);
+
+    const lat = parseFloat(evalLat) || mapCenter[0];
+    const lon = parseFloat(evalLon) || mapCenter[1];
+    await evaluateDisasterRoute(lat, lon, undefined, disasterScenario, evacRadiusKm, shelter.id);
+  };
+
+  // Browser Geolocation Detection
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      setActionNotice({ message: 'Geolocation is not supported by your browser.', type: 'error' });
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        setLocationAccuracy(accuracy);
+        setEvalLat(lat.toFixed(5));
+        setEvalLon(lon.toFixed(5));
+        setMapCenter([lat, lon]);
+        setMapZoom(13);
+
+        try {
+          const geo = await api.reverseGeocode(lat, lon);
+          if (geo) {
+            const shortName = geo.area_name || (geo.display_name ? geo.display_name.split(',')[0] : '');
+            setReverseGeocodedName(geo.display_name);
+            setOriginName(shortName ? `Live GPS: ${shortName}` : `Live GPS (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+          } else {
+            setOriginName(`Live GPS (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+          }
+        } catch {
+          setOriginName(`Live GPS (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+        }
+
+        await evaluateDisasterRoute(lat, lon, undefined, disasterScenario, evacRadiusKm);
+        setActionNotice({
+          message: `Live GPS locked (±${Math.round(accuracy)}m accuracy). Safest evacuation options computed.`,
+          type: 'success',
+        });
+        setTimeout(() => setActionNotice(null), 5000);
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn('Geolocation failed:', err);
+        setLocationError(err.message);
+        setActionNotice({
+          message: `Unable to access GPS: ${err.message}. Using mountain district fallback.`,
+          type: 'warning',
+        });
+        setTimeout(() => setActionNotice(null), 6000);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Disaster Scenario Switcher
+  const handleScenarioChange = async (scenario: string) => {
+    setDisasterScenario(scenario);
+    const lat = parseFloat(evalLat) || 30.598;
+    const lon = parseFloat(evalLon) || 79.036;
+    await evaluateDisasterRoute(lat, lon, selectedSettlementId || undefined, scenario, evacRadiusKm);
+    setActionNotice({
+      message: `Switched to ${scenario} scenario. Shelter ratings and road risk matrices re-evaluated.`,
+      type: 'success',
+    });
+    setTimeout(() => setActionNotice(null), 4000);
+  };
+
+  // Search Radius Switcher
+  const handleRadiusChange = async (radius: number) => {
+    setEvacRadiusKm(radius);
+    const lat = parseFloat(evalLat) || 30.598;
+    const lon = parseFloat(evalLon) || 79.036;
+    await evaluateDisasterRoute(lat, lon, selectedSettlementId || undefined, disasterScenario, radius);
   };
 
   // Handle Settlement / Village Selection
@@ -236,6 +390,7 @@ export const ResponderPage: React.FC = () => {
       setEvalLat(target.latitude.toFixed(4));
       setEvalLon(target.longitude.toFixed(4));
       setOriginName(target.name);
+      setLocationAccuracy(null);
       setMapCenter([target.latitude, target.longitude]);
       await evaluateDisasterRoute(target.latitude, target.longitude, target.id);
     }
@@ -243,10 +398,26 @@ export const ResponderPage: React.FC = () => {
 
   // Handle Map Click for Arbitrary Coordinate Evaluation
   const handleMapClick = async (coords: [number, number]) => {
-    setEvalLat(coords[0].toFixed(4));
-    setEvalLon(coords[1].toFixed(4));
-    setOriginName(`Field Coordinates (${coords[0].toFixed(3)}°N, ${coords[1].toFixed(3)}°E)`);
-    await evaluateDisasterRoute(coords[0], coords[1]);
+    const lat = coords[0];
+    const lon = coords[1];
+    setEvalLat(lat.toFixed(5));
+    setEvalLon(lon.toFixed(5));
+    setLocationAccuracy(null); // Clicked manually, clear device accuracy ring
+
+    try {
+      const geo = await api.reverseGeocode(lat, lon);
+      if (geo) {
+        const shortName = geo.area_name || (geo.display_name ? geo.display_name.split(',')[0] : '');
+        setReverseGeocodedName(geo.display_name);
+        setOriginName(shortName ? `Map Pin: ${shortName}` : `Map Pin (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+      } else {
+        setOriginName(`Map Pin (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+      }
+    } catch {
+      setOriginName(`Map Pin (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+    }
+
+    await evaluateDisasterRoute(lat, lon, undefined, disasterScenario, evacRadiusKm);
   };
 
   // Handle "Use Current Risk Area" from ML Predictions
@@ -360,7 +531,7 @@ export const ResponderPage: React.FC = () => {
   return (
     <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', color: '#f1f5f9' }}>
       {/* 1. Header & Live Sync Status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '6px', borderRadius: '8px', color: '#ef4444' }}>
@@ -379,15 +550,57 @@ export const ResponderPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Mode Switcher: Operational Command vs Citizen Safe Guide */}
+        <div style={{ display: 'flex', background: '#091526', padding: '4px', borderRadius: '10px', border: '1px solid #1e355b' }}>
+          <button
+            onClick={() => setActiveMode('COMMAND')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeMode === 'COMMAND' ? '#0284c7' : 'transparent',
+              color: activeMode === 'COMMAND' ? '#ffffff' : '#94a3b8',
+              fontWeight: 700,
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <ShieldCheck size={14} /> Operational Command
+          </button>
+          <button
+            onClick={() => setActiveMode('CITIZEN')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeMode === 'CITIZEN' ? '#10b981' : 'transparent',
+              color: activeMode === 'CITIZEN' ? '#ffffff' : '#94a3b8',
+              fontWeight: 700,
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Navigation size={14} /> Citizen Safe Guide
+          </button>
+        </div>
       </div>
 
-      {/* 3. Evacuation Area Selector Bar (State -> District + AI Action Button) */}
+      {/* 2. Real-Time Location & Multi-Hazard Catchment Control Deck */}
       <div
         className="card"
         style={{
           padding: '20px 24px',
           marginBottom: '20px',
-          background: 'linear-gradient(135deg, rgba(13, 27, 54, 0.9) 0%, rgba(9, 18, 36, 0.98) 100%)',
+          background: 'linear-gradient(135deg, rgba(13, 27, 54, 0.95) 0%, rgba(9, 18, 36, 0.98) 100%)',
           backdropFilter: 'blur(16px)',
           border: '1px solid rgba(56, 189, 248, 0.25)',
           borderRadius: '12px',
@@ -400,26 +613,68 @@ export const ResponderPage: React.FC = () => {
             </div>
             <div>
               <div style={{ color: '#f8fafc', fontSize: '13.5px', fontWeight: 800, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>OPERATIONAL JURISDICTION & CATCHMENT</span>
+                <span>GROUND TELEMETRY & MULTI-HAZARD PARAMETERS</span>
                 <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '12px' }}>
                   CENTRALIZED GEOGRAPHIC REGISTRY
                 </span>
               </div>
               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                Select district • Multi-hazard data synchronizes with terrain & river telemetry
+                Acquire device coordinates or select settlement • Evaluates live road corridors & nearest safe shelters
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
-            <span style={{ color: '#34d399', fontWeight: 700 }}>ML Live Inference Connected</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px' }}>
+            <button
+              onClick={handleUseCurrentLocation}
+              disabled={isLocating}
+              style={{
+                height: '38px',
+                padding: '0 16px',
+                background: isLocating ? '#0369a1' : 'linear-gradient(135deg, #10b981 0%, #0284c7 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: isLocating ? 'wait' : 'pointer',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+              }}
+            >
+              <Locate size={15} className={isLocating ? 'animate-spin' : ''} />
+              <span>{isLocating ? 'Acquiring GPS Fix...' : '📍 Use My Current Location'}</span>
+            </button>
+
+            <button
+              onClick={handleUseCurrentRiskArea}
+              style={{
+                height: '38px',
+                padding: '0 14px',
+                background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <Flame size={14} style={{ color: '#fef08a' }} />
+              <span>Risk Alert Area</span>
+            </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        {/* Row 1: State, District, and Settlement Selectors */}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '16px' }}>
           {/* State Dropdown */}
-          <div style={{ flex: '1 1 200px' }}>
+          <div style={{ flex: '1 1 180px' }}>
             <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
               State / UT
             </label>
@@ -427,7 +682,7 @@ export const ResponderPage: React.FC = () => {
               <select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
-                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
+                style={{ width: '100%', height: '40px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
               >
                 {states.map((s) => (
                   <option key={s.state} value={s.state} style={{ background: '#0b172a' }}>
@@ -442,7 +697,7 @@ export const ResponderPage: React.FC = () => {
           </div>
 
           {/* District Dropdown */}
-          <div style={{ flex: '1 1 240px' }}>
+          <div style={{ flex: '1 1 200px' }}>
             <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
               District Jurisdiction
             </label>
@@ -450,7 +705,7 @@ export const ResponderPage: React.FC = () => {
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                style={{ width: '100%', height: '42px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
+                style={{ width: '100%', height: '40px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
               >
                 {districts.map((d) => (
                   <option key={d.district} value={d.district} style={{ background: '#0b172a' }}>
@@ -464,36 +719,129 @@ export const ResponderPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Use Risk Alert Area Action Button */}
-          <div style={{ flex: '0 0 auto' }}>
-            <button
-              onClick={handleUseCurrentRiskArea}
-              style={{
-                height: '42px',
-                padding: '0 20px',
-                background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '10px',
-                fontSize: '13px',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
-              }}
-            >
-              <Flame size={15} style={{ color: '#fef08a' }} />
-              <span>Use Risk Alert Area</span>
-            </button>
+          {/* Settlement / Village Dropdown */}
+          <div style={{ flex: '1 1 220px' }}>
+            <label style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
+              Target Settlement / Village ({settlements.length})
+            </label>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={selectedSettlementId}
+                onChange={(e) => handleSettlementChange(e.target.value)}
+                style={{ width: '100%', height: '40px', padding: '0 36px 0 14px', background: '#142544', color: '#f8fafc', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, outline: 'none', appearance: 'none', WebkitAppearance: 'none' }}
+              >
+                <option value="" style={{ background: '#0b172a' }}>Custom GPS / Map Pin Origin</option>
+                {settlements.map((s) => (
+                  <option key={s.id} value={s.id} style={{ background: '#0b172a' }}>
+                    {s.name} ({s.type || 'Village'}, pop: {s.population?.toLocaleString() || '—'})
+                  </option>
+                ))}
+              </select>
+              <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#38bdf8' }}>
+                <ChevronDown size={16} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Disaster Scenario Selector Pills & Search Radius Pills */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid rgba(30, 53, 91, 0.7)', paddingTop: '14px' }}>
+          {/* Disaster Scenario Selector */}
+          <div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Disaster Hazard Scenario:
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {SCENARIOS.map((sc) => {
+                const isActive = disasterScenario === sc.id;
+                return (
+                  <button
+                    key={sc.id}
+                    onClick={() => handleScenarioChange(sc.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${isActive ? sc.color : '#1e355b'}`,
+                      background: isActive ? `${sc.color}22` : '#0f213e',
+                      color: isActive ? '#ffffff' : '#94a3b8',
+                      fontSize: '12px',
+                      fontWeight: isActive ? 800 : 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span>{sc.icon}</span>
+                    <span>{sc.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Search Radius Selector */}
+          <div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Evacuation Search Radius:
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {RADII.map((r) => {
+                const isActive = evacRadiusKm === r;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => handleRadiusChange(r)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${isActive ? '#06b6d4' : '#1e355b'}`,
+                      background: isActive ? 'rgba(6, 182, 212, 0.2)' : '#0f213e',
+                      color: isActive ? '#38bdf8' : '#94a3b8',
+                      fontSize: '12px',
+                      fontWeight: isActive ? 800 : 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {r} km
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Telemetry Status Ribbon */}
+        <div style={{ marginTop: '14px', background: 'rgba(6, 13, 23, 0.6)', border: '1px solid #14284b', padding: '8px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '11.5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: '#06b6d4', fontWeight: 800 }}>ACTIVE ORIGIN:</span>
+            <span style={{ color: '#f1f5f9', fontWeight: 700 }}>{originName}</span>
+            <span style={{ color: '#64748b' }}>({evalLat}°N, {evalLon}°E)</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {locationAccuracy && (
+              <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Crosshair size={13} /> GPS Accuracy: ±{Math.round(locationAccuracy)}m
+              </span>
+            )}
+            {locationError && (
+              <span style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <AlertTriangle size={13} /> GPS: {locationError}
+              </span>
+            )}
+            {reverseGeocodedName && (
+              <span style={{ color: '#94a3b8', maxWidth: '320px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                📍 {reverseGeocodedName}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-
-
-      {/* 4. Action Notification Banner */}
+      {/* 3. Action Notification Banner */}
       {actionNotice && (
         <div
           style={{
@@ -515,8 +863,140 @@ export const ResponderPage: React.FC = () => {
         </div>
       )}
 
-      {/* 5. Tactical GIS Evacuation Map Container */}
-      <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
+      {/* 4. Hazard Re-Routing Alert Banner (Active when direct route is severed) */}
+      {shortestRouteWarning && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(245, 158, 11, 0.18) 100%)',
+            border: '2px solid #ef4444',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '14px',
+            boxShadow: '0 4px 20px rgba(239, 68, 68, 0.25)',
+          }}
+        >
+          <div style={{ background: '#ef4444', color: '#ffffff', padding: '6px', borderRadius: '8px', flexShrink: 0 }}>
+            <AlertTriangle size={22} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#f87171', fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>DIRECT ROUTE SEVERED / HAZARDOUS</span>
+              <span style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.25)', color: '#fca5a5', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                SAFE DETOUR ENGAGED
+              </span>
+            </div>
+            <div style={{ fontSize: '12.5px', color: '#fecaca', marginTop: '4px', lineHeight: 1.5 }}>
+              {shortestRouteWarning}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. BEST SAFE EVACUATION OPTION Hero Card */}
+      {(() => {
+        const bestOption = recommendedShelters.find((s) => s.is_best_safe_option) || recommendedShelters[0] || selectedSafeHaven;
+        if (!bestOption) return null;
+
+        return (
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)',
+              border: '1.5px solid rgba(16, 185, 129, 0.5)',
+              borderRadius: '12px',
+              padding: '18px 24px',
+              marginBottom: '20px',
+              boxShadow: '0 4px 24px rgba(16, 185, 129, 0.15)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+            }}
+          >
+            <div style={{ flex: '1 1 340px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ background: '#10b981', color: '#041628', fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '6px', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <ShieldCheck size={14} /> BEST SAFE EVACUATION OPTION
+                </span>
+                <span style={{ fontSize: '11px', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  {disasterScenario} SAFE
+                </span>
+              </div>
+              <h3 style={{ fontSize: '19px', fontWeight: 800, margin: '2px 0 4px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {bestOption.name}
+              </h3>
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                {bestOption.type} • {bestOption.village_town || selectedDistrict} • DDMP Verified Safe Shelter
+              </div>
+            </div>
+
+            {/* Metrics Deck */}
+            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ background: '#091526', border: '1px solid #1e355b', padding: '8px 14px', borderRadius: '8px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>SAFETY SCORE</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#34d399' }}>
+                  {bestOption.suitability_score || 93}<span style={{ fontSize: '11px', color: '#64748b' }}>/100</span>
+                </div>
+              </div>
+
+              <div style={{ background: '#091526', border: '1px solid #1e355b', padding: '8px 14px', borderRadius: '8px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>ROAD DISTANCE</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#38bdf8' }}>
+                  {bestOption.distance_km ? `${bestOption.distance_km.toFixed(1)} km` : '—'}
+                </div>
+              </div>
+
+              <div style={{ background: '#091526', border: '1px solid #1e355b', padding: '8px 14px', borderRadius: '8px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>EST. TRAVEL</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#cbd5e1' }}>
+                  {bestOption.estimated_travel_time_min ? `${bestOption.estimated_travel_time_min} min` : '~12 min'}
+                </div>
+              </div>
+
+              {bestOption.elevation_m && (
+                <div style={{ background: '#091526', border: '1px solid #1e355b', padding: '8px 14px', borderRadius: '8px', textAlign: 'center', minWidth: '85px' }}>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>ELEVATION</div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#f59e0b' }}>
+                    {Math.round(bestOption.elevation_m)} m
+                  </div>
+                </div>
+              )}
+
+              {/* Turn-by-Turn Guidance Trigger Button */}
+              {primaryRoute && (
+                <button
+                  onClick={() => setIsNavDrawerOpen(!isNavDrawerOpen)}
+                  style={{
+                    height: '46px',
+                    padding: '0 20px',
+                    background: isNavDrawerOpen ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(5, 150, 105, 0.4)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Navigation size={16} />
+                  <span>{isNavDrawerOpen ? 'Close Navigation' : '🧭 Turn-by-Turn Guidance'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 6. Tactical GIS Evacuation Map Container */}
+      <div className="card" style={{ padding: '20px', marginBottom: '24px', position: 'relative' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -524,12 +1004,24 @@ export const ResponderPage: React.FC = () => {
               Tactical Evacuation GIS — {selectedDistrict} ({selectedState})
             </h2>
             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-              Real-time multi-hazard perimeters, dynamic road blockages, safe havens, and official emergency facilities.
+              Real-time multi-hazard perimeters, dynamic road blockages, safe havens, and official emergency facilities. Click anywhere to re-route.
             </div>
           </div>
 
-          <div style={{ fontSize: '11px', color: '#cbd5e1', background: '#162a4d', padding: '6px 12px', borderRadius: '6px' }}>
-            Evacuation Origin: <strong>{originName}</strong> ({evalLat}°N, {evalLon}°E)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {primaryRoute && (
+              <button
+                onClick={() => setIsNavDrawerOpen(!isNavDrawerOpen)}
+                className="btn btn-xs btn-outline"
+                style={{ color: '#06b6d4', borderColor: '#06b6d4', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              >
+                <Navigation size={12} />
+                <span>{isNavDrawerOpen ? 'Hide Steps' : 'Show Navigation Steps'}</span>
+              </button>
+            )}
+            <div style={{ fontSize: '11px', color: '#cbd5e1', background: '#162a4d', padding: '6px 12px', borderRadius: '6px' }}>
+              Origin: <strong>{originName}</strong>
+            </div>
           </div>
         </div>
 
@@ -538,20 +1030,45 @@ export const ResponderPage: React.FC = () => {
           zoom={mapZoom}
           originCoords={[parseFloat(evalLat) || mapCenter[0], parseFloat(evalLon) || mapCenter[1]]}
           originName={originName}
+          accuracyRadius={locationAccuracy}
           shelters={shelters}
           routes={routes}
           selectedShelterId={selectedShelterId}
-          onSelectShelter={(shelter) => {
-            setSelectedShelterId(shelter.id);
-            setSelectedSafeHaven(shelter);
-            if (shelter.corridor_id) setActiveCorridorId(shelter.corridor_id);
-          }}
+          selectedSafeHaven={selectedSafeHaven}
+          onSelectShelter={handleSelectShelter}
           onMapClick={handleMapClick}
           activeCorridorId={activeCorridorId}
           disasterEvents={disasterEvents}
           emergencyFacilities={emergencyFacilities}
           primaryRouteId={primaryRoute?.id}
+          primaryRoute={primaryRoute}
+          onOpenNavDrawer={() => setIsNavDrawerOpen(true)}
         />
+
+        {/* Floating Turn-by-Turn Navigation Slide-Out Drawer */}
+        {isNavDrawerOpen && primaryRoute && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '64px',
+              right: '32px',
+              bottom: '32px',
+              width: '380px',
+              maxWidth: 'calc(100% - 64px)',
+              zIndex: 1050,
+              boxShadow: '-8px 8px 32px rgba(0, 0, 0, 0.85)',
+              borderRadius: '14px',
+              overflow: 'hidden',
+            }}
+          >
+            <TurnByTurnNavigation
+              route={primaryRoute}
+              shelter={selectedSafeHaven || recommendedShelters.find((s) => s.is_best_safe_option) || recommendedShelters[0]}
+              originCoords={[parseFloat(evalLat) || mapCenter[0], parseFloat(evalLon) || mapCenter[1]]}
+              onClose={() => setIsNavDrawerOpen(false)}
+            />
+          </div>
+        )}
       </div>
 
       {/* 6. MODE VIEW: Citizen Guidance Wizard vs Operational Commander */}
@@ -943,6 +1460,55 @@ export const ResponderPage: React.FC = () => {
                           OPEN & PASSABLE
                         </div>
                       </div>
+                    </div>
+
+                    <div style={{ marginTop: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          setIsNavDrawerOpen(true);
+                          window.scrollTo({ top: 350, behavior: 'smooth' });
+                        }}
+                        style={{
+                          padding: '10px 18px',
+                          background: 'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)',
+                        }}
+                      >
+                        <Navigation size={16} /> 🧭 Open Turn-by-Turn GPS Guidance
+                      </button>
+
+                      {selectedSafeHaven && (
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&origin=${parseFloat(evalLat) || mapCenter[0]},${parseFloat(evalLon) || mapCenter[1]}&destination=${selectedSafeHaven.latitude},${selectedSafeHaven.longitude}&travelmode=driving`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            padding: '10px 18px',
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            color: '#38bdf8',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <ExternalLink size={16} /> 🗺️ Open in Google Maps (Voice GPS)
+                        </a>
+                      )}
                     </div>
 
                     {alternateRoutes.length > 0 && (

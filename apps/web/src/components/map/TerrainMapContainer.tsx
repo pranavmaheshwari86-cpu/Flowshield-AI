@@ -75,7 +75,8 @@ const MapController: React.FC<{
   zoom: number;
   triggerInvalidate?: boolean;
   isFullPage?: boolean;
-}> = ({ center, zoom, triggerInvalidate, isFullPage }) => {
+  onZoomChange?: (z: number) => void;
+}> = ({ center, zoom, triggerInvalidate, isFullPage, onZoomChange }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -92,6 +93,17 @@ const MapController: React.FC<{
     }, 150);
     return () => clearTimeout(timer);
   }, [center, zoom, map, triggerInvalidate, isFullPage]);
+
+  useEffect(() => {
+    const handleZoom = () => {
+      if (onZoomChange) onZoomChange(map.getZoom());
+    };
+    map.on('zoomend', handleZoom);
+    if (onZoomChange) onZoomChange(map.getZoom());
+    return () => {
+      map.off('zoomend', handleZoom);
+    };
+  }, [map, onZoomChange]);
 
   return null;
 };
@@ -182,7 +194,12 @@ const createHazardPinIcon = (name: string, tier: string, score: number) => {
 };
 
 // Custom Leaflet DivIcon for Real-Time Rainfall Radar & 24h Cumulative Points
-const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Village, isSelected: boolean = false) => {
+const createRainfallPinIcon = (
+  reading: RainfallReading,
+  matchedVillage?: Village,
+  isSelected: boolean = false,
+  zoomLevel: number = 5
+) => {
   const sev = reading.severity;
   const color = getRainfallColor(sev);
   const glow = getRainfallGlowColor(sev);
@@ -196,6 +213,9 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
   const borderStyle = isSelected
     ? 'border: 2px solid #38BDF8; box-shadow: 0 0 16px #38BDF8, 0 4px 12px rgba(0,0,0,0.8);'
     : `border: 1px solid ${color}; box-shadow: 0 3px 8px rgba(0,0,0,0.7);`;
+
+  // At national zoom (<= 5), if dry and not selected, show compact circular radar point to prevent label collisions
+  const isCompact = zoomLevel <= 5 && !isCurrentlyRaining && !isSelected && (reading.rainfall_24h_mm || 0) < 5.0;
 
   const html = `
     <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(-50%, -50%); cursor: pointer;">
@@ -211,11 +231,13 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
         align-items: center;
         justify-content: center;
         z-index: 2;
+        transition: transform 0.15s ease;
       ">
         <svg width="${size * 0.55}" height="${size * 0.55}" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
         </svg>
       </div>
+      ${isCompact ? '' : `
       <div style="
         margin-top: 2px;
         background: rgba(2, 14, 32, 0.95);
@@ -238,13 +260,14 @@ const createRainfallPinIcon = (reading: RainfallReading, matchedVillage?: Villag
         <span style="color: ${isCurrentlyRaining ? '#38BDF8' : '#94A3B8'}; font-weight: 700;">${rateLabel}</span>
         ${riskScore > 0 ? `<span style="font-size: 7.5px; font-weight: 800; padding: 0.5px 3.5px; border-radius: 2px; background: ${color}25; color: ${color}; border: 1px solid ${color}50;">${riskScore}</span>` : ''}
       </div>
+      `}
     </div>
   `;
   return L.divIcon({
     html,
     className: 'rainfall-pin',
-    iconSize: [94, 46],
-    iconAnchor: [47, 23],
+    iconSize: isCompact ? [size + 4, size + 4] : [94, 46],
+    iconAnchor: isCompact ? [(size + 4) / 2, (size + 4) / 2] : [47, 23],
   });
 };
 
@@ -262,6 +285,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
   const defaultCenter: [number, number] = [22.5, 82.0];
   const [center, setCenter] = useState<[number, number]>(defaultCenter);
   const [zoom, setZoom] = useState<number>(5);
+  const [currentZoom, setCurrentZoom] = useState<number>(5);
   const [mapMode, setMapMode] = useState<'satellite' | 'terrain' | 'dark'>(isFullPage ? 'satellite' : 'terrain');
   const [zonesGeoJSON, setZonesGeoJSON] = useState<GeoJSONFeatureCollection | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -318,9 +342,10 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
 
   // Interactive Search & Filter states
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [rainfallFilterMode, setRainfallFilterMode] = useState<'all_today' | 'active_rain' | 'all_stations'>('all_today');
+  const [rainfallFilterMode, setRainfallFilterMode] = useState<'all_today' | 'active_rain' | 'all_stations'>('all_stations');
   const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
   const [isPanelExpanded, setIsPanelExpanded] = useState<boolean>(true);
+  const [secondsSinceUpdate, setSecondsSinceUpdate] = useState<number>(0);
 
   // Fetch real-time precipitation telemetry
   const fetchRainfallTelemetry = async (force: boolean = false) => {
@@ -331,7 +356,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         setRainfallData(report.data || []);
         setRainfallQuality(report.status || 'live');
         setRainfallTimestamp(report.timestamp);
-        setRainfallSource(report.source || 'OpenWeather');
+        setSecondsSinceUpdate(0);
+        setRainfallSource(report.source || 'Open-Meteo / Copernicus');
         setIsRateLimited(Boolean(report.rate_limited || report.status === 'rate_limited'));
         if (report.error && (report.rate_limited || report.status === 'rate_limited')) {
           setRateLimitMessage(report.error);
@@ -343,9 +369,6 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         setTotalMonitored(report.total_monitored_points || report.data?.length || 0);
         if (report.highest_rainfall_point) {
           setHighestRainPoint(report.highest_rainfall_point);
-        }
-        if (rainTodayCount === 0 && rainfallFilterMode === 'all_today') {
-          setRainfallFilterMode('all_stations');
         }
         // Smoothly update selected reading if open
         if (selectedReading) {
@@ -363,13 +386,30 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
     }
   };
 
-  // Poll live precipitation telemetry on mount and every 5 minutes
+  // Track seconds since last update for real-time freshness visibility
+  useEffect(() => {
+    const t = setInterval(() => {
+      setSecondsSinceUpdate(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Poll live precipitation telemetry on mount, every 30 seconds, and on SSE stream pushes
   useEffect(() => {
     fetchRainfallTelemetry(false);
     const timer = setInterval(() => {
       fetchRainfallTelemetry(false);
-    }, 300000); // 5 minutes
-    return () => clearInterval(timer);
+    }, 30000); // 30 seconds for live continuous updates
+
+    // Real-time Server-Sent Events (SSE) listener for instant telemetry broadcasts
+    const unsub = api.subscribeRealtimeStream(undefined, (_event) => {
+      fetchRainfallTelemetry(false);
+    });
+
+    return () => {
+      clearInterval(timer);
+      unsub();
+    };
   }, []);
 
   // AgroMonitoring Soil Moisture Layer States & Fetcher
@@ -728,8 +768,10 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                   {isRateLimited ? 'RATE LIMIT' : rainfallQuality.toUpperCase()}
                 </span>
               </div>
-              <span style={{ fontSize: '9.5px', color: '#94A3B8' }}>
-                {filteredRainfallData.length} / {totalMonitored || 120} stations monitored across India • {rainfallTimestamp ? formatIST(rainfallTimestamp) : 'Syncing'}
+              <span style={{ fontSize: '9.5px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                <strong style={{ color: '#E2E8F0' }}>{filteredRainfallData.length} / {totalMonitored || 193}</strong> stations monitored across India • 
+                <span style={{ color: '#38BDF8', fontWeight: 600 }}>LIVE</span>
+                <span>• {rainfallTimestamp ? (secondsSinceUpdate < 5 ? 'Just now' : `${secondsSinceUpdate}s ago`) : 'Syncing...'}</span>
               </span>
             </div>
           </div>
@@ -921,14 +963,34 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
               )}
             </div>
 
-            {/* Filter Mode Tabs: 24h Rain Today | Active Raining Now | All Stations */}
+            {/* Filter Mode Tabs: All Stations (Default) | 24h Rain Today | Active Raining Now */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '4px' }}>
+              <button
+                onClick={() => setRainfallFilterMode('all_stations')}
+                style={{
+                  background: rainfallFilterMode === 'all_stations' ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                  border: rainfallFilterMode === 'all_stations' ? '1px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: rainfallFilterMode === 'all_stations' ? '#38BDF8' : '#94A3B8',
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  fontSize: '9.5px',
+                  fontWeight: rainfallFilterMode === 'all_stations' ? 700 : 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                }}
+              >
+                <span>🌐 All Stations ({totalMonitored || 193})</span>
+              </button>
+
               <button
                 onClick={() => setRainfallFilterMode('all_today')}
                 style={{
-                  background: rainfallFilterMode === 'all_today' ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255, 255, 255, 0.04)',
-                  border: rainfallFilterMode === 'all_today' ? '1px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.1)',
-                  color: rainfallFilterMode === 'all_today' ? '#38BDF8' : '#94A3B8',
+                  background: rainfallFilterMode === 'all_today' ? 'rgba(147, 51, 234, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                  border: rainfallFilterMode === 'all_today' ? '1px solid #C084FC' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: rainfallFilterMode === 'all_today' ? '#C084FC' : '#94A3B8',
                   padding: '4px 6px',
                   borderRadius: '6px',
                   fontSize: '9.5px',
@@ -961,26 +1023,6 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
                 }}
               >
                 <span>⚡ Active Rain ({liveActiveRainingCount})</span>
-              </button>
-
-              <button
-                onClick={() => setRainfallFilterMode('all_stations')}
-                style={{
-                  background: rainfallFilterMode === 'all_stations' ? 'rgba(147, 51, 234, 0.22)' : 'rgba(255, 255, 255, 0.04)',
-                  border: rainfallFilterMode === 'all_stations' ? '1px solid #C084FC' : '1px solid rgba(255, 255, 255, 0.1)',
-                  color: rainfallFilterMode === 'all_stations' ? '#C084FC' : '#94A3B8',
-                  padding: '4px 6px',
-                  borderRadius: '6px',
-                  fontSize: '9.5px',
-                  fontWeight: rainfallFilterMode === 'all_stations' ? 700 : 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '3px',
-                }}
-              >
-                <span>🌐 All ({totalMonitored})</span>
               </button>
             </div>
 
@@ -1125,7 +1167,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         preferCanvas={true}
         ref={mapRef}
       >
-        <MapController center={center} zoom={zoom} isFullPage={isFullPage} />
+        <MapController center={center} zoom={zoom} isFullPage={isFullPage} onZoomChange={setCurrentZoom} />
 
         {/* Dynamic Basemap Layer */}
         <TileLayer
@@ -1212,7 +1254,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
         })}
 
         {/* Primary Mandi Beacon & Key Mountain Settlements */}
-        {!showRainfallLayer && visibleReferenceSettlements.map((s) => (
+        {(!showRainfallLayer || filteredRainfallData.length === 0) && visibleReferenceSettlements.map((s) => (
           <Marker
             key={s.name}
             position={s.coords}
@@ -1226,8 +1268,12 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           />
         ))}
 
-        {/* Dynamic Village & Regional Settlement Markers */}
-        {filteredVillages.map((v) => {
+        {/* Dynamic Village & Regional Settlement Markers:
+            Rendered when rainfall layer is toggled off (Settlement Evacuation Mode),
+            or when zoomed into a valley/district (currentZoom >= 7), or for an actively selected village,
+            or as safety fallback if rainfall telemetry is still loading/empty. */}
+        {(!showRainfallLayer || currentZoom >= 7 || selectedVillage || filteredRainfallData.length === 0) && filteredVillages.map((v) => {
+          if (showRainfallLayer && currentZoom < 7 && selectedVillage?.id !== v.id && filteredRainfallData.length > 0) return null;
           if (showRainfallLayer && filteredRainfallData.some(r => Math.abs(r.lat - v.latitude) < 0.04 && Math.abs(r.lon - v.longitude) < 0.04)) return null;
           return (
             <Marker
@@ -1241,8 +1287,8 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
           );
         })}
 
-        {/* Designated Disaster Relief Shelters */}
-        {(selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
+        {/* Designated Disaster Relief Shelters: Only shown when rainfall layer is off or zoomed into local valley */}
+        {(!showRainfallLayer || currentZoom >= 7) && (selectedRegion === 'ALL' || selectedRegion === 'NORTH') && shelters.map((sh) => (
           <Marker
             key={`sh-${sh.id}`}
             position={[sh.latitude, sh.longitude]}
@@ -1274,7 +1320,7 @@ export const TerrainMapContainer: React.FC<TerrainMapContainerProps> = ({
             <Marker
               key={`rain-${r.id}`}
               position={[r.lat, r.lon]}
-              icon={createRainfallPinIcon(r, matchedVillage, isSelected)}
+              icon={createRainfallPinIcon(r, matchedVillage, isSelected, currentZoom)}
               eventHandlers={{
                 click: () => {
                   openStationIntelligence(r);

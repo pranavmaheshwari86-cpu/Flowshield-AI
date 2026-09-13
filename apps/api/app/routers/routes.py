@@ -51,6 +51,7 @@ def list_blocked_routes(
     return [r for r in all_routes if r.is_blocked]
 
 
+@router.get("/emergency-facilities")
 @router.get("/emergency-contacts")
 def get_district_emergency_contacts(
     district: Optional[str] = Query("Rudraprayag"),
@@ -92,6 +93,9 @@ def evaluate_disaster_aware_route(req: RouteEvaluateRequest, db: Session = Depen
         destination_shelter_id=req.destination_shelter_id,
         state=req.state,
         district=req.district,
+        disaster_type=req.disaster_type or "FLOOD",
+        avoid_hazards=req.avoid_hazards if req.avoid_hazards is not None else True,
+        radius_km=req.radius_km or 25.0,
     )
 
 

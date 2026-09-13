@@ -80,9 +80,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map'
 
   // Initial load and live telemetry synchronization
   useEffect(() => {
-    // If on the dedicated Timeline route, skip the heavy 7-endpoint dashboard polling
+    // If on the dedicated Timeline route or active on Timeline tab, skip the heavy 7-endpoint dashboard polling
     // and skip global multi-settlement live telemetry synchronization
-    if (isTimelineRoute) {
+    if (isTimelineRoute || activeSidebarItem === 'Timeline') {
       return;
     }
 
@@ -91,18 +91,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map'
       .then(() => {
         const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         setLastSyncedTime(nowStr);
-        fetchData();
       })
       .catch((err) => console.warn('Live telemetry initial sync:', err));
 
     // Poll status every 15 seconds (only when on Map or Overview dashboards)
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
-  }, [fetchData, isTimelineRoute]);
+  }, [fetchData, isTimelineRoute, activeSidebarItem]);
 
   // Connect to Real-Time SSE Event Stream
   useEffect(() => {
-    if (isTimelineRoute) return;
+    if (isTimelineRoute || activeSidebarItem === 'Timeline') return;
 
     const unsub = api.subscribeRealtimeStream(
       selectedVillageId ? String(selectedVillageId) : undefined,
@@ -116,7 +115,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'Map'
     return () => {
       unsub();
     };
-  }, [selectedVillageId, fetchData, isTimelineRoute]);
+  }, [selectedVillageId, fetchData, isTimelineRoute, activeSidebarItem]);
 
 
 

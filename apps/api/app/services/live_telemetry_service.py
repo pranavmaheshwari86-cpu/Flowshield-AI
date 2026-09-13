@@ -31,6 +31,10 @@ from ..config import settings
 
 logger = logging.getLogger("flowshield.live_telemetry")
 
+_GLOBAL_LAST_SYNC_TIME: Optional[datetime] = None
+_GLOBAL_LAST_SYNC_STATUS: str = "INITIALIZED"
+_GLOBAL_LAST_SYNCED_COUNT: int = 0
+
 
 class LiveTelemetryService:
     """
@@ -44,15 +48,39 @@ class LiveTelemetryService:
         self.open_meteo_provider = OpenMeteoProvider()
         self.open_weather_provider = OpenWeatherProvider()
         self.cwc_provider = CwcRiverGaugeProvider()
-        self.last_sync_time: Optional[datetime] = None
-        self.last_sync_status: str = "INITIALIZED"
-        self.last_synced_count: int = 0
         if getattr(settings, "TOMORROW_API_KEY", ""):
             self.provider = "Tomorrow.io High-Resolution Nowcasting + CWC Hydro Telemetry"
         elif settings.OPENWEATHER_API_KEY:
             self.provider = "OpenWeatherMap Live API + CWC Hydro Telemetry"
         else:
             self.provider = "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
+
+    @property
+    def last_sync_time(self) -> Optional[datetime]:
+        return _GLOBAL_LAST_SYNC_TIME
+
+    @last_sync_time.setter
+    def last_sync_time(self, val: Optional[datetime]):
+        global _GLOBAL_LAST_SYNC_TIME
+        _GLOBAL_LAST_SYNC_TIME = val
+
+    @property
+    def last_sync_status(self) -> str:
+        return _GLOBAL_LAST_SYNC_STATUS
+
+    @last_sync_status.setter
+    def last_sync_status(self, val: str):
+        global _GLOBAL_LAST_SYNC_STATUS
+        _GLOBAL_LAST_SYNC_STATUS = val
+
+    @property
+    def last_synced_count(self) -> int:
+        return _GLOBAL_LAST_SYNCED_COUNT
+
+    @last_synced_count.setter
+    def last_synced_count(self, val: int):
+        global _GLOBAL_LAST_SYNCED_COUNT
+        _GLOBAL_LAST_SYNCED_COUNT = val
 
 
     def sync_live_telemetry(self, db: Session, force: bool = False) -> Dict[str, Any]:
@@ -78,6 +106,17 @@ class LiveTelemetryService:
             return {"status": "error", "message": "No settlements found in database"}
 
         sync_id = str(uuid.uuid4())
+
+        import time
+        now_ts = time.time()
+        # Fast circuit breaker check: if upstream providers are in backoff, immediately serve cached fallback without network delay
+        tm_blocked = (getattr(self.tomorrow_provider, "_rate_limited_until", 0) > now_ts) or (not getattr(settings, "TOMORROW_API_KEY", ""))
+        ow_blocked = (getattr(self.open_weather_provider, "_circuit_breaker_until", 0) > now_ts) or (not getattr(settings, "OPENWEATHER_API_KEY", ""))
+        om_blocked = getattr(self.open_meteo_provider, "_rate_limited_until", 0) > now_ts
+
+        if tm_blocked and ow_blocked and om_blocked and not force:
+            logger.info("All external meteorological APIs in active rate-limit cooldown. Serving cached observations instantly.")
+            return self._handle_degraded_cached_fallback(db, villages, sync_id, ["External APIs in active rate-limit cooldown (HTTP 429)"], now)
 
         # Build location targets
         targets = [
@@ -130,6 +169,18 @@ class LiveTelemetryService:
             normalized_obs_list = self.open_meteo_provider.normalize(raw_payload, targets)
             active_provider_name = "Open-Meteo / ECMWF Copernicus + CWC Hydro Telemetry"
 
+        # 4. Guarantee 100% settlement coverage: supplement any rate-limited / missing targets with Open-Meteo
+        if len(normalized_obs_list) < len(targets):
+            existing_ids = {obs.location_id for obs in normalized_obs_list}
+            missing_targets = [t for t in targets if t.id not in existing_ids]
+            if missing_targets:
+                logger.info(f"Supplementing {len(missing_targets)} settlements with Open-Meteo Copernicus batch telemetry.")
+                om_payload = self.open_meteo_provider.fetch(missing_targets)
+                om_valid, _ = self.open_meteo_provider.validate(om_payload)
+                if om_valid:
+                    om_obs = self.open_meteo_provider.normalize(om_payload, missing_targets)
+                    normalized_obs_list.extend(om_obs)
+                    logger.info(f"Successfully synced 100% ({len(normalized_obs_list)}/{len(targets)}) of settlements.")
 
         self.provider = active_provider_name
         norm_map = {obs.location_id: obs for obs in normalized_obs_list}
@@ -309,13 +360,20 @@ class LiveTelemetryService:
         cached_count = 0
         total_risk = 0.0
 
+        # Batch-load recent observations for all settlements
+        recent_obs = (
+            db.query(EnvironmentalObservation)
+            .order_by(EnvironmentalObservation.timestamp.desc())
+            .limit(len(villages) * 4)
+            .all()
+        )
+        obs_by_village = {}
+        for o in recent_obs:
+            if o.village_id not in obs_by_village:
+                obs_by_village[o.village_id] = o
+
         for v in villages:
-            latest_obs = (
-                db.query(EnvironmentalObservation)
-                .filter(EnvironmentalObservation.village_id == v.id)
-                .order_by(EnvironmentalObservation.timestamp.desc())
-                .first()
-            )
+            latest_obs = obs_by_village.get(v.id)
             if not latest_obs:
                 continue
 

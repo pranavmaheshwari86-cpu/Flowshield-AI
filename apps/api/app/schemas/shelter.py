@@ -68,6 +68,9 @@ class ShelterResponse(BaseModel):
     corridor_id: Optional[str] = None
     corridor_name: Optional[str] = None
     corridor_blocked: Optional[bool] = None
+    elevation_m: Optional[float] = None
+    is_best_safe_option: Optional[bool] = False
+    disaster_type: Optional[str] = "FLOOD"
 
     class Config:
         from_attributes = True
