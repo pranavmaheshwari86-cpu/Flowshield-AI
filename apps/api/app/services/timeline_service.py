@@ -1030,7 +1030,7 @@ class TimelineService:
         if not force_refresh and cache_key in self._forecast_cache:
             c_time, c_series, c_accum, c_qual = self._forecast_cache[cache_key]
             if (now - c_time).total_seconds() < self.FORECAST_CACHE_TTL_SECONDS:
-                if not ((is_demo or is_sim_running) and c_series is None):
+                if not (is_sim_running and c_series is None):
                     return c_series, c_accum, c_qual
 
         if is_sim_running:
@@ -1163,9 +1163,9 @@ class TimelineService:
             logger.info(f"Tomorrow.io forecast probe skipped or unavailable for {village.name}: {te}")
 
         # -------------------------------------------------------------
-        # Tier 3: Topographic Catchment Climatological Forecast (Fallback & DEMO_MODE)
+        # Tier 3: Topographic Catchment Climatological Forecast (Active Simulation Only)
         # -------------------------------------------------------------
-        if is_demo or is_sim_running:
+        if is_sim_running:
             series, forecast_accum, quality = self._generate_catchment_climatological_forecast(village, db, now)
             self._forecast_cache[cache_key] = (now, series, forecast_accum, quality)
             return series, forecast_accum, quality

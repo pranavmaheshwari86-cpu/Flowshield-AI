@@ -165,17 +165,18 @@ class RainfallService:
         self._last_fetch_time: Optional[datetime] = None
         self._last_error: Optional[str] = None
 
-        # Pre-seed cached readings from disk or build initial baseline to guarantee instantaneous map rendering
-        self._load_readings_from_disk()
-        if not self._cached_readings:
-            try:
-                initial_targets = self.get_effective_targets()
-                self._cached_readings = self._build_fallback_readings(initial_targets)
-                self._last_fetch_time = datetime.now(timezone.utc)
-                self._save_readings_to_disk()
-                logger.info(f"Initialized {len(self._cached_readings)} baseline synoptic readings for immediate display.")
-            except Exception as e:
-                logger.warning(f"Could not pre-populate initial rainfall readings: {e}")
+        # Pre-seed cached readings from disk or build initial baseline to guarantee instantaneous map rendering (production only)
+        if provider is None:
+            self._load_readings_from_disk()
+            if not self._cached_readings:
+                try:
+                    initial_targets = self.get_effective_targets()
+                    self._cached_readings = self._build_fallback_readings(initial_targets)
+                    self._last_fetch_time = datetime.now(timezone.utc)
+                    self._save_readings_to_disk()
+                    logger.info(f"Initialized {len(self._cached_readings)} baseline synoptic readings for immediate display.")
+                except Exception as e:
+                    logger.warning(f"Could not pre-populate initial rainfall readings: {e}")
 
     def _save_readings_to_disk(self):
         try:
@@ -394,14 +395,21 @@ class RainfallService:
                         r.model_copy(update={"quality": "stale"}) for r in self._cached_readings
                     ]
                     quality = "stale"
-                else:
+                elif not force_refresh:
                     # Fallback to calibrated readings from OpenWeather disk cache or DB
                     fallback_readings = self._build_fallback_readings(targets, db)
-                    self._cached_readings = fallback_readings
-                    self._last_fetch_time = now
-                    self._save_readings_to_disk()
-                    readings = fallback_readings
-                    quality = "stale"
+                    if fallback_readings:
+                        self._cached_readings = fallback_readings
+                        self._last_fetch_time = now
+                        self._save_readings_to_disk()
+                        readings = fallback_readings
+                        quality = "stale"
+                    else:
+                        readings = []
+                        quality = "unavailable"
+                else:
+                    readings = []
+                    quality = "unavailable"
 
         # Filter points that received rain today (24h accumulation >= 0.1 mm)
         rain_today_points = [

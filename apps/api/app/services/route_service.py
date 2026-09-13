@@ -374,6 +374,90 @@ class RouteService:
 
         emergency_facilities = cls.get_emergency_facilities(resolved_district)
 
+        # 1.1 Compute snap distance to nearest mapped settlement & off-network threshold guard
+        all_villages = db.query(Village).all()
+        min_snap_dist = float("inf")
+        nearest_village = None
+
+        for v in all_villages:
+            dist = cls.haversine_distance_km(origin_lat, origin_lon, float(v.latitude), float(v.longitude))
+            if dist < min_snap_dist:
+                min_snap_dist = dist
+                nearest_village = v
+
+        if not nearest_v_id and nearest_village:
+            nearest_v_id = nearest_village.id
+
+        if min_snap_dist > cls.OFF_NETWORK_THRESHOLD_KM:
+            return RouteEvaluationResult(
+                status="ROUTING_UNAVAILABLE_OFF_GRID",
+                route_label="OFF-GRID COORDINATES",
+                requires_authority_coordination=True,
+                selected_route=None,
+                alternate_routes=[],
+                blocked_routes=[],
+                nearest_emergency_facilities=emergency_facilities,
+                snap_distance_km=round(min_snap_dist, 2),
+                hazard_penalty_applied=999.0,
+                message=(
+                    f"Coordinates are {min_snap_dist:.2f} km from the nearest road corridor "
+                    f"(limit: {cls.OFF_NETWORK_THRESHOLD_KM} km). Standard road routing unavailable. "
+                    "Requires immediate direct coordination with local DDMA / disaster authorities."
+                ),
+            )
+
+        # 1.2 If origin village has designated database evacuation corridors, evaluate them first
+        target_village_id = village_id or (nearest_village.id if nearest_village and min_snap_dist <= cls.OFF_NETWORK_THRESHOLD_KM else None)
+        if target_village_id:
+            query = db.query(Route).filter(Route.origin_village_id == target_village_id)
+            if destination_shelter_id:
+                query = query.filter(Route.destination_shelter_id == destination_shelter_id)
+            db_routes = query.all()
+
+            if db_routes:
+                ranked: List[Tuple[Route, float]] = []
+                for r in db_routes:
+                    cost = cls.compute_route_cost(r)
+                    ranked.append((r, cost))
+
+                ranked.sort(key=lambda item: item[1])
+                all_blocked = all(math.isinf(cost) for _, cost in ranked)
+
+                if all_blocked:
+                    v_record = db.query(Village).filter(Village.id == target_village_id).first()
+                    v_title = v_record.name if v_record else "Settlement"
+                    return RouteEvaluationResult(
+                        status="NO_SAFE_ROUTE_FOUND",
+                        route_label="NO SAFE ROUTE FOUND",
+                        requires_authority_coordination=True,
+                        selected_route=None,
+                        alternate_routes=[],
+                        blocked_routes=[cls._format_route_response(db, r) for r in db_routes],
+                        nearest_emergency_facilities=emergency_facilities,
+                        snap_distance_km=round(min_snap_dist, 2),
+                        hazard_penalty_applied=999.0,
+                        message=(
+                            f"All evacuation corridors from {v_title} are severed or flooded. "
+                            "Ground evacuation impassable. Mandatory emergency authority coordination required."
+                        ),
+                    )
+
+                route_resps = [cls._format_route_response(db, r) for r, _ in ranked]
+                best_route = route_resps[0]
+                alt_routes = route_resps[1:4]
+                return RouteEvaluationResult(
+                    status="RECOMMENDED_LOWER_RISK_ROUTE",
+                    route_label=best_route.route_label,
+                    requires_authority_coordination=(best_route.assessed_risk_score > 60),
+                    selected_route=best_route,
+                    alternate_routes=alt_routes,
+                    blocked_routes=[r for r in route_resps if r.is_blocked],
+                    nearest_emergency_facilities=emergency_facilities,
+                    snap_distance_km=round(min_snap_dist, 2),
+                    hazard_penalty_applied=round(ranked[0][1] / max(0.1, best_route.distance_km), 2),
+                    message=f"Optimal corridor selected via {best_route.name} to {best_route.destination_shelter_name}.",
+                )
+
         # 2. Active hazards and incidents
         active_events = db.query(DisasterEvent).filter(DisasterEvent.status.in_(["ACTIVE", "MONITORING"])).all()
         active_incidents = db.query(RoadIncident).filter(RoadIncident.status.in_(["ACTIVE", "VERIFIED", "REPORTED"])).all()

@@ -72,11 +72,13 @@ def test_disaggregated_precipitation_peaks(client, db_session):
         assert abs(obs["forecast_peak_rate_mm_hr"] - data["precipitation_forecast"]["peak_forecast_mm_hr"]) < 0.05
     else:
         forecast_horizons = data.get("forecast_horizons", [])
-        if forecast_horizons:
+        if forecast_horizons and obs.get("forecast_peak_rate_mm_hr") is not None:
             actual_fc_peak = max(
                 (h.get("projected_rainfall_rate_mm_hr") or 0.0) for h in forecast_horizons
             )
             assert abs(obs["forecast_peak_rate_mm_hr"] - actual_fc_peak) < 0.05
+        else:
+            assert obs.get("forecast_peak_rate_mm_hr") is None
 
 
 def test_zero_fabrication_on_weather_outage(client, db_session):
