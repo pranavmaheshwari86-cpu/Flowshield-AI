@@ -210,14 +210,9 @@ export const ResponderPage: React.FC = () => {
     loadDistrictData();
   }, [selectedState, selectedDistrict]);
 
-  // Disaster Scenarios Config
+  // Disaster Scenarios Config (Focused strictly on Flash Flood intelligence)
   const SCENARIOS = [
-    { id: 'FLOOD', label: 'Flood Surge', icon: '🌊', color: '#38bdf8' },
-    { id: 'LANDSLIDE', label: 'Landslide', icon: '⛰️', color: '#f59e0b' },
-    { id: 'EARTHQUAKE', label: 'Earthquake', icon: '🌋', color: '#ec4899' },
-    { id: 'CYCLONE', label: 'Cyclone', icon: '🌀', color: '#06b6d4' },
-    { id: 'FIRE', label: 'Wildfire', icon: '🔥', color: '#ef4444' },
-    { id: 'MULTI_HAZARD', label: 'Multi-Hazard', icon: '⚡', color: '#a855f7' },
+    { id: 'FLOOD', label: 'Flash Flood', icon: '🌊', color: '#38bdf8' },
   ];
 
   const RADII = [5, 10, 25, 50];
